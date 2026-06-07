@@ -1,0 +1,27 @@
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { AuthProvider } from "@/components/providers/auth-provider";
+
+const inter = Inter({ subsets: ["latin", "cyrillic"] });
+
+export const metadata: Metadata = {
+  title: "BuloqWater - Suv Yetkazish Tizimi",
+  description: "Multi-tenant suv yetkazib berish platformasi",
+  manifest: "/manifest.json",
+  themeColor: "#0ea5e9",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="uz" suppressHydrationWarning>
+      <body className={inter.className}>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
+    </html>
+  );
+}
