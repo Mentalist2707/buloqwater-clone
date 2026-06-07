@@ -69,3 +69,58 @@ export async function updateProductPrice(productId: string, newPrice: number): P
     return { success: false, error: "Narx o'zgartirishda xatolik" };
   }
 }
+
+
+
+// ── Mahsulotni to'liq yangilash ───────────────────────────────
+interface UpdateProductInput {
+  name?: string;
+  description?: string;
+  price?: number;
+  isBottle?: boolean;
+}
+
+export async function updateProduct(productId: string, input: UpdateProductInput): Promise<ActionResult> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user.companyId) return { success: false, error: "Ruxsat yo'q" };
+
+    const product = await prisma.product.findFirst({
+      where: { id: productId, companyId: session.user.companyId },
+    });
+    if (!product) return { success: false, error: "Mahsulot topilmadi" };
+
+    const updateData: any = {};
+    if (input.name !== undefined) updateData.name = input.name;
+    if (input.description !== undefined) updateData.description = input.description || null;
+    if (input.price !== undefined) updateData.price = input.price;
+    if (input.isBottle !== undefined) updateData.isBottle = input.isBottle;
+
+    await prisma.product.update({ where: { id: productId }, data: updateData });
+    return { success: true, message: "Mahsulot yangilandi" };
+  } catch (error) {
+    return { success: false, error: "Yangilashda xatolik" };
+  }
+}
+
+// ── Mahsulot statusini o'zgartirish ───────────────────────────
+export async function toggleProductStatus(productId: string): Promise<ActionResult> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user.companyId) return { success: false, error: "Ruxsat yo'q" };
+
+    const product = await prisma.product.findFirst({
+      where: { id: productId, companyId: session.user.companyId },
+    });
+    if (!product) return { success: false, error: "Mahsulot topilmadi" };
+
+    await prisma.product.update({
+      where: { id: productId },
+      data: { isActive: !product.isActive },
+    });
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: "Status o'zgartirishda xatolik" };
+  }
+}

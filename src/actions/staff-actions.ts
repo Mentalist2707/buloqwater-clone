@@ -106,3 +106,47 @@ export async function toggleStaffStatus(userId: string): Promise<ActionResult> {
     return { success: false, error: "Status o'zgartirishda xatolik" };
   }
 }
+
+
+
+// ── Xodim ma'lumotlarini yangilash ────────────────────────────
+interface UpdateStaffInput {
+  name?: string;
+  phone?: string;
+  password?: string;
+}
+
+export async function updateStaffMember(userId: string, input: UpdateStaffInput): Promise<ActionResult> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user.companyId) return { success: false, error: "Ruxsat yo'q" };
+
+    const user = await prisma.user.findFirst({
+      where: { id: userId, companyId: session.user.companyId },
+    });
+    if (!user) return { success: false, error: "Xodim topilmadi" };
+
+    const updateData: any = {};
+
+    if (input.name && input.name !== user.name) updateData.name = input.name;
+
+    if (input.phone && input.phone !== user.phone) {
+      const existing = await prisma.user.findFirst({
+        where: { phone: input.phone, companyId: session.user.companyId, id: { not: userId } },
+      });
+      if (existing) return { success: false, error: "Bu telefon raqami band" };
+      updateData.phone = input.phone;
+    }
+
+    if (input.password && input.password.length >= 6) {
+      updateData.password = await bcrypt.hash(input.password, 10);
+    }
+
+    if (Object.keys(updateData).length === 0) return { success: false, error: "O'zgartirish kiritilmadi" };
+
+    await prisma.user.update({ where: { id: userId }, data: updateData });
+    return { success: true, message: "Xodim yangilandi" };
+  } catch (error) {
+    return { success: false, error: "Yangilashda xatolik" };
+  }
+}
