@@ -53,7 +53,19 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Telefon va parol kiritilishi shart");
         }
 
-        const { phone, password, subdomain } = credentials;
+        const { phone: rawPhone, password, subdomain } = credentials;
+
+        // Telefon raqamni normalizatsiya qilish
+        let phone = rawPhone.replace(/\D/g, "");
+        if (phone.startsWith("998") && phone.length === 12) {
+          phone = `+${phone}`;
+        } else if (phone.length === 9) {
+          phone = `+998${phone}`;
+        } else if (rawPhone.startsWith("+")) {
+          phone = rawPhone;
+        } else {
+          phone = `+998${phone}`;
+        }
 
         // SUPER ADMIN
         if (!subdomain || subdomain === "app" || subdomain === "www") {

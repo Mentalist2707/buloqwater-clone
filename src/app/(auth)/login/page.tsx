@@ -31,8 +31,20 @@ export default function LoginPage() {
     try {
       const subdomain = getSubdomain();
 
+      // Telefon raqamni to'g'ri formatga keltirish
+      let formattedPhone = phone.replace(/\D/g, ""); // faqat raqamlar
+      if (formattedPhone.startsWith("998") && formattedPhone.length === 12) {
+        formattedPhone = `+${formattedPhone}`;
+      } else if (formattedPhone.length === 9) {
+        formattedPhone = `+998${formattedPhone}`;
+      } else if (phone.startsWith("+")) {
+        formattedPhone = phone;
+      } else {
+        formattedPhone = `+998${formattedPhone}`;
+      }
+
       const result = await signIn("credentials", {
-        phone: phone.startsWith("+") ? phone : `+998${phone}`,
+        phone: formattedPhone,
         password,
         subdomain,
         redirect: false,
