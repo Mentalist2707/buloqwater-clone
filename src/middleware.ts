@@ -102,6 +102,6 @@ function redirectToRoleHome(role: string, baseUrl: string): NextResponse {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.json|icon-|public).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.json|icon|logo|public|.*\\.svg$|.*\\.png$|.*\\.jpg$|.*\\.ico$).*)",
   ],
 };
