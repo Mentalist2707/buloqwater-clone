@@ -8,17 +8,23 @@ async function main() {
 
   // ── 1. Super Admin ──────────────────────────────────────────
   const superAdminPassword = await bcrypt.hash("superadmin123", 10);
-  const superAdmin = await prisma.user.upsert({
-    where: { phone_companyId: { phone: "+998901234567", companyId: "" } },
-    update: {},
-    create: {
-      name: "Super Admin",
-      phone: "+998901234567",
-      password: superAdminPassword,
-      role: Role.SUPER_ADMIN,
-      companyId: null,
-    },
+  
+  // Avval mavjud Super Admin-ni tekshiramiz
+  let superAdmin = await prisma.user.findFirst({
+    where: { phone: "+998901234567", role: Role.SUPER_ADMIN, companyId: null },
   });
+  
+  if (!superAdmin) {
+    superAdmin = await prisma.user.create({
+      data: {
+        name: "Super Admin",
+        phone: "+998901234567",
+        password: superAdminPassword,
+        role: Role.SUPER_ADMIN,
+        companyId: null,
+      },
+    });
+  }
   console.log("✅ Super Admin yaratildi:", superAdmin.phone);
 
   // ── 2. Demo Kompaniya ────────────────────────────────────────
@@ -37,47 +43,56 @@ async function main() {
 
   // ── 3. Direktor ──────────────────────────────────────────────
   const directorPassword = await bcrypt.hash("director123", 10);
-  const director = await prisma.user.upsert({
-    where: { phone_companyId: { phone: "+998901111111", companyId: company.id } },
-    update: {},
-    create: {
-      name: "Bobur Toshmatov",
-      phone: "+998901111111",
-      password: directorPassword,
-      role: Role.DIRECTOR,
-      companyId: company.id,
-    },
+  let director = await prisma.user.findFirst({
+    where: { phone: "+998901111111", companyId: company.id },
   });
+  if (!director) {
+    director = await prisma.user.create({
+      data: {
+        name: "Bobur Toshmatov",
+        phone: "+998901111111",
+        password: directorPassword,
+        role: Role.DIRECTOR,
+        companyId: company.id,
+      },
+    });
+  }
   console.log("✅ Direktor yaratildi:", director.name);
 
   // ── 4. Operator ──────────────────────────────────────────────
   const operatorPassword = await bcrypt.hash("operator123", 10);
-  const operator = await prisma.user.upsert({
-    where: { phone_companyId: { phone: "+998902222222", companyId: company.id } },
-    update: {},
-    create: {
-      name: "Dilnoza Karimova",
-      phone: "+998902222222",
-      password: operatorPassword,
-      role: Role.OPERATOR,
-      companyId: company.id,
-    },
+  let operator = await prisma.user.findFirst({
+    where: { phone: "+998902222222", companyId: company.id },
   });
+  if (!operator) {
+    operator = await prisma.user.create({
+      data: {
+        name: "Dilnoza Karimova",
+        phone: "+998902222222",
+        password: operatorPassword,
+        role: Role.OPERATOR,
+        companyId: company.id,
+      },
+    });
+  }
   console.log("✅ Operator yaratildi:", operator.name);
 
   // ── 5. Haydovchi ─────────────────────────────────────────────
   const driverPassword = await bcrypt.hash("driver123", 10);
-  const driver = await prisma.user.upsert({
-    where: { phone_companyId: { phone: "+998903333333", companyId: company.id } },
-    update: {},
-    create: {
-      name: "Jasur Eshmatov",
-      phone: "+998903333333",
-      password: driverPassword,
-      role: Role.DRIVER,
-      companyId: company.id,
-    },
+  let driver = await prisma.user.findFirst({
+    where: { phone: "+998903333333", companyId: company.id },
   });
+  if (!driver) {
+    driver = await prisma.user.create({
+      data: {
+        name: "Jasur Eshmatov",
+        phone: "+998903333333",
+        password: driverPassword,
+        role: Role.DRIVER,
+        companyId: company.id,
+      },
+    });
+  }
   console.log("✅ Haydovchi yaratildi:", driver.name);
 
   // ── 6. Mahsulotlar ───────────────────────────────────────────
