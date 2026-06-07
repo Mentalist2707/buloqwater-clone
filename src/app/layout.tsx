@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   title: "BuloqWater - Suv Yetkazish Tizimi",
   description: "Multi-tenant suv yetkazib berish platformasi",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg", // public papkaga tashlasangiz
+  },
 };
 
 export const viewport = {
