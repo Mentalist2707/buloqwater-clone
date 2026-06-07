@@ -59,16 +59,80 @@ model Company {
   phone       String?
   address     String?
   logoUrl     String?
+  maxCustomers Int          @default(500)   // Limit: maksimal mijozlar
+  maxUsers     Int          @default(20)    // Limit: maksimal xodimlar
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  users       User[]
-  customers   Customer[]
-  products    Product[]
-  orders      Order[]
+  users         User[]
+  customers     Customer[]
+  products      Product[]
+  orders        Order[]
+  subscription  Subscription?
+  activityLogs  ActivityLog[]
 
   @@index([subdomain])
   @@map("companies")
+}
+
+// ============================================================
+// SUBSCRIPTION (Obuna) - Kompaniya to'lov muddati
+// ============================================================
+
+model Subscription {
+  id          String    @id @default(uuid())
+  startDate   DateTime  @default(now())
+  endDate     DateTime                    // Obuna tugash sanasi
+  amount      Float     @default(0)       // To'langan summa
+  isPaid      Boolean   @default(false)
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  companyId   String    @unique
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  payments    Payment[]
+
+  @@map("subscriptions")
+}
+
+// ============================================================
+// PAYMENT (To'lovlar tarixi)
+// ============================================================
+
+model Payment {
+  id          String    @id @default(uuid())
+  amount      Float
+  description String?
+  paidAt      DateTime  @default(now())
+
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@map("payments")
+}
+
+// ============================================================
+// ACTIVITY LOG (Faoliyat jurnali)
+// ============================================================
+
+model ActivityLog {
+  id          String    @id @default(uuid())
+  action      String    // "company_created", "user_login", "order_delivered"
+  description String    // "Shifo kompaniyasi yaratildi"
+  metadata    String?   // JSON qo'shimcha ma'lumot
+  createdAt   DateTime  @default(now())
+
+  userId      String?
+  companyId   String?
+  company     Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([companyId])
+  @@index([action])
+  @@map("activity_logs")
 }
 
 // ============================================================
