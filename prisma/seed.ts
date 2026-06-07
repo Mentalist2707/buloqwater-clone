@@ -171,28 +171,34 @@ async function main() {
   console.log("✅ Demo mijozlar yaratildi");
 
   // ── 8. Demo Buyurtma ─────────────────────────────────────────
-  const order = await prisma.order.create({
-    data: {
-      orderNumber: 1,
-      companyId: company.id,
-      customerId: customer1.id,
-      operatorId: operator.id,
-      driverId: driver.id,
-      status: "ASSIGNED",
-      bottlesDelivered: 2,
-      totalAmount: 30000,
-      items: {
-        create: [
-          {
-            quantity: 2,
-            unitPrice: 15000,
-            totalPrice: 30000,
-            productId: products[0].id,
-          },
-        ],
-      },
-    },
+  let order = await prisma.order.findFirst({
+    where: { orderNumber: 1, companyId: company.id },
   });
+
+  if (!order) {
+    order = await prisma.order.create({
+      data: {
+        orderNumber: 1,
+        companyId: company.id,
+        customerId: customer1.id,
+        operatorId: operator.id,
+        driverId: driver.id,
+        status: "ASSIGNED",
+        bottlesDelivered: 2,
+        totalAmount: 30000,
+        items: {
+          create: [
+            {
+              quantity: 2,
+              unitPrice: 15000,
+              totalPrice: 30000,
+              productId: products[0].id,
+            },
+          ],
+        },
+      },
+    });
+  }
   console.log("✅ Demo buyurtma yaratildi:", order.orderNumber);
 
   console.log("\n🎉 Seed muvaffaqiyatli tugadi!");
