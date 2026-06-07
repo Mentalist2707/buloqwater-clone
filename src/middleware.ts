@@ -10,7 +10,7 @@ export default withAuth(
 
     const subdomain = getSubdomainFromHost(hostname);
 
-    if (pathname === "/login" || pathname.startsWith("/api/auth")) {
+    if (pathname === "/login" || pathname.startsWith("/api/auth") || pathname === "/manifest.json" || pathname.startsWith("/icon")) {
       return NextResponse.next();
     }
 
@@ -102,6 +102,6 @@ function redirectToRoleHome(role: string, baseUrl: string): NextResponse {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|public).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.json|icon-|public).*)",
   ],
 };

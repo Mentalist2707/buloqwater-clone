@@ -16,6 +16,13 @@ export default function LoginPage() {
 
   const getSubdomain = (): string => {
     if (typeof window === "undefined") return "";
+    
+    // Dev mode: URL param orqali subdomen — ?subdomain=shifo
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramSubdomain = urlParams.get("subdomain");
+    if (paramSubdomain) return paramSubdomain;
+    
+    // Production: hostname-dan — shifo.buloqwater.uz
     const hostname = window.location.hostname;
     const parts = hostname.split(".");
     if (parts.length >= 3) return parts[0];
@@ -53,9 +60,11 @@ export default function LoginPage() {
       if (result?.error) {
         setErrorMsg(result.error);
       } else {
+        // Rolga qarab redirect
         if (!subdomain || subdomain === "app") {
           router.push("/superadmin/dashboard");
         } else {
+          // Subdomenli login — session olish va redirect
           router.push("/");
           router.refresh();
         }
