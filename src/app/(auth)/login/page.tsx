@@ -6,7 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary-500 border-t-transparent rounded-full" /></div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin h-8 w-8 border-4 border-primary-500 border-t-transparent rounded-full" />
+        </div>
+      }>
       <LoginForm />
     </Suspense>
   );
@@ -24,12 +29,12 @@ function LoginForm() {
 
   const getSubdomain = (): string => {
     if (typeof window === "undefined") return "";
-    
+
     // Dev mode: URL param orqali subdomen — ?subdomain=shifo
     const urlParams = new URLSearchParams(window.location.search);
     const paramSubdomain = urlParams.get("subdomain");
     if (paramSubdomain) return paramSubdomain;
-    
+
     // Production: hostname-dan — shifo.buloqwater.uz
     const hostname = window.location.hostname;
     const parts = hostname.split(".");
@@ -88,13 +93,25 @@ function LoginForm() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-primary-100 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img src="/icon.svg" alt="BuloqWater" className="h-16 mx-auto mb-4 dark:invert" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">BuloqWater</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Suv yetkazish boshqaruv tizimi</p>
+          <div className="relative h-32 sm:h-60  mx-auto mb-4">
+            <img
+              src="/image.png" // public papkangizda bor bo'lgan toza vektorli SVG
+              alt="BuloqWater Logo"
+              className="w-full h-full object-contain dark:invert transition-all duration-300"
+            />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            BuloqWater
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Suv yetkazish boshqaruv tizimi
+          </p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          <h2 className="text-lg font-semibold text-gray-800 mb-6">Tizimga kirish</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-6">
+            Tizimga kirish
+          </h2>
 
           {errorMsg && (
             <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
@@ -104,9 +121,13 @@ function LoginForm() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Telefon raqami</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Telefon raqami
+              </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">+998</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+                  +998
+                </span>
                 <input
                   type="tel"
                   value={phone}
@@ -120,7 +141,9 @@ function LoginForm() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Parol</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Parol
+              </label>
               <input
                 type="password"
                 value={password}
@@ -134,13 +157,24 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 text-white font-medium rounded-xl transition-all duration-200 shadow-lg shadow-primary-500/20 hover:shadow-primary-500/30"
-            >
+              className="w-full py-3 px-4 bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 text-white font-medium rounded-xl transition-all duration-200 shadow-lg shadow-primary-500/20 hover:shadow-primary-500/30">
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
                   </svg>
                   Kirish...
                 </span>
