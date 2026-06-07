@@ -23,9 +23,7 @@ export default async function DriverLayout({ children }: { children: React.React
       <header className="sticky top-0 z-40 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-4 py-3 shadow-sm safe-top">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary-500 flex items-center justify-center">
-              <span className="text-white text-lg">🚚</span>
-            </div>
+            <img src="/icon.svg" alt="BuloqWater" className="w-9 h-9 dark:invert" />
             <div>
               <h1 className="text-sm font-bold text-gray-900 dark:text-white">BuloqWater</h1>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">Haydovchi paneli</p>

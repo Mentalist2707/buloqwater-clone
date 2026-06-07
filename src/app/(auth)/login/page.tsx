@@ -88,11 +88,9 @@ function LoginForm() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-primary-100 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-500 text-white text-2xl font-bold mb-4">
-            💧
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">BuloqWater</h1>
-          <p className="text-sm text-gray-500 mt-1">Suv yetkazish boshqaruv tizimi</p>
+          <img src="/icon.svg" alt="BuloqWater" className="h-16 mx-auto mb-4 dark:invert" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">BuloqWater</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Suv yetkazish boshqaruv tizimi</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
