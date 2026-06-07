@@ -36,9 +36,19 @@ function LoginForm() {
     if (paramSubdomain) return paramSubdomain;
 
     const hostname = window.location.hostname;
-    const parts = hostname.split(".");
-    if (parts.length >= 3) return parts[0];
-    if (hostname.includes(".localhost")) return parts[0];
+    
+    // Vercel default domeni — subdomen emas
+    if (hostname.endsWith(".vercel.app")) return "";
+    
+    // Production: shifo.buloqwater.uz → "shifo"
+    const baseDomain = "buloqwater.uz";
+    if (hostname.endsWith(baseDomain) && hostname !== baseDomain && hostname !== `www.${baseDomain}`) {
+      return hostname.replace(`.${baseDomain}`, "");
+    }
+    
+    // Dev: shifo.localhost → "shifo"
+    if (hostname.includes(".localhost")) return hostname.split(".")[0];
+    
     return "";
   };
 

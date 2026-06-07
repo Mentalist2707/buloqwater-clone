@@ -74,13 +74,20 @@ export default withAuth(
 function getSubdomainFromHost(hostname: string): string | null {
   const baseDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || "buloqwater.uz";
 
+  // Vercel default domeni — subdomen emas
+  if (hostname.includes(".vercel.app")) return null;
+
+  // Production: shifo.buloqwater.uz → "shifo"
   if (hostname.includes(baseDomain)) {
-    const parts = hostname.replace(`:${process.env.PORT || "3000"}`, "").split(".");
-    if (parts.length >= 3) {
-      return parts[0];
-    }
+    const clean = hostname.replace(`:${process.env.PORT || "3000"}`, "");
+    // buloqwater.uz yoki www.buloqwater.uz — subdomen emas
+    if (clean === baseDomain || clean === `www.${baseDomain}`) return null;
+    // shifo.buloqwater.uz → "shifo"
+    const sub = clean.replace(`.${baseDomain}`, "");
+    if (sub && sub !== clean) return sub;
   }
 
+  // Dev: shifo.localhost:3000
   if (hostname.includes(".localhost")) {
     return hostname.split(".")[0];
   }
