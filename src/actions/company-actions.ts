@@ -207,3 +207,39 @@ export async function extendSubscription(companyId: string, months: number, amou
     return { success: false, error: "Obuna uzaytirishda xatolik" };
   }
 }
+
+
+
+// ── Kompaniya statistikasi (batafsil) ─────────────────────────
+export async function getCompanyStats(companyId: string): Promise<ActionResult<any>> {
+  try {
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      include: { subscription: { select: { endDate: true, isPaid: true, amount: true } } },
+    });
+    if (!company) return { success: false, error: "Kompaniya topilmadi" };
+
+    const [totalOrders, deliveredOrders, revenue, totalCustomers, users, recentOrders, products] = await Promise.all([
+      prisma.order.count({ where: { companyId } }),
+      prisma.order.count({ where: { companyId, status: "DELIVERED" } }),
+      prisma.order.aggregate({ where: { companyId, status: "DELIVERED" }, _sum: { totalAmount: true } }),
+      prisma.customer.count({ where: { companyId } }),
+      prisma.user.findMany({ where: { companyId }, select: { id: true, name: true, phone: true, role: true, isActive: true }, orderBy: { role: "asc" } }),
+      prisma.order.findMany({ where: { companyId }, take: 10, orderBy: { createdAt: "desc" }, include: { customer: { select: { name: true } } } }),
+      prisma.product.findMany({ where: { companyId }, orderBy: { createdAt: "desc" } }),
+    ]);
+
+    return {
+      success: true,
+      data: {
+        company: { id: company.id, name: company.name, subdomain: company.subdomain, status: company.status, createdAt: company.createdAt.toISOString(), subscription: company.subscription },
+        stats: { totalOrders, deliveredOrders, totalRevenue: revenue._sum.totalAmount || 0, totalCustomers },
+        users,
+        recentOrders: recentOrders.map((o) => ({ ...o, createdAt: o.createdAt.toISOString() })),
+        products,
+      },
+    };
+  } catch (error) {
+    return { success: false, error: "Statistika yuklanmadi" };
+  }
+}

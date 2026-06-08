@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -104,8 +105,8 @@ export default function CompaniesPage() {
             const daysLeft = getDaysLeft(company.subscription);
             return (
               <div key={company.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all overflow-hidden">
-                {/* Header */}
-                <div className="p-5 pb-3">
+                {/* Header - link to stats */}
+                <Link href={`/superadmin/companies/${company.id}`} className="block p-5 pb-3 hover:bg-gray-50/30 dark:hover:bg-gray-700/20 transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-11 h-11 rounded-xl bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center text-primary-700 dark:text-primary-300 font-bold text-lg">
@@ -120,9 +121,7 @@ export default function CompaniesPage() {
                       {company.status === "ACTIVE" ? "Faol" : "Muzlatilgan"}
                     </Badge>
                   </div>
-                </div>
-
-                {/* Info */}
+                </Link>
                 <div className="px-5 pb-4 space-y-2">
                   {/* Direktor */}
                   {company.director && (
