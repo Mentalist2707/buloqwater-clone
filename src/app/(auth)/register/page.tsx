@@ -14,8 +14,6 @@ export default function RegisterPage() {
     phone: "",
     password: "",
     confirmPassword: "",
-    address: "",
-    landmark: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -26,7 +24,6 @@ export default function RegisterPage() {
     setError("");
 
     if (step === 1) {
-      // Validatsiya
       if (form.phone.length < 9) { setError("Telefon raqam to'liq kiriting"); return; }
       if (form.password.length < 6) { setError("Parol kamida 6 ta belgi bo'lishi kerak"); return; }
       if (form.password !== form.confirmPassword) { setError("Parollar mos kelmaydi"); return; }
@@ -36,7 +33,6 @@ export default function RegisterPage() {
 
     // Step 2 — register
     if (!form.name) { setError("Ismingizni kiriting"); return; }
-    if (!form.address) { setError("Manzilni kiriting"); return; }
 
     setLoading(true);
 
@@ -46,9 +42,6 @@ export default function RegisterPage() {
       name: form.name,
       phone,
       password: form.password,
-      address: form.address,
-      landmark: form.landmark || undefined,
-      subdomain: getSubdomain() || undefined,
     });
 
     if (!result.success) {
@@ -57,17 +50,15 @@ export default function RegisterPage() {
       return;
     }
 
-    // Ro'yxatdan o'tdi — avtomatik login
-    const subdomain = getSubdomain();
+    // Ro'yxatdan o'tdi — avtomatik login (CUSTOMER, companyId null)
     const signInResult = await signIn("credentials", {
       phone,
       password: form.password,
-      subdomain,
+      subdomain: "", // bo'sh — CUSTOMER sifatida kiradi
       redirect: false,
     });
 
     if (signInResult?.error) {
-      // Login xato — login sahifaga yo'naltirish
       router.push("/login");
     } else {
       router.push("/customer");
@@ -75,22 +66,6 @@ export default function RegisterPage() {
     }
 
     setLoading(false);
-  };
-
-  const getSubdomain = (): string => {
-    if (typeof window === "undefined") return "";
-    const urlParams = new URLSearchParams(window.location.search);
-    const paramSubdomain = urlParams.get("subdomain");
-    if (paramSubdomain) return paramSubdomain;
-
-    const hostname = window.location.hostname;
-    if (hostname.endsWith(".vercel.app")) return "";
-    const baseDomain = "buloqwater.uz";
-    if (hostname.endsWith(baseDomain) && hostname !== baseDomain && hostname !== `www.${baseDomain}`) {
-      return hostname.replace(`.${baseDomain}`, "");
-    }
-    if (hostname.includes(".localhost")) return hostname.split(".")[0];
-    return "";
   };
 
   return (
@@ -102,7 +77,7 @@ export default function RegisterPage() {
             <img src="/image.png" alt="BuloqWater" className="h-20 sm:h-32 mx-auto mb-4 object-contain" />
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">Ro&apos;yxatdan o&apos;tish</h1>
-          <p className="text-sm text-gray-500 mt-1">Yangi hisob yarating va buyurtma bering</p>
+          <p className="text-sm text-gray-500 mt-1">Yangi hisob yarating</p>
         </div>
 
         {/* Progress */}
@@ -114,22 +89,21 @@ export default function RegisterPage() {
         {/* Form */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
           <h2 className="text-base font-semibold text-gray-800 mb-1">
-            {step === 1 ? "1. Asosiy ma'lumotlar" : "2. Shaxsiy ma'lumotlar"}
+            {step === 1 ? "1. Telefon va parol" : "2. Ismingiz"}
           </h2>
           <p className="text-xs text-gray-500 mb-6">
-            {step === 1 ? "Telefon va parol kiriting" : "Ism va manzil kiriting"}
+            {step === 1 ? "Kirish uchun telefon va parol o'ylab toping" : "Ismingizni kiriting"}
           </p>
 
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-              ❌ {error}
+              {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {step === 1 ? (
               <>
-                {/* Telefon */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Telefon raqami</label>
                   <div className="relative">
@@ -147,7 +121,6 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
-                {/* Parol */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Parol</label>
                   <div className="relative">
@@ -166,7 +139,6 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
-                {/* Parol tasdiqlash */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Parolni tasdiqlang</label>
                   <input
@@ -181,7 +153,6 @@ export default function RegisterPage() {
               </>
             ) : (
               <>
-                {/* Ism */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Ism familiya</label>
                   <input
@@ -194,35 +165,9 @@ export default function RegisterPage() {
                     autoFocus
                   />
                 </div>
-
-                {/* Manzil */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Manzil</label>
-                  <input
-                    type="text"
-                    value={form.address}
-                    onChange={(e) => setForm({ ...form, address: e.target.value })}
-                    placeholder="Yunusobod 7-kvartal, 15-uy"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all text-sm"
-                    required
-                  />
-                </div>
-
-                {/* Mo'ljal */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mo&apos;ljal (ixtiyoriy)</label>
-                  <input
-                    type="text"
-                    value={form.landmark}
-                    onChange={(e) => setForm({ ...form, landmark: e.target.value })}
-                    placeholder="Sariq darvoza yonida"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all text-sm"
-                  />
-                </div>
               </>
             )}
 
-            {/* Buttons */}
             <div className="flex gap-3 pt-2">
               {step === 2 && (
                 <button
@@ -256,7 +201,6 @@ export default function RegisterPage() {
           </form>
         </div>
 
-        {/* Login link */}
         <p className="text-center text-sm text-gray-500 mt-6">
           Hisobingiz bormi?{" "}
           <Link href="/login" className="text-primary-500 font-medium hover:underline">

@@ -67,14 +67,14 @@ export const authOptions: NextAuthOptions = {
           phone = `+998${phone}`;
         }
 
-        // SUPER ADMIN
+        // SUPER ADMIN yoki CUSTOMER (companyId null)
         if (!subdomain || subdomain === "app" || subdomain === "www") {
           const user = await prisma.user.findFirst({
             where: {
               phone,
-              role: "SUPER_ADMIN",
               companyId: null,
               isActive: true,
+              role: { in: ["SUPER_ADMIN", "CUSTOMER"] },
             },
           });
 
