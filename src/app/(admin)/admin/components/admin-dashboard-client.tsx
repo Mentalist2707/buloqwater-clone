@@ -38,10 +38,10 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
   return (
     <div className="space-y-6">
       {/* Header + Quick Actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Analitika</h1>
-          <p className="text-sm text-gray-500 mt-1">Kompaniya ko'rsatkichlari</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Analitika</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Kompaniya ko'rsatkichlari</p>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/operator/orders">
@@ -103,36 +103,36 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
       </div>
 
       {/* Mini stat row */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs text-gray-500">Kutilayotgan buyurtmalar</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Kutilayotgan buyurtmalar</p>
             <p className="text-2xl font-bold text-orange-600">{stats.pendingOrders}</p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-lg">⏳</div>
+          <div className="w-10 h-10 rounded-full bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-lg">⏳</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs text-gray-500">Umumiy qarz</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Umumiy qarz</p>
             <p className="text-2xl font-bold text-red-600">{formatCurrency(stats.totalDebt)}</p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-lg">💳</div>
+          <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-lg">💳</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs text-gray-500">Faol haydovchilar</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Faol haydovchilar</p>
             <p className="text-2xl font-bold text-green-600">{stats.activeDrivers}</p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-lg">🚚</div>
+          <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-green-900/30 flex items-center justify-center text-lg">🚚</div>
         </div>
       </div>
 
       {/* Weekly Chart */}
-      <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Haftalik Buyurtmalar</h3>
-            <p className="text-sm text-gray-500">Oxirgi 7 kun</p>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Haftalik Buyurtmalar</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Oxirgi 7 kun</p>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="default">
@@ -147,8 +147,8 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
             <div key={idx} className="flex-1 flex flex-col items-center gap-1 group">
               {/* Hover tooltip */}
               <div className="opacity-0 group-hover:opacity-100 transition-opacity text-center">
-                <p className="text-xs font-bold text-gray-900">{item.orders} ta</p>
-                <p className="text-[10px] text-gray-500">{formatCurrency(item.revenue)}</p>
+                <p className="text-xs font-bold text-gray-900 dark:text-white">{item.orders} ta</p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400">{formatCurrency(item.revenue)}</p>
               </div>
               {/* Bar */}
               <div
@@ -157,32 +157,32 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
               />
               {/* Label */}
               <div className="text-center">
-                <p className="text-xs font-medium text-gray-700">{item.day}</p>
-                <p className="text-[10px] text-gray-400">{item.date}</p>
+                <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{item.day}</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">{item.date}</p>
               </div>
             </div>
           ))}
         </div>
 
         {/* Summary */}
-        <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-100">
+        <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
           <div className="text-center">
-            <p className="text-lg font-bold text-gray-900">
+            <p className="text-lg font-bold text-gray-900 dark:text-white">
               {stats.weeklyData.reduce((s, d) => s + d.orders, 0)}
             </p>
-            <p className="text-xs text-gray-500">Jami buyurtmalar</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Jami buyurtmalar</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-gray-900">
+            <p className="text-lg font-bold text-gray-900 dark:text-white">
               {formatCurrency(stats.weeklyData.reduce((s, d) => s + d.revenue, 0))}
             </p>
-            <p className="text-xs text-gray-500">Jami tushum</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Jami tushum</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-gray-900">
+            <p className="text-lg font-bold text-gray-900 dark:text-white">
               {Math.round(stats.weeklyData.reduce((s, d) => s + d.orders, 0) / 7)}
             </p>
-            <p className="text-xs text-gray-500">O'rtacha kunlik</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">O'rtacha kunlik</p>
           </div>
         </div>
       </div>

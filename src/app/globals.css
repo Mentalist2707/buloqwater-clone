@@ -27,11 +27,11 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 220 20% 7%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 220 20% 10%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 220 20% 10%;
     --popover-foreground: 210 40% 98%;
     --primary: 199 89% 48%;
     --primary-foreground: 222.2 47.4% 11.2%;
@@ -43,8 +43,8 @@
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 217.2 32.6% 20%;
+    --input: 217.2 32.6% 20%;
     --ring: 199 89% 48%;
   }
 }
@@ -54,21 +54,68 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    @apply bg-background text-foreground antialiased;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 
+/* Smooth animations */
+@layer utilities {
+  .animate-in {
+    animation: animateIn 0.3s ease-out;
+  }
+  .slide-in-from-bottom-4 {
+    animation: slideInBottom 0.3s ease-out;
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@keyframes animateIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInBottom {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
+  background: hsl(var(--muted-foreground) / 0.2);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
+  background: hsl(var(--muted-foreground) / 0.4);
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+/* Mobile tap highlight */
+@media (pointer: coarse) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Prevent layout shift on scrollbar */
+html {
+  overflow-y: scroll;
 }

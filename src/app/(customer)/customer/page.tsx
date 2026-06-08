@@ -14,6 +14,7 @@ interface Product {
   name: string;
   description: string | null;
   price: number;
+  category: string;
   isBottle: boolean;
   isActive: boolean;
 }
@@ -55,9 +56,7 @@ export default function CustomerStorePage() {
 
   const filteredProducts = activeCategory === "ALL"
     ? products
-    : activeCategory === "WATER"
-    ? products.filter((p) => p.isBottle)
-    : products;
+    : products.filter((p) => p.category === activeCategory);
 
   if (loading) {
     return (
@@ -127,8 +126,17 @@ export default function CustomerStorePage() {
                 )}
               >
                 {/* Product Image placeholder */}
-                <div className="h-32 bg-gradient-to-br from-primary-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center">
-                  <span className="text-5xl">{product.isBottle ? "🫙" : "💧"}</span>
+                <div className="h-32 bg-gradient-to-br from-primary-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center relative">
+                  <span className="text-5xl">{product.category === "WATER" ? "💧" : product.category === "PROMO" ? "🔥" : product.category === "ACCESSORIES" ? "🔧" : "💧"}</span>
+                  <div className="absolute top-2 left-2">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                      product.category === "WATER" ? "bg-blue-100 text-blue-700 border-blue-200" :
+                      product.category === "PROMO" ? "bg-orange-100 text-orange-700 border-orange-200" :
+                      "bg-gray-100 text-gray-700 border-gray-200"
+                    }`}>
+                      {product.category === "WATER" ? "💧 Suv" : product.category === "PROMO" ? "🔥 Aksiya" : "🔧 Aksessuar"}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="p-4">

@@ -96,14 +96,14 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-primary-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-primary-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="relative h-32 sm:h-60 mx-auto mb-4">
             <img
               src="/image.png"
               alt="BuloqWater Logo"
-              className="w-full h-full object-contain dark:invert transition-all duration-300"
+              className="w-full h-full object-contain transition-all duration-300"
             />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -114,8 +114,8 @@ function LoginForm() {
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          <h2 className="text-lg font-semibold text-gray-800 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-8">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">
             Tizimga kirish
           </h2>
 

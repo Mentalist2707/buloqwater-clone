@@ -47,6 +47,12 @@ enum ProductUnit {
   LITER
 }
 
+enum ProductCategory {
+  WATER        // 💧 Suvlar
+  PROMO        // 🔥 Aksiyalar
+  ACCESSORIES  // 🔧 Aksessuarlar
+}
+
 // ============================================================
 // COMPANY (Kompaniya) - Multi-tenant asosi
 // ============================================================
@@ -196,15 +202,16 @@ model Customer {
 // ============================================================
 
 model Product {
-  id          String      @id @default(uuid())
+  id          String          @id @default(uuid())
   name        String
   description String?
   price       Float
-  unit        ProductUnit @default(PIECE)
-  isBottle    Boolean     @default(true)
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  category    ProductCategory @default(WATER)
+  unit        ProductUnit     @default(PIECE)
+  isBottle    Boolean         @default(true)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   companyId   String
   company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -212,6 +219,7 @@ model Product {
   orderItems  OrderItem[]
 
   @@index([companyId])
+  @@index([category])
   @@map("products")
 }
 

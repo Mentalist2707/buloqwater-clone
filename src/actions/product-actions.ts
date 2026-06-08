@@ -25,6 +25,7 @@ interface CreateProductInput {
   name: string;
   description?: string;
   price: number;
+  category: "WATER" | "PROMO" | "ACCESSORIES";
   isBottle: boolean;
 }
 
@@ -38,6 +39,7 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
         name: input.name,
         description: input.description,
         price: input.price,
+        category: input.category,
         isBottle: input.isBottle,
         companyId: session.user.companyId,
       },
@@ -77,6 +79,7 @@ interface UpdateProductInput {
   name?: string;
   description?: string;
   price?: number;
+  category?: "WATER" | "PROMO" | "ACCESSORIES";
   isBottle?: boolean;
 }
 
@@ -94,6 +97,7 @@ export async function updateProduct(productId: string, input: UpdateProductInput
     if (input.name !== undefined) updateData.name = input.name;
     if (input.description !== undefined) updateData.description = input.description || null;
     if (input.price !== undefined) updateData.price = input.price;
+    if (input.category !== undefined) updateData.category = input.category;
     if (input.isBottle !== undefined) updateData.isBottle = input.isBottle;
 
     await prisma.product.update({ where: { id: productId }, data: updateData });
