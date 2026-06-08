@@ -11,14 +11,20 @@ interface RegisterInput {
   password: string;
   address: string;
   landmark?: string;
+  subdomain?: string; // Client-dan keladi (dev mode uchun)
 }
 
 export async function registerCustomer(input: RegisterInput): Promise<ActionResult> {
   try {
-    // Subdomenni aniqlash (header orqali)
+    // Subdomenni aniqlash
     const headersList = headers();
     const hostname = headersList.get("host") || "";
-    const subdomain = getSubdomainFromHost(hostname);
+    let subdomain = getSubdomainFromHost(hostname);
+
+    // Agar header-dan topilmasa, client yuborgan subdomenni ishlatamiz
+    if (!subdomain && input.subdomain) {
+      subdomain = input.subdomain;
+    }
 
     if (!subdomain) {
       return { success: false, error: "Kompaniya aniqlanmadi. Subdomen orqali kiring." };
@@ -57,7 +63,6 @@ export async function registerCustomer(input: RegisterInput): Promise<ActionResu
 
     // Transaction: User + Customer bir vaqtda yaratiladi
     await prisma.$transaction(async (tx) => {
-      // User (login uchun)
       await tx.user.create({
         data: {
           name: input.name,
@@ -68,7 +73,6 @@ export async function registerCustomer(input: RegisterInput): Promise<ActionResu
         },
       });
 
-      // Customer (biznes logika uchun)
       await tx.customer.create({
         data: {
           name: input.name,
@@ -90,7 +94,6 @@ export async function registerCustomer(input: RegisterInput): Promise<ActionResu
   }
 }
 
-// Helper: subdomen aniqlash
 function getSubdomainFromHost(hostname: string): string | null {
   const baseDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || "buloqwater.uz";
 
@@ -107,7 +110,5 @@ function getSubdomainFromHost(hostname: string): string | null {
     return hostname.split(".")[0];
   }
 
-  // Dev: query param orqali (referer header-dan)
-  // Bu server action-da ishlamaydi, shuning uchun null
   return null;
 }

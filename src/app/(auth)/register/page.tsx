@@ -48,6 +48,7 @@ export default function RegisterPage() {
       password: form.password,
       address: form.address,
       landmark: form.landmark || undefined,
+      subdomain: getSubdomain() || undefined,
     });
 
     if (!result.success) {
