@@ -69,14 +69,17 @@ export const authOptions: NextAuthOptions = {
 
         // SUPER ADMIN yoki CUSTOMER (companyId null)
         if (!subdomain || subdomain === "app" || subdomain === "www") {
-          const user = await prisma.user.findFirst({
-            where: {
-              phone,
-              companyId: null,
-              isActive: true,
-              role: { in: ["SUPER_ADMIN", "CUSTOMER"] },
-            },
+          // Avval SUPER_ADMIN qidiramiz
+          let user = await prisma.user.findFirst({
+            where: { phone, role: "SUPER_ADMIN", isActive: true },
           });
+
+          // Topilmasa CUSTOMER qidiramiz
+          if (!user) {
+            user = await prisma.user.findFirst({
+              where: { phone, role: "CUSTOMER", isActive: true },
+            });
+          }
 
           if (!user) throw new Error("Foydalanuvchi topilmadi");
 
@@ -88,7 +91,7 @@ export const authOptions: NextAuthOptions = {
             name: user.name,
             phone: user.phone,
             role: user.role,
-            companyId: null,
+            companyId: user.companyId,
             subdomain: null,
           };
         }
