@@ -10,7 +10,7 @@ export default withAuth(
 
     const subdomain = getSubdomainFromHost(hostname);
 
-    if (pathname === "/login" || pathname === "/register" || pathname.startsWith("/api/auth") || pathname === "/manifest.json" || pathname.startsWith("/icon")) {
+    if (pathname === "/" || pathname === "/login" || pathname === "/register" || pathname.startsWith("/api/auth") || pathname === "/manifest.json" || pathname.startsWith("/icon")) {
       return NextResponse.next();
     }
 
