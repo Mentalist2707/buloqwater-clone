@@ -198,7 +198,14 @@ function LoginForm() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
+        <p className="text-center text-sm text-gray-500 mt-6">
+          Hisobingiz yo&apos;qmi?{" "}
+          <a href="/register" className="text-primary-500 font-medium hover:underline">
+            Ro&apos;yxatdan o&apos;tish
+          </a>
+        </p>
+
+        <p className="text-center text-xs text-gray-400 mt-4">
           &copy; 2024 BuloqWater. Barcha huquqlar himoyalangan.
         </p>
       </div>

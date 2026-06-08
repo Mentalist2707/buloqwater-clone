@@ -10,7 +10,7 @@ export default withAuth(
 
     const subdomain = getSubdomainFromHost(hostname);
 
-    if (pathname === "/login" || pathname.startsWith("/api/auth") || pathname === "/manifest.json" || pathname.startsWith("/icon")) {
+    if (pathname === "/login" || pathname === "/register" || pathname.startsWith("/api/auth") || pathname === "/manifest.json" || pathname.startsWith("/icon")) {
       return NextResponse.next();
     }
 
@@ -57,11 +57,13 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const pathname = req.nextUrl.pathname;
         if (
+          pathname === "/" ||
           pathname === "/login" ||
+          pathname === "/register" ||
           pathname.startsWith("/api/auth") ||
           pathname.startsWith("/_next") ||
           pathname.startsWith("/favicon") ||
-          pathname === "/"
+          pathname === "/manifest.json"
         ) {
           return true;
         }
