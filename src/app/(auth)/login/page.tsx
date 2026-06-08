@@ -3,12 +3,13 @@
 import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-primary-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
           <div className="animate-spin h-8 w-8 border-4 border-primary-500 border-t-transparent rounded-full" />
         </div>
       }>
@@ -27,28 +28,20 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(error || "");
+  const [successMsg, setSuccessMsg] = useState("");
 
   const getSubdomain = (): string => {
     if (typeof window === "undefined") return "";
-
     const urlParams = new URLSearchParams(window.location.search);
     const paramSubdomain = urlParams.get("subdomain");
     if (paramSubdomain) return paramSubdomain;
-
     const hostname = window.location.hostname;
-    
-    // Vercel default domeni — subdomen emas
     if (hostname.endsWith(".vercel.app")) return "";
-    
-    // Production: shifo.buloqwater.uz → "shifo"
     const baseDomain = "buloqwater.uz";
     if (hostname.endsWith(baseDomain) && hostname !== baseDomain && hostname !== `www.${baseDomain}`) {
       return hostname.replace(`.${baseDomain}`, "");
     }
-    
-    // Dev: shifo.localhost → "shifo"
     if (hostname.includes(".localhost")) return hostname.split(".")[0];
-    
     return "";
   };
 
@@ -56,6 +49,7 @@ function LoginForm() {
     e.preventDefault();
     setLoading(true);
     setErrorMsg("");
+    setSuccessMsg("");
 
     try {
       const subdomain = getSubdomain();
@@ -80,17 +74,25 @@ function LoginForm() {
 
       if (result?.error) {
         setErrorMsg(result.error);
+        setLoading(false);
       } else {
-        if (!subdomain || subdomain === "app") {
-          router.push("/superadmin/dashboard");
-        } else {
-          router.push("/");
+        // Muvaffaqiyatli login!
+        setSuccessMsg("✅ Kirish muvaffaqiyatli! Kutib turing...");
+
+        // 1 soniya kutib keyin redirect
+        setTimeout(() => {
+          if (!subdomain || subdomain === "app") {
+            // Super Admin yoki Customer — session dan rol aniqlanadi
+            // Hozircha / ga redirect — u yerda page.tsx rolga qarab yo'naltiradi
+            router.push("/");
+          } else {
+            router.push("/");
+          }
           router.refresh();
-        }
+        }, 800);
       }
     } catch (err) {
       setErrorMsg("Tizimda xatolik yuz berdi");
-    } finally {
       setLoading(false);
     }
   };
@@ -98,71 +100,77 @@ function LoginForm() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-primary-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 p-4">
       <div className="w-full max-w-md">
+        {/* Logo */}
         <div className="text-center mb-8">
-          <div className="relative h-32 sm:h-60 mx-auto mb-4">
-            <img
-              src="/image.png"
-              alt="BuloqWater Logo"
-              className="w-full h-full object-contain transition-all duration-300"
-            />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            BuloqWater
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Suv yetkazish boshqaruv tizimi
-          </p>
+          <Link href="/">
+            <div className="relative h-28 sm:h-48 mx-auto mb-4">
+              <img src="/image.png" alt="BuloqWater Logo" className="w-full h-full object-contain transition-all duration-300" />
+            </div>
+          </Link>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">BuloqWater</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Suv yetkazish boshqaruv tizimi</p>
         </div>
 
+        {/* Success Toast */}
+        {successMsg && (
+          <div className="mb-4 p-4 rounded-xl bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 text-sm font-medium text-center animate-in">
+            <div className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              {successMsg}
+            </div>
+          </div>
+        )}
+
+        {/* Form Card */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-8">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">
-            Tizimga kirish
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">Tizimga kirish</h2>
 
           {errorMsg && (
-            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-              {errorMsg}
+            <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm animate-in">
+              ❌ {errorMsg}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Telefon */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Telefon raqami
-              </label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Telefon raqami</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
-                  +998
-                </span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">+998</span>
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
                   placeholder="901234567"
-                  className="w-full pl-14 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all text-sm"
+                  className="w-full pl-14 pr-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all text-sm"
                   required
                   maxLength={9}
+                  disabled={loading || !!successMsg}
                 />
               </div>
             </div>
 
+            {/* Parol */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Parol
-              </label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Parol</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all text-sm"
+                  className="w-full px-4 pr-12 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all text-sm"
                   required
+                  disabled={loading || !!successMsg}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  tabIndex={-1}
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,18 +186,27 @@ function LoginForm() {
               </div>
             </div>
 
+            {/* Submit */}
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-3 px-4 bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 text-white font-medium rounded-xl transition-all duration-200 shadow-lg shadow-primary-500/20 hover:shadow-primary-500/30"
+              disabled={loading || !!successMsg}
+              className="w-full py-3.5 px-4 bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 dark:disabled:bg-primary-800 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-primary-500/20 hover:shadow-primary-500/30 active:scale-[0.98] disabled:cursor-not-allowed"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Kirish...
+                  Tekshirilmoqda...
+                </span>
+              ) : successMsg ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Yo'naltirilmoqda...
                 </span>
               ) : (
                 "Kirish"
@@ -198,14 +215,15 @@ function LoginForm() {
           </form>
         </div>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
-          Hisobingiz yo&apos;qmi?{" "}
-          <a href="/register" className="text-primary-500 font-medium hover:underline">
-            Ro&apos;yxatdan o&apos;tish
-          </a>
+        {/* Links */}
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
+          Hisobingiz yo'qmi?{" "}
+          <Link href="/register" className="text-primary-500 font-medium hover:underline">
+            Ro'yxatdan o'tish
+          </Link>
         </p>
 
-        <p className="text-center text-xs text-gray-400 mt-4">
+        <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">
           &copy; 2024 BuloqWater. Barcha huquqlar himoyalangan.
         </p>
       </div>

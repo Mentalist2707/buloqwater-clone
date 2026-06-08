@@ -18,6 +18,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,48 +51,65 @@ export default function RegisterPage() {
       return;
     }
 
-    // Ro'yxatdan o'tdi — avtomatik login (CUSTOMER, companyId null)
+    // Muvaffaqiyatli! Toast ko'rsatish
+    setSuccess("🎉 Ro'yxatdan muvaffaqiyatli o'tdingiz! Tizimga kirilmoqda...");
+
+    // Avtomatik login
     const signInResult = await signIn("credentials", {
       phone,
       password: form.password,
-      subdomain: "", // bo'sh — CUSTOMER sifatida kiradi
+      subdomain: "",
       redirect: false,
     });
 
     if (signInResult?.error) {
-      router.push("/login");
+      // Login xato — login sahifaga
+      setTimeout(() => router.push("/login"), 1000);
     } else {
-      router.push("/customer");
-      router.refresh();
+      setTimeout(() => {
+        router.push("/customer");
+        router.refresh();
+      }, 1200);
     }
-
-    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-primary-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-primary-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/">
             <img src="/image.png" alt="BuloqWater" className="h-20 sm:h-32 mx-auto mb-4 object-contain" />
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Ro&apos;yxatdan o&apos;tish</h1>
-          <p className="text-sm text-gray-500 mt-1">Yangi hisob yarating</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ro&apos;yxatdan o&apos;tish</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Yangi hisob yarating</p>
         </div>
+
+        {/* Success Toast */}
+        {success && (
+          <div className="mb-4 p-4 rounded-xl bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 text-sm font-medium text-center animate-in">
+            <div className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              {success}
+            </div>
+          </div>
+        )}
 
         {/* Progress */}
         <div className="flex items-center gap-2 mb-6 max-w-xs mx-auto">
-          <div className={`flex-1 h-1.5 rounded-full ${step >= 1 ? "bg-primary-500" : "bg-gray-200"}`} />
-          <div className={`flex-1 h-1.5 rounded-full ${step >= 2 ? "bg-primary-500" : "bg-gray-200"}`} />
+          <div className={`flex-1 h-1.5 rounded-full ${step >= 1 ? "bg-primary-500" : "bg-gray-200 dark:bg-gray-700"}`} />
+          <div className={`flex-1 h-1.5 rounded-full ${step >= 2 ? "bg-primary-500" : "bg-gray-200 dark:bg-gray-700"}`} />
         </div>
 
         {/* Form */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          <h2 className="text-base font-semibold text-gray-800 mb-1">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-8">
+          <h2 className="text-base font-semibold text-gray-800 dark:text-white mb-1">
             {step === 1 ? "1. Telefon va parol" : "2. Ismingiz"}
           </h2>
-          <p className="text-xs text-gray-500 mb-6">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">
             {step === 1 ? "Kirish uchun telefon va parol o'ylab toping" : "Ismingizni kiriting"}
           </p>
 
