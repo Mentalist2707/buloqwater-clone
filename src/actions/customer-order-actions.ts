@@ -1,0 +1,206 @@
+"use server";
+
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import type { ActionResult } from "@/types";
+
+// ── Mijoz uchun mahsulotlar (vitrina) ─────────────────────────
+export async function getCustomerProducts(): Promise<ActionResult<any[]>> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user.companyId) return { success: false, error: "Tizimga kiring" };
+
+    const products = await prisma.product.findMany({
+      where: { companyId: session.user.companyId, isActive: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return { success: true, data: products as any };
+  } catch (error) {
+    return { success: false, error: "Mahsulotlar yuklanmadi" };
+  }
+}
+
+// ── Mijoz profili ─────────────────────────────────────────────
+export async function getCustomerProfile(): Promise<ActionResult<any>> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user.companyId) return { success: false, error: "Tizimga kiring" };
+
+    // Agar CUSTOMER roli bo'lsa, Customer jadvalidan olish
+    // Agar boshqa rol bo'lsa, hozircha session dan olish
+    const customer = await prisma.customer.findFirst({
+      where: {
+        companyId: session.user.companyId,
+        phone1: session.user.phone,
+      },
+    });
+
+    if (customer) {
+      return { success: true, data: customer };
+    }
+
+    // Customer topilmasa, User ma'lumotlarini qaytarish
+    return { success: true, data: { address: "", landmark: "", locationLink: "" } };
+  } catch (error) {
+    return { success: false, error: "Profil yuklanmadi" };
+  }
+}
+
+// ── Manzilni yangilash ────────────────────────────────────────
+export async function updateCustomerAddress(input: { address: string; landmark?: string; locationLink?: string }): Promise<ActionResult> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user.companyId) return { success: false, error: "Tizimga kiring" };
+
+    const customer = await prisma.customer.findFirst({
+      where: { companyId: session.user.companyId, phone1: session.user.phone },
+    });
+
+    if (customer) {
+      await prisma.customer.update({
+        where: { id: customer.id },
+        data: {
+          address: input.address,
+          landmark: input.landmark || null,
+          locationLink: input.locationLink || null,
+        },
+      });
+    }
+
+    return { success: true, message: "Manzil yangilandi" };
+  } catch (error) {
+    return { success: false, error: "Manzilni yangilashda xatolik" };
+  }
+}
+
+// ── Mijoz buyurtmalari tarixi ─────────────────────────────────
+export async function getCustomerOrders(): Promise<ActionResult<any[]>> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user.companyId) return { success: false, error: "Tizimga kiring" };
+
+    // Mijozni topish
+    const customer = await prisma.customer.findFirst({
+      where: { companyId: session.user.companyId, phone1: session.user.phone },
+    });
+
+    if (!customer) return { success: true, data: [] };
+
+    const orders = await prisma.order.findMany({
+      where: { customerId: customer.id },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      include: {
+        items: { include: { product: { select: { name: true, isBottle: true } } } },
+        driver: { select: { name: true, phone: true } },
+      },
+    });
+
+    return { success: true, data: orders as any };
+  } catch (error) {
+    return { success: false, error: "Buyurtmalar yuklanmadi" };
+  }
+}
+
+// ── Idish balansi ─────────────────────────────────────────────
+export async function getCustomerBalance(): Promise<ActionResult<any>> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user.companyId) return { success: false, error: "Tizimga kiring" };
+
+    const customer = await prisma.customer.findFirst({
+      where: { companyId: session.user.companyId, phone1: session.user.phone },
+    });
+
+    if (!customer) return { success: true, data: { bottleBalance: 0, debtBalance: 0 } };
+
+    return {
+      success: true,
+      data: {
+        bottleBalance: customer.bottleBalance,
+        debtBalance: customer.debtBalance,
+      },
+    };
+  } catch (error) {
+    return { success: false, error: "Balans yuklanmadi" };
+  }
+}
+
+// ── Mijoz buyurtma berish ─────────────────────────────────────
+interface PlaceOrderInput {
+  items: { productId: string; quantity: number }[];
+  notes?: string;
+}
+
+export async function placeCustomerOrder(input: PlaceOrderInput): Promise<ActionResult> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user.companyId) return { success: false, error: "Tizimga kiring" };
+
+    const companyId = session.user.companyId;
+
+    // Mijozni topish
+    let customer = await prisma.customer.findFirst({
+      where: { companyId, phone1: session.user.phone },
+    });
+
+    if (!customer) {
+      // Agar customer yo'q bo'lsa, user ma'lumotlaridan yaratamiz
+      customer = await prisma.customer.create({
+        data: {
+          name: session.user.name || "Mijoz",
+          phone1: session.user.phone,
+          address: "Manzil kiritilmagan",
+          companyId,
+        },
+      });
+    }
+
+    // Mahsulotlarni olish
+    const productIds = input.items.map((i) => i.productId);
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds }, companyId, isActive: true },
+    });
+
+    if (products.length === 0) return { success: false, error: "Mahsulotlar topilmadi" };
+
+    // Hisoblash
+    let totalAmount = 0;
+    let totalBottles = 0;
+    const orderItems = input.items.map((item) => {
+      const product = products.find((p) => p.id === item.productId);
+      if (!product) throw new Error("Mahsulot topilmadi");
+      const itemTotal = product.price * item.quantity;
+      totalAmount += itemTotal;
+      if (product.isBottle) totalBottles += item.quantity;
+      return { productId: item.productId, quantity: item.quantity, unitPrice: product.price, totalPrice: itemTotal };
+    });
+
+    // Order raqam
+    const lastOrder = await prisma.order.findFirst({
+      where: { companyId },
+      orderBy: { orderNumber: "desc" },
+    });
+    const nextOrderNumber = (lastOrder?.orderNumber || 0) + 1;
+
+    // Yaratish
+    await prisma.order.create({
+      data: {
+        orderNumber: nextOrderNumber,
+        companyId,
+        customerId: customer.id,
+        totalAmount,
+        bottlesDelivered: totalBottles,
+        notes: input.notes || null,
+        status: "PENDING",
+        items: { create: orderItems },
+      },
+    });
+
+    return { success: true, message: "Buyurtma qabul qilindi!" };
+  } catch (error) {
+    return { success: false, error: "Buyurtma berishda xatolik" };
+  }
+}

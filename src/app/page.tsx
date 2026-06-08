@@ -18,6 +18,8 @@ export default async function Home() {
       redirect("/operator/orders");
     case "DRIVER":
       redirect("/driver/tasks");
+    case "CUSTOMER":
+      redirect("/customer");
     default:
       redirect("/login");
   }
