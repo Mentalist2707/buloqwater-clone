@@ -85,9 +85,9 @@ export default function SuperAdminProductsPage() {
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
         <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Nomi yoki #tag..." className="max-w-xs" />
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <button className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${filterCategory === "ALL" ? "bg-primary-500 text-white" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"}`} onClick={() => setFilterCategory("ALL")}>🏪 Barchasi</button>
-          {CATEGORIES.map((cat) => (<button key={cat.value} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${filterCategory === cat.value ? "bg-primary-500 text-white" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"}`} onClick={() => setFilterCategory(cat.value)}>{cat.icon} {cat.label}</button>))}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filterCategory === "ALL" ? "bg-primary-500 text-white" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"}`} onClick={() => setFilterCategory("ALL")}>🏪 Barchasi</button>
+          {CATEGORIES.map((cat) => (<button key={cat.value} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filterCategory === cat.value ? "bg-primary-500 text-white" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"}`} onClick={() => setFilterCategory(cat.value)}>{cat.icon} {cat.label}</button>))}
         </div>
       </div>
 
