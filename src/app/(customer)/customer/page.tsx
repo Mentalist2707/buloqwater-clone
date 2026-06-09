@@ -13,10 +13,12 @@ interface Product {
   id: string;
   name: string;
   description: string | null;
+  imageUrl: string | null;
   price: number;
   category: string;
   isBottle: boolean;
   isActive: boolean;
+  company?: { name: string };
 }
 
 export default function CustomerStorePage() {
@@ -125,9 +127,13 @@ export default function CustomerStorePage() {
                   inCart > 0 ? "border-primary-300 dark:border-primary-600 ring-1 ring-primary-100" : "border-gray-100 dark:border-gray-700"
                 )}
               >
-                {/* Product Image placeholder */}
-                <div className="h-32 bg-gradient-to-br from-primary-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center relative">
-                  <span className="text-5xl">{product.category === "WATER" ? "💧" : product.category === "PROMO" ? "🔥" : product.category === "ACCESSORIES" ? "🔧" : "💧"}</span>
+                {/* Product Image */}
+                <div className="h-32 bg-gradient-to-br from-primary-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center relative overflow-hidden">
+                  {product.imageUrl ? (
+                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-5xl">{product.category === "WATER" ? "💧" : product.category === "PROMO" ? "🔥" : product.category === "ACCESSORIES" ? "🔧" : "💧"}</span>
+                  )}
                   <div className="absolute top-2 left-2">
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
                       product.category === "WATER" ? "bg-blue-100 text-blue-700 border-blue-200" :

@@ -24,6 +24,7 @@ export async function getProducts(): Promise<ActionResult<any[]>> {
 interface CreateProductInput {
   name: string;
   description?: string;
+  imageUrl?: string;
   price: number;
   category: "WATER" | "PROMO" | "ACCESSORIES";
   isBottle: boolean;
@@ -38,6 +39,7 @@ export async function createProduct(input: CreateProductInput): Promise<ActionRe
       data: {
         name: input.name,
         description: input.description,
+        imageUrl: input.imageUrl || null,
         price: input.price,
         category: input.category,
         isBottle: input.isBottle,
@@ -78,6 +80,7 @@ export async function updateProductPrice(productId: string, newPrice: number): P
 interface UpdateProductInput {
   name?: string;
   description?: string;
+  imageUrl?: string;
   price?: number;
   category?: "WATER" | "PROMO" | "ACCESSORIES";
   isBottle?: boolean;
@@ -96,6 +99,7 @@ export async function updateProduct(productId: string, input: UpdateProductInput
     const updateData: any = {};
     if (input.name !== undefined) updateData.name = input.name;
     if (input.description !== undefined) updateData.description = input.description || null;
+    if (input.imageUrl !== undefined) updateData.imageUrl = input.imageUrl || null;
     if (input.price !== undefined) updateData.price = input.price;
     if (input.category !== undefined) updateData.category = input.category;
     if (input.isBottle !== undefined) updateData.isBottle = input.isBottle;

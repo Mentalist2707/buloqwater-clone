@@ -27,8 +27,8 @@ export default function ProductsPage() {
   const [editProduct, setEditProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<"ALL" | Category>("ALL");
-  const [createForm, setCreateForm] = useState({ name: "", description: "", price: "", category: "WATER" as Category, isBottle: true });
-  const [editForm, setEditForm] = useState({ name: "", description: "", price: "", category: "WATER" as Category, isBottle: true });
+  const [createForm, setCreateForm] = useState({ name: "", description: "", price: "", category: "WATER" as Category, imageUrl: "", isBottle: true });
+  const [editForm, setEditForm] = useState({ name: "", description: "", price: "", category: "WATER" as Category, imageUrl: "", isBottle: true });
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
   const [toast, setToast] = useState<string | null>(null);
@@ -41,8 +41,8 @@ export default function ProductsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault(); setFormLoading(true); setFormError("");
     if (!createForm.category) { setFormError("Kategoriyani tanlang"); setFormLoading(false); return; }
-    const r = await createProduct({ name: createForm.name, description: createForm.description || undefined, price: parseFloat(createForm.price), category: createForm.category, isBottle: createForm.isBottle });
-    if (r.success) { setIsCreateOpen(false); setCreateForm({ name: "", description: "", price: "", category: "WATER", isBottle: true }); loadProducts(); showToast("Mahsulot qo'shildi!"); }
+    const r = await createProduct({ name: createForm.name, description: createForm.description || undefined, price: parseFloat(createForm.price), category: createForm.category, imageUrl: createForm.imageUrl || undefined, isBottle: createForm.isBottle });
+    if (r.success) { setIsCreateOpen(false); setCreateForm({ name: "", description: "", price: "", category: "WATER", imageUrl: "", isBottle: true }); loadProducts(); showToast("Mahsulot qo'shildi!"); }
     else setFormError(r.error);
     setFormLoading(false);
   };
@@ -50,7 +50,7 @@ export default function ProductsPage() {
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!editProduct) return;
     setFormLoading(true); setFormError("");
-    const r = await updateProduct(editProduct.id, { name: editForm.name, description: editForm.description, price: parseFloat(editForm.price), category: editForm.category, isBottle: editForm.isBottle });
+    const r = await updateProduct(editProduct.id, { name: editForm.name, description: editForm.description, price: parseFloat(editForm.price), category: editForm.category, imageUrl: editForm.imageUrl || undefined, isBottle: editForm.isBottle });
     if (r.success) { setEditProduct(null); loadProducts(); showToast("Mahsulot yangilandi!"); }
     else setFormError(r.error);
     setFormLoading(false);
@@ -58,7 +58,7 @@ export default function ProductsPage() {
 
   const openEdit = (p: any) => {
     setEditProduct(p);
-    setEditForm({ name: p.name, description: p.description || "", price: p.price.toString(), category: p.category || "WATER", isBottle: p.isBottle });
+    setEditForm({ name: p.name, description: p.description || "", price: p.price.toString(), category: p.category || "WATER", imageUrl: p.imageUrl || "", isBottle: p.isBottle });
     setFormError("");
   };
 
@@ -103,8 +103,12 @@ export default function ProductsPage() {
               return (
                 <div key={p.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all overflow-hidden">
                   {/* Category badge + image area */}
-                  <div className="h-28 bg-gradient-to-br from-primary-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center relative">
-                    <span className="text-5xl">{p.isBottle ? "🫙" : catInfo.icon}</span>
+                  <div className="h-28 bg-gradient-to-br from-primary-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center relative overflow-hidden">
+                    {p.imageUrl ? (
+                      <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-5xl">{p.isBottle ? "🫙" : catInfo.icon}</span>
+                    )}
                     <div className="absolute top-3 left-3">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${catInfo.color}`}>
                         {catInfo.icon} {catInfo.label}
@@ -184,6 +188,7 @@ export default function ProductsPage() {
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nomi <span className="text-red-500">*</span></label><Input value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} placeholder="19L Kumush Suv" required /></div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tavsif</label><Input value={createForm.description} onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })} placeholder="Toza tog' suvidan filtrlangan" /></div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Narxi (so'm) <span className="text-red-500">*</span></label><Input type="number" value={createForm.price} onChange={(e) => setCreateForm({ ...createForm, price: e.target.value })} placeholder="15000" required min={0} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rasm URL (ixtiyoriy)</label><Input value={createForm.imageUrl} onChange={(e) => setCreateForm({ ...createForm, imageUrl: e.target.value })} placeholder="https://example.com/product.jpg" /><p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Rasm havolasini kiriting (png, jpg, webp)</p></div>
 
           <label className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 cursor-pointer border border-gray-100 dark:border-gray-700">
             <input type="checkbox" checked={createForm.isBottle} onChange={(e) => setCreateForm({ ...createForm, isBottle: e.target.checked })} className="w-5 h-5 rounded border-gray-300 text-primary-500 focus:ring-primary-500" />
@@ -214,6 +219,7 @@ export default function ProductsPage() {
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nomi</label><Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required /></div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tavsif</label><Input value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} /></div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Narxi (so'm)</label><Input type="number" value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} required min={0} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rasm URL</label><Input value={editForm.imageUrl} onChange={(e) => setEditForm({ ...editForm, imageUrl: e.target.value })} placeholder="https://example.com/product.jpg" /></div>
 
           <label className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 cursor-pointer border border-gray-100 dark:border-gray-700">
             <input type="checkbox" checked={editForm.isBottle} onChange={(e) => setEditForm({ ...editForm, isBottle: e.target.checked })} className="w-5 h-5 rounded border-gray-300 text-primary-500" />

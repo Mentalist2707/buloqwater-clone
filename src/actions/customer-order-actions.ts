@@ -9,12 +9,28 @@ import type { ActionResult } from "@/types";
 export async function getCustomerProducts(): Promise<ActionResult<any[]>> {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user.companyId) return { success: false, error: "Tizimga kiring" };
+    if (!session) return { success: false, error: "Tizimga kiring" };
 
-    const products = await prisma.product.findMany({
-      where: { companyId: session.user.companyId, isActive: true },
-      orderBy: { createdAt: "desc" },
-    });
+    let products;
+
+    if (session.user.companyId) {
+      // Kompaniyaga bog'langan mijoz — faqat shu kompaniya mahsulotlari
+      products = await prisma.product.findMany({
+        where: { companyId: session.user.companyId, isActive: true },
+        orderBy: { createdAt: "desc" },
+        include: { company: { select: { name: true } } },
+      });
+    } else {
+      // Erkin mijoz (companyId null) — barcha faol kompaniyalar mahsulotlari
+      products = await prisma.product.findMany({
+        where: {
+          isActive: true,
+          company: { status: "ACTIVE", subdomain: { not: "global-templates" } },
+        },
+        orderBy: { createdAt: "desc" },
+        include: { company: { select: { name: true } } },
+      });
+    }
 
     return { success: true, data: products as any };
   } catch (error) {
