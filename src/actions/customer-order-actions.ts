@@ -172,17 +172,26 @@ interface PlaceOrderInput {
 export async function placeCustomerOrder(input: PlaceOrderInput): Promise<ActionResult> {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user.companyId) return { success: false, error: "Tizimga kiring" };
+    if (!session) return { success: false, error: "Tizimga kiring" };
 
-    const companyId = session.user.companyId;
+    // Mahsulotlarni olish (companyId bo'lsa shu kompaniya, bo'lmasa barcha)
+    const productIds = input.items.map((i) => i.productId);
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds }, isActive: true },
+    });
+
+    if (products.length === 0) return { success: false, error: "Mahsulotlar topilmadi" };
+
+    // Buyurtma qaysi kompaniyaga tegishli (mahsulotning kompaniyasidan olinadi)
+    const companyId = products[0].companyId;
 
     // Mijozni topish
     let customer = await prisma.customer.findFirst({
-      where: { companyId, phone1: session.user.phone },
+      where: { phone1: session.user.phone, companyId },
     });
 
     if (!customer) {
-      // Agar customer yo'q bo'lsa, user ma'lumotlaridan yaratamiz
+      // Agar customer yo'q bo'lsa — yaratamiz
       customer = await prisma.customer.create({
         data: {
           name: session.user.name || "Mijoz",
@@ -192,14 +201,6 @@ export async function placeCustomerOrder(input: PlaceOrderInput): Promise<Action
         },
       });
     }
-
-    // Mahsulotlarni olish
-    const productIds = input.items.map((i) => i.productId);
-    const products = await prisma.product.findMany({
-      where: { id: { in: productIds }, companyId, isActive: true },
-    });
-
-    if (products.length === 0) return { success: false, error: "Mahsulotlar topilmadi" };
 
     // Hisoblash
     let totalAmount = 0;
