@@ -528,15 +528,12 @@ export default function ProductsPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Rasm URL
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Mahsulot rasmi
             </label>
-            <Input
+            <ImageUpload
               value={editForm.imageUrl}
-              onChange={(e) =>
-                setEditForm({ ...editForm, imageUrl: e.target.value })
-              }
-              placeholder="https://example.com/product.jpg"
+              onChange={(url) => setEditForm({ ...editForm, imageUrl: url })}
             />
           </div>
 
