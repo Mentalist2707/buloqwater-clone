@@ -9,11 +9,10 @@ import type { ActionResult } from "@/types";
 export async function getCustomerProducts(): Promise<ActionResult<any[]>> {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) return { success: false, error: "Tizimga kiring" };
 
     let products;
 
-    if (session.user.companyId) {
+    if (session?.user?.companyId) {
       // Kompaniyaga bog'langan mijoz — faqat shu kompaniya mahsulotlari
       products = await prisma.product.findMany({
         where: { companyId: session.user.companyId, isActive: true },
@@ -21,11 +20,11 @@ export async function getCustomerProducts(): Promise<ActionResult<any[]>> {
         include: { company: { select: { name: true } } },
       });
     } else {
-      // Erkin mijoz (companyId null) — barcha faol kompaniyalar mahsulotlari
+      // Erkin mijoz yoki session yo'q — barcha faol kompaniyalar mahsulotlari
       products = await prisma.product.findMany({
         where: {
           isActive: true,
-          company: { status: "ACTIVE", subdomain: { not: "global-templates" } },
+          company: { status: "ACTIVE" },
         },
         orderBy: { createdAt: "desc" },
         include: { company: { select: { name: true } } },

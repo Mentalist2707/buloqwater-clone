@@ -76,14 +76,14 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
       {/* Mobile Bottom Nav — faqat mobileda */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 shadow-lg md:hidden safe-bottom">
         <div className="flex items-center justify-around py-2 px-2">
-          {navItems.map((item) => {
+          {navItems.slice(0, 4).map((item) => {
             const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 py-1.5 px-2 rounded-lg transition-all min-w-[48px]",
+                  "flex flex-col items-center gap-0.5 py-1.5 px-2 rounded-lg transition-all min-w-[44px]",
                   isActive ? "text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30" : "text-gray-400 dark:text-gray-500"
                 )}
               >
@@ -92,6 +92,14 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
               </Link>
             );
           })}
+          {/* Logout */}
+          <button
+            onClick={() => { const origin = typeof window !== "undefined" ? window.location.origin : ""; signOut({ callbackUrl: `${origin}/login` }); }}
+            className="flex flex-col items-center gap-0.5 py-1.5 px-2 rounded-lg transition-all min-w-[44px] text-red-400"
+          >
+            <span className="text-xl">🚪</span>
+            <span className="text-[10px] font-medium">Chiqish</span>
+          </button>
         </div>
       </nav>
     </div>
