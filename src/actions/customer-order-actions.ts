@@ -41,22 +41,25 @@ export async function getCustomerProducts(): Promise<ActionResult<any[]>> {
 export async function getCustomerProfile(): Promise<ActionResult<any>> {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user.companyId) return { success: false, error: "Tizimga kiring" };
+    if (!session) return { success: false, error: "Tizimga kiring" };
 
-    // Agar CUSTOMER roli bo'lsa, Customer jadvalidan olish
-    // Agar boshqa rol bo'lsa, hozircha session dan olish
-    const customer = await prisma.customer.findFirst({
-      where: {
-        companyId: session.user.companyId,
-        phone1: session.user.phone,
-      },
-    });
+    // Customer-ni telefon bo'yicha topish
+    let customer;
+    if (session.user.companyId) {
+      customer = await prisma.customer.findFirst({
+        where: { companyId: session.user.companyId, phone1: session.user.phone },
+      });
+    } else {
+      customer = await prisma.customer.findFirst({
+        where: { phone1: session.user.phone },
+      });
+    }
 
     if (customer) {
       return { success: true, data: customer };
     }
 
-    // Customer topilmasa, User ma'lumotlarini qaytarish
+    // Customer topilmasa — bo'sh qaytarish
     return { success: true, data: { address: "", landmark: "", locationLink: "" } };
   } catch (error) {
     return { success: false, error: "Profil yuklanmadi" };
@@ -67,11 +70,20 @@ export async function getCustomerProfile(): Promise<ActionResult<any>> {
 export async function updateCustomerAddress(input: { address: string; landmark?: string; locationLink?: string }): Promise<ActionResult> {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user.companyId) return { success: false, error: "Tizimga kiring" };
+    if (!session) return { success: false, error: "Tizimga kiring" };
 
-    const customer = await prisma.customer.findFirst({
-      where: { companyId: session.user.companyId, phone1: session.user.phone },
-    });
+    // Customer-ni telefon bo'yicha topish (companyId bor yoki yo'q)
+    let customer;
+    if (session.user.companyId) {
+      customer = await prisma.customer.findFirst({
+        where: { companyId: session.user.companyId, phone1: session.user.phone },
+      });
+    } else {
+      // Erkin customer — phone bo'yicha birinchi topilgan
+      customer = await prisma.customer.findFirst({
+        where: { phone1: session.user.phone },
+      });
+    }
 
     if (customer) {
       await prisma.customer.update({
@@ -82,9 +94,12 @@ export async function updateCustomerAddress(input: { address: string; landmark?:
           locationLink: input.locationLink || null,
         },
       });
+      return { success: true, message: "Manzil yangilandi" };
     }
 
-    return { success: true, message: "Manzil yangilandi" };
+    // Customer topilmasa — yangi yaratish (erkin user uchun)
+    // Erkin customer uchun birinchi faol kompaniyaga bog'laymiz yoki xato qaytaramiz
+    return { success: false, error: "Mijoz profili topilmadi. Avval buyurtma bering." };
   } catch (error) {
     return { success: false, error: "Manzilni yangilashda xatolik" };
   }
@@ -94,12 +109,14 @@ export async function updateCustomerAddress(input: { address: string; landmark?:
 export async function getCustomerOrders(): Promise<ActionResult<any[]>> {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user.companyId) return { success: false, error: "Tizimga kiring" };
+    if (!session) return { success: false, error: "Tizimga kiring" };
 
-    // Mijozni topish
-    const customer = await prisma.customer.findFirst({
-      where: { companyId: session.user.companyId, phone1: session.user.phone },
-    });
+    let customer;
+    if (session.user.companyId) {
+      customer = await prisma.customer.findFirst({ where: { companyId: session.user.companyId, phone1: session.user.phone } });
+    } else {
+      customer = await prisma.customer.findFirst({ where: { phone1: session.user.phone } });
+    }
 
     if (!customer) return { success: true, data: [] };
 
@@ -123,11 +140,14 @@ export async function getCustomerOrders(): Promise<ActionResult<any[]>> {
 export async function getCustomerBalance(): Promise<ActionResult<any>> {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user.companyId) return { success: false, error: "Tizimga kiring" };
+    if (!session) return { success: false, error: "Tizimga kiring" };
 
-    const customer = await prisma.customer.findFirst({
-      where: { companyId: session.user.companyId, phone1: session.user.phone },
-    });
+    let customer;
+    if (session.user.companyId) {
+      customer = await prisma.customer.findFirst({ where: { companyId: session.user.companyId, phone1: session.user.phone } });
+    } else {
+      customer = await prisma.customer.findFirst({ where: { phone1: session.user.phone } });
+    }
 
     if (!customer) return { success: true, data: { bottleBalance: 0, debtBalance: 0 } };
 
