@@ -25,13 +25,24 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "Faqat rasm (jpg, png, webp)" }, { status: 400 });
     }
 
+    // addRandomSuffix: true makes unique filenames automatically
     const blob = await put(`products/${Date.now()}-${file.name}`, file, {
       access: "public",
+      addRandomSuffix: true,
     });
 
     return NextResponse.json({ url: blob.url });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Upload error:", error);
-    return NextResponse.json({ error: "Yuklashda xatolik. BLOB_READ_WRITE_TOKEN sozlanganmi?" }, { status: 500 });
+
+    // Agar private store bo'lsa — public o'rniga boshqa yondashuv
+    if (error?.message?.includes("private")) {
+      return NextResponse.json(
+        { error: "Blob store 'public' rejimga o'tkazilishi kerak. Vercel → Storage → Settings → Public Access yoqing." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ error: "Yuklashda xatolik" }, { status: 500 });
   }
 }
