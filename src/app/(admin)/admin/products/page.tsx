@@ -7,14 +7,40 @@ import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { PageHeader } from "@/components/layout/page-header";
 import { formatCurrency } from "@/lib/utils";
-import { getProducts, createProduct, updateProduct, toggleProductStatus } from "@/actions/product-actions";
+import {
+  getProducts,
+  createProduct,
+  updateProduct,
+  toggleProductStatus,
+} from "@/actions/product-actions";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 type Category = "WATER" | "PROMO" | "ACCESSORIES";
 
-const CATEGORIES: { value: Category; label: string; icon: string; color: string }[] = [
-  { value: "WATER", label: "Suvlar", icon: "💧", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  { value: "PROMO", label: "Aksiyalar", icon: "🔥", color: "bg-orange-100 text-orange-700 border-orange-200" },
-  { value: "ACCESSORIES", label: "Aksessuarlar", icon: "🔧", color: "bg-gray-100 text-gray-700 border-gray-200" },
+const CATEGORIES: {
+  value: Category;
+  label: string;
+  icon: string;
+  color: string;
+}[] = [
+  {
+    value: "WATER",
+    label: "Suvlar",
+    icon: "💧",
+    color: "bg-blue-100 text-blue-700 border-blue-200",
+  },
+  {
+    value: "PROMO",
+    label: "Aksiyalar",
+    icon: "🔥",
+    color: "bg-orange-100 text-orange-700 border-orange-200",
+  },
+  {
+    value: "ACCESSORIES",
+    label: "Aksessuarlar",
+    icon: "🔧",
+    color: "bg-gray-100 text-gray-700 border-gray-200",
+  },
 ];
 
 function getCategoryInfo(cat: string) {
@@ -27,128 +53,274 @@ export default function ProductsPage() {
   const [editProduct, setEditProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<"ALL" | Category>("ALL");
-  const [createForm, setCreateForm] = useState({ name: "", description: "", price: "", category: "WATER" as Category, imageUrl: "", isBottle: true });
-  const [editForm, setEditForm] = useState({ name: "", description: "", price: "", category: "WATER" as Category, imageUrl: "", isBottle: true });
+  const [createForm, setCreateForm] = useState({
+    name: "",
+    description: "",
+    price: "",
+    category: "WATER" as Category,
+    imageUrl: "",
+    isBottle: true,
+  });
+  const [editForm, setEditForm] = useState({
+    name: "",
+    description: "",
+    price: "",
+    category: "WATER" as Category,
+    imageUrl: "",
+    isBottle: true,
+  });
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
   const [toast, setToast] = useState<string | null>(null);
 
-  const loadProducts = async () => { setLoading(true); const r = await getProducts(); if (r.success && r.data) setProducts(r.data as any); setLoading(false); };
-  useEffect(() => { loadProducts(); }, []);
+  const loadProducts = async () => {
+    setLoading(true);
+    const r = await getProducts();
+    if (r.success && r.data) setProducts(r.data as any);
+    setLoading(false);
+  };
+  useEffect(() => {
+    loadProducts();
+  }, []);
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault(); setFormLoading(true); setFormError("");
-    if (!createForm.category) { setFormError("Kategoriyani tanlang"); setFormLoading(false); return; }
-    const r = await createProduct({ name: createForm.name, description: createForm.description || undefined, price: parseFloat(createForm.price), category: createForm.category, imageUrl: createForm.imageUrl || undefined, isBottle: createForm.isBottle });
-    if (r.success) { setIsCreateOpen(false); setCreateForm({ name: "", description: "", price: "", category: "WATER", imageUrl: "", isBottle: true }); loadProducts(); showToast("Mahsulot qo'shildi!"); }
-    else setFormError(r.error);
+    e.preventDefault();
+    setFormLoading(true);
+    setFormError("");
+    if (!createForm.category) {
+      setFormError("Kategoriyani tanlang");
+      setFormLoading(false);
+      return;
+    }
+    const r = await createProduct({
+      name: createForm.name,
+      description: createForm.description || undefined,
+      price: parseFloat(createForm.price),
+      category: createForm.category,
+      imageUrl: createForm.imageUrl || undefined,
+      isBottle: createForm.isBottle,
+    });
+    if (r.success) {
+      setIsCreateOpen(false);
+      setCreateForm({
+        name: "",
+        description: "",
+        price: "",
+        category: "WATER",
+        imageUrl: "",
+        isBottle: true,
+      });
+      loadProducts();
+      showToast("Mahsulot qo'shildi!");
+    } else setFormError(r.error);
     setFormLoading(false);
   };
 
   const handleEdit = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!editProduct) return;
-    setFormLoading(true); setFormError("");
-    const r = await updateProduct(editProduct.id, { name: editForm.name, description: editForm.description, price: parseFloat(editForm.price), category: editForm.category, imageUrl: editForm.imageUrl || undefined, isBottle: editForm.isBottle });
-    if (r.success) { setEditProduct(null); loadProducts(); showToast("Mahsulot yangilandi!"); }
-    else setFormError(r.error);
+    e.preventDefault();
+    if (!editProduct) return;
+    setFormLoading(true);
+    setFormError("");
+    const r = await updateProduct(editProduct.id, {
+      name: editForm.name,
+      description: editForm.description,
+      price: parseFloat(editForm.price),
+      category: editForm.category,
+      imageUrl: editForm.imageUrl || undefined,
+      isBottle: editForm.isBottle,
+    });
+    if (r.success) {
+      setEditProduct(null);
+      loadProducts();
+      showToast("Mahsulot yangilandi!");
+    } else setFormError(r.error);
     setFormLoading(false);
   };
 
   const openEdit = (p: any) => {
     setEditProduct(p);
-    setEditForm({ name: p.name, description: p.description || "", price: p.price.toString(), category: p.category || "WATER", imageUrl: p.imageUrl || "", isBottle: p.isBottle });
+    setEditForm({
+      name: p.name,
+      description: p.description || "",
+      price: p.price.toString(),
+      category: p.category || "WATER",
+      imageUrl: p.imageUrl || "",
+      isBottle: p.isBottle,
+    });
     setFormError("");
   };
 
   const handleToggleStatus = async (id: string, isActive: boolean) => {
     await toggleProductStatus(id);
     loadProducts();
-    showToast(isActive ? "Mahsulot nofaol qilindi" : "Mahsulot faollashtirildi");
+    showToast(
+      isActive ? "Mahsulot nofaol qilindi" : "Mahsulot faollashtirildi",
+    );
   };
 
-  const filtered = filterCategory === "ALL" ? products : products.filter((p) => p.category === filterCategory);
+  const filtered =
+    filterCategory === "ALL"
+      ? products
+      : products.filter((p) => p.category === filterCategory);
   const activeProducts = filtered.filter((p) => p.isActive);
   const inactiveProducts = filtered.filter((p) => !p.isActive);
 
   return (
     <div className="relative">
-      {toast && <div className="fixed top-4 right-4 z-50 px-4 py-3 rounded-xl bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 shadow-lg"><p className="text-sm font-medium">✅ {toast}</p></div>}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 px-4 py-3 rounded-xl bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 shadow-lg">
+          <p className="text-sm font-medium">✅ {toast}</p>
+        </div>
+      )}
 
-      <PageHeader title="Mahsulotlar" description={`${products.length} ta mahsulot`} action={<Button onClick={() => setIsCreateOpen(true)}>+ Yangi Mahsulot</Button>} />
+      <PageHeader
+        title="Mahsulotlar"
+        description={`${products.length} ta mahsulot`}
+        action={
+          <Button onClick={() => setIsCreateOpen(true)}>
+            + Yangi Mahsulot
+          </Button>
+        }
+      />
 
       {/* Category Filter */}
       <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
-        <button className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${filterCategory === "ALL" ? "bg-primary-500 text-white shadow-md" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"}`} onClick={() => setFilterCategory("ALL")}>
+        <button
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${filterCategory === "ALL" ? "bg-primary-500 text-white shadow-md" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"}`}
+          onClick={() => setFilterCategory("ALL")}>
           🏪 Barchasi
         </button>
         {CATEGORIES.map((cat) => (
-          <button key={cat.value} className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${filterCategory === cat.value ? "bg-primary-500 text-white shadow-md" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"}`} onClick={() => setFilterCategory(cat.value)}>
+          <button
+            key={cat.value}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${filterCategory === cat.value ? "bg-primary-500 text-white shadow-md" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"}`}
+            onClick={() => setFilterCategory(cat.value)}>
             {cat.icon} {cat.label}
           </button>
         ))}
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-4 border-primary-500 border-t-transparent rounded-full" /></div>
+        <div className="flex justify-center py-12">
+          <div className="animate-spin h-8 w-8 border-4 border-primary-500 border-t-transparent rounded-full" />
+        </div>
       ) : (
         <div className="space-y-6">
           {/* Active products */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {activeProducts.length === 0 ? (
-              <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400"><p className="text-4xl mb-2">📦</p><p>Bu filtrada mahsulot yo'q</p></div>
-            ) : activeProducts.map((p) => {
-              const catInfo = getCategoryInfo(p.category);
-              return (
-                <div key={p.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all overflow-hidden">
-                  {/* Category badge + image area */}
-                  <div className="h-28 bg-gradient-to-br from-primary-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center relative overflow-hidden">
-                    {p.imageUrl ? (
-                      <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-5xl">{p.isBottle ? "🫙" : catInfo.icon}</span>
-                    )}
-                    <div className="absolute top-3 left-3">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${catInfo.color}`}>
-                        {catInfo.icon} {catInfo.label}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{p.name}</h3>
-                    {p.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{p.description}</p>}
-                    <div className="flex items-center justify-between mt-3">
-                      <div>
-                        <p className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(p.price)}</p>
-                        {p.isBottle && <span className="text-[10px] text-blue-600 dark:text-blue-400">🫙 Baxla</span>}
+              <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
+                <p className="text-4xl mb-2">📦</p>
+                <p>Bu filtrada mahsulot yo'q</p>
+              </div>
+            ) : (
+              activeProducts.map((p) => {
+                const catInfo = getCategoryInfo(p.category);
+                return (
+                  <div
+                    key={p.id}
+                    className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all overflow-hidden">
+                    {/* Category badge + image area */}
+                    <div className="h-28 bg-gradient-to-br from-primary-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center relative overflow-hidden">
+                      {p.imageUrl ? (
+                        <img
+                          src={p.imageUrl}
+                          alt={p.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-5xl">
+                          {p.isBottle ? "🫙" : catInfo.icon}
+                        </span>
+                      )}
+                      <div className="absolute top-3 left-3">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${catInfo.color}`}>
+                          {catInfo.icon} {catInfo.label}
+                        </span>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="border-t border-gray-100 dark:border-gray-700 px-4 py-3 flex items-center gap-2 bg-gray-50/50 dark:bg-gray-700/30">
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => openEdit(p)}>✏️ Tahrirlash</Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleToggleStatus(p.id, p.isActive)}>🚫</Button>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
+                        {p.name}
+                      </h3>
+                      {p.description && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          {p.description}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between mt-3">
+                        <div>
+                          <p className="text-xl font-bold text-gray-900 dark:text-white">
+                            {formatCurrency(p.price)}
+                          </p>
+                          {p.isBottle && (
+                            <span className="text-[10px] text-blue-600 dark:text-blue-400">
+                              🫙 Baxla
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-gray-100 dark:border-gray-700 px-4 py-3 flex items-center gap-2 bg-gray-50/50 dark:bg-gray-700/30">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => openEdit(p)}>
+                        ✏️ Tahrirlash
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleStatus(p.id, p.isActive)}>
+                        🚫
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
           {/* Inactive */}
           {inactiveProducts.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Nofaol ({inactiveProducts.length})</h3>
+              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                Nofaol ({inactiveProducts.length})
+              </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {inactiveProducts.map((p) => (
-                  <div key={p.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 opacity-60">
+                  <div
+                    key={p.id}
+                    className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 opacity-60">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <span className="text-xl">{p.isBottle ? "🫙" : "💧"}</span>
-                        <div><p className="text-sm font-medium text-gray-700 dark:text-gray-300">{p.name}</p><p className="text-xs text-gray-500">{formatCurrency(p.price)}</p></div>
+                        <span className="text-xl">
+                          {p.isBottle ? "🫙" : "💧"}
+                        </span>
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {p.name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatCurrency(p.price)}
+                          </p>
+                        </div>
                       </div>
-                      <Button variant="success" size="sm" onClick={() => handleToggleStatus(p.id, p.isActive)}>Faollashtirish</Button>
+                      <Button
+                        variant="success"
+                        size="sm"
+                        onClick={() => handleToggleStatus(p.id, p.isActive)}>
+                        Faollashtirish
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -159,13 +331,22 @@ export default function ProductsPage() {
       )}
 
       {/* ═══ Modal: Yangi Mahsulot ═══ */}
-      <Modal open={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Yangi Mahsulot Qo'shish">
+      <Modal
+        open={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        title="Yangi Mahsulot Qo'shish">
         <form onSubmit={handleCreate} className="space-y-4">
-          {formError && <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm border border-red-200 dark:border-red-800">{formError}</div>}
+          {formError && (
+            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm border border-red-200 dark:border-red-800">
+              {formError}
+            </div>
+          )}
 
           {/* Kategoriya tanlash — MAJBURIY */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kategoriya <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Kategoriya <span className="text-red-500">*</span>
+            </label>
             <div className="grid grid-cols-3 gap-2">
               {CATEGORIES.map((cat) => (
                 <button
@@ -176,57 +357,214 @@ export default function ProductsPage() {
                       ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 shadow-sm"
                       : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
                   }`}
-                  onClick={() => setCreateForm({ ...createForm, category: cat.value })}
-                >
+                  onClick={() =>
+                    setCreateForm({ ...createForm, category: cat.value })
+                  }>
                   <span className="text-2xl">{cat.icon}</span>
-                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{cat.label}</span>
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                    {cat.label}
+                  </span>
                 </button>
               ))}
             </div>
           </div>
 
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nomi <span className="text-red-500">*</span></label><Input value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} placeholder="19L Kumush Suv" required /></div>
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tavsif</label><Input value={createForm.description} onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })} placeholder="Toza tog' suvidan filtrlangan" /></div>
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Narxi (so'm) <span className="text-red-500">*</span></label><Input type="number" value={createForm.price} onChange={(e) => setCreateForm({ ...createForm, price: e.target.value })} placeholder="15000" required min={0} /></div>
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rasm URL (ixtiyoriy)</label><Input value={createForm.imageUrl} onChange={(e) => setCreateForm({ ...createForm, imageUrl: e.target.value })} placeholder="https://example.com/product.jpg" /><p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Rasm havolasini kiriting (png, jpg, webp)</p></div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Nomi <span className="text-red-500">*</span>
+            </label>
+            <Input
+              value={createForm.name}
+              onChange={(e) =>
+                setCreateForm({ ...createForm, name: e.target.value })
+              }
+              placeholder="19L Kumush Suv"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Tavsif
+            </label>
+            <Input
+              value={createForm.description}
+              onChange={(e) =>
+                setCreateForm({ ...createForm, description: e.target.value })
+              }
+              placeholder="Toza tog' suvidan filtrlangan"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Narxi (so'm) <span className="text-red-500">*</span>
+            </label>
+            <Input
+              type="number"
+              value={createForm.price}
+              onChange={(e) =>
+                setCreateForm({ ...createForm, price: e.target.value })
+              }
+              placeholder="15000"
+              required
+              min={0}
+            />
+          </div>
+          <div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Mahsulot rasmi
+              </label>
+              <ImageUpload
+                value={createForm.imageUrl}
+                onChange={(url) =>
+                  setCreateForm({ ...createForm, imageUrl: url })
+                }
+              />
+            </div>
+          </div>
 
           <label className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 cursor-pointer border border-gray-100 dark:border-gray-700">
-            <input type="checkbox" checked={createForm.isBottle} onChange={(e) => setCreateForm({ ...createForm, isBottle: e.target.checked })} className="w-5 h-5 rounded border-gray-300 text-primary-500 focus:ring-primary-500" />
-            <div><p className="text-sm font-medium text-gray-700 dark:text-gray-300">🫙 Baxla (idish) hisoblansin</p><p className="text-xs text-gray-500 dark:text-gray-400">Buyurtmada idish hisobi yuritiladi</p></div>
+            <input
+              type="checkbox"
+              checked={createForm.isBottle}
+              onChange={(e) =>
+                setCreateForm({ ...createForm, isBottle: e.target.checked })
+              }
+              className="w-5 h-5 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+            />
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                🫙 Baxla (idish) hisoblansin
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Buyurtmada idish hisobi yuritiladi
+              </p>
+            </div>
           </label>
 
-          <div className="flex justify-end gap-3 pt-4"><Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Bekor</Button><Button type="submit" disabled={formLoading}>{formLoading ? "Saqlanmoqda..." : "Qo'shish"}</Button></div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsCreateOpen(false)}>
+              Bekor
+            </Button>
+            <Button type="submit" disabled={formLoading}>
+              {formLoading ? "Saqlanmoqda..." : "Qo'shish"}
+            </Button>
+          </div>
         </form>
       </Modal>
 
       {/* ═══ Modal: Tahrirlash ═══ */}
-      <Modal open={!!editProduct} onClose={() => setEditProduct(null)} title={`Tahrirlash: ${editProduct?.name || ""}`}>
+      <Modal
+        open={!!editProduct}
+        onClose={() => setEditProduct(null)}
+        title={`Tahrirlash: ${editProduct?.name || ""}`}>
         <form onSubmit={handleEdit} className="space-y-4">
-          {formError && <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm border border-red-200 dark:border-red-800">{formError}</div>}
+          {formError && (
+            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm border border-red-200 dark:border-red-800">
+              {formError}
+            </div>
+          )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kategoriya</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Kategoriya
+            </label>
             <div className="grid grid-cols-3 gap-2">
               {CATEGORIES.map((cat) => (
-                <button key={cat.value} type="button" className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition-all ${editForm.category === cat.value ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30" : "border-gray-200 dark:border-gray-700"}`} onClick={() => setEditForm({ ...editForm, category: cat.value })}>
+                <button
+                  key={cat.value}
+                  type="button"
+                  className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition-all ${editForm.category === cat.value ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30" : "border-gray-200 dark:border-gray-700"}`}
+                  onClick={() =>
+                    setEditForm({ ...editForm, category: cat.value })
+                  }>
                   <span className="text-xl">{cat.icon}</span>
-                  <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300">{cat.label}</span>
+                  <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300">
+                    {cat.label}
+                  </span>
                 </button>
               ))}
             </div>
           </div>
 
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nomi</label><Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required /></div>
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tavsif</label><Input value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} /></div>
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Narxi (so'm)</label><Input type="number" value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} required min={0} /></div>
-          <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rasm URL</label><Input value={editForm.imageUrl} onChange={(e) => setEditForm({ ...editForm, imageUrl: e.target.value })} placeholder="https://example.com/product.jpg" /></div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Nomi
+            </label>
+            <Input
+              value={editForm.name}
+              onChange={(e) =>
+                setEditForm({ ...editForm, name: e.target.value })
+              }
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Tavsif
+            </label>
+            <Input
+              value={editForm.description}
+              onChange={(e) =>
+                setEditForm({ ...editForm, description: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Narxi (so'm)
+            </label>
+            <Input
+              type="number"
+              value={editForm.price}
+              onChange={(e) =>
+                setEditForm({ ...editForm, price: e.target.value })
+              }
+              required
+              min={0}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Rasm URL
+            </label>
+            <Input
+              value={editForm.imageUrl}
+              onChange={(e) =>
+                setEditForm({ ...editForm, imageUrl: e.target.value })
+              }
+              placeholder="https://example.com/product.jpg"
+            />
+          </div>
 
           <label className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 cursor-pointer border border-gray-100 dark:border-gray-700">
-            <input type="checkbox" checked={editForm.isBottle} onChange={(e) => setEditForm({ ...editForm, isBottle: e.target.checked })} className="w-5 h-5 rounded border-gray-300 text-primary-500" />
-            <span className="text-sm text-gray-700 dark:text-gray-300">🫙 Baxla hisoblansin</span>
+            <input
+              type="checkbox"
+              checked={editForm.isBottle}
+              onChange={(e) =>
+                setEditForm({ ...editForm, isBottle: e.target.checked })
+              }
+              className="w-5 h-5 rounded border-gray-300 text-primary-500"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              🫙 Baxla hisoblansin
+            </span>
           </label>
 
-          <div className="flex justify-end gap-3 pt-4"><Button type="button" variant="outline" onClick={() => setEditProduct(null)}>Bekor</Button><Button type="submit" disabled={formLoading}>{formLoading ? "..." : "Saqlash"}</Button></div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditProduct(null)}>
+              Bekor
+            </Button>
+            <Button type="submit" disabled={formLoading}>
+              {formLoading ? "..." : "Saqlash"}
+            </Button>
+          </div>
         </form>
       </Modal>
     </div>
