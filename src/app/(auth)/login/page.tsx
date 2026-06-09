@@ -76,18 +76,11 @@ function LoginForm() {
         setErrorMsg(result.error);
         setLoading(false);
       } else {
-        // Muvaffaqiyatli login!
         setSuccessMsg("✅ Kirish muvaffaqiyatli! Kutib turing...");
-
-        // 1 soniya kutib keyin redirect
         setTimeout(() => {
-          if (!subdomain || subdomain === "app") {
-            // Super Admin yoki Customer — session dan rol aniqlanadi
-            // Hozircha / ga redirect — u yerda page.tsx rolga qarab yo'naltiradi
-            router.push("/");
-          } else {
-            router.push("/");
-          }
+          // Subdomenli login — to'g'ridan-to'g'ri rolga qarab yo'naltirish
+          // page.tsx o'zi session-ga qarab redirect qiladi
+          router.push("/");
           router.refresh();
         }, 800);
       }
