@@ -107,6 +107,7 @@ export default function SuperAdminProductsPage() {
                 </div>
                 <div className="p-4">
                   <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{p.name}</h3>
+                  {p.company && <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{p.company.name}</p>}
                   <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">{formatCurrency(p.price)}</p>
                   {p.tags && p.tags.length > 0 && <div className="flex flex-wrap gap-1 mt-2">{p.tags.map((tag: string, i: number) => <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 font-medium">#{tag}</span>)}</div>}
                   {p.isBottle && <span className="text-[10px] text-blue-600 dark:text-blue-400 mt-1 inline-block">🫙 Baxla</span>}

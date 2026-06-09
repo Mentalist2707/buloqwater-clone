@@ -10,16 +10,12 @@ export async function getGlobalProducts(): Promise<ActionResult<any[]>> {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== "SUPER_ADMIN") return { success: false, error: "Ruxsat yo'q" };
 
-    let globalCompany = await prisma.company.findUnique({ where: { subdomain: "global-templates" } });
-    if (!globalCompany) {
-      globalCompany = await prisma.company.create({
-        data: { name: "Global Templates", subdomain: "global-templates", status: "ACTIVE" },
-      });
-    }
-
+    // Barcha kompaniyalardagi mahsulotlarni ko'rsatish
     const products = await prisma.product.findMany({
-      where: { companyId: globalCompany.id },
       orderBy: { createdAt: "desc" },
+      include: {
+        company: { select: { name: true, subdomain: true } },
+      },
     });
 
     const formatted = products.map(p => ({ ...p, tags: extractTags(p.description) }));
