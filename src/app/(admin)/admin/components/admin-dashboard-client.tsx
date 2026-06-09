@@ -44,10 +44,10 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Kompaniya ko'rsatkichlari</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/operator/orders">
+          <Link href="/admin/orders">
             <Button variant="success">+ Yangi Buyurtma</Button>
           </Link>
-          <Button variant="outline">📊 Hisobot yuklash</Button>
+          <Button variant="outline">📊 Hisobot</Button>
         </div>
       </div>
 
