@@ -77,12 +77,27 @@ function LoginForm() {
         setLoading(false);
       } else {
         setSuccessMsg("✅ Kirish muvaffaqiyatli! Kutib turing...");
-        setTimeout(() => {
-          // Subdomenli login — to'g'ridan-to'g'ri rolga qarab yo'naltirish
-          // page.tsx o'zi session-ga qarab redirect qiladi
-          router.push("/");
-          router.refresh();
-        }, 800);
+
+        // Session olish va rolga qarab to'g'ridan-to'g'ri redirect
+        setTimeout(async () => {
+          try {
+            const sessionRes = await fetch("/api/auth/session");
+            const session = await sessionRes.json();
+            const role = session?.user?.role;
+
+            if (role === "SUPER_ADMIN") router.push("/superadmin/dashboard");
+            else if (role === "DIRECTOR") router.push("/admin");
+            else if (role === "OPERATOR") router.push("/operator/orders");
+            else if (role === "DRIVER") router.push("/driver/tasks");
+            else if (role === "CUSTOMER") router.push("/customer");
+            else router.push("/");
+
+            router.refresh();
+          } catch {
+            router.push("/");
+            router.refresh();
+          }
+        }, 500);
       }
     } catch (err) {
       setErrorMsg("Tizimda xatolik yuz berdi");
