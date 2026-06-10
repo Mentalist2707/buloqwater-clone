@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/layout/page-header";
-import { getSettings, updateSetting, updateMultipleSettings, resetSettings } from "@/actions/superadmin-settings-actions";
+import { getSettings, updateMultipleSettings, resetSettings } from "@/actions/superadmin-settings-actions";
 
 interface Setting {
   id: string;

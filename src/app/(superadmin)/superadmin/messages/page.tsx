@@ -163,7 +163,7 @@ export default function MessagesPage() {
       )}
 
       {/* Send Message Modal */}
-      <Modal isOpen={isSendOpen} onClose={() => setIsSendOpen(false)} title="Xabar Yuborish">
+      <Modal open={isSendOpen} onClose={() => setIsSendOpen(false)} title="Xabar Yuborish">
         <form onSubmit={handleSend} className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sarlavha *</label>

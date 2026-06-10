@@ -180,7 +180,7 @@ export default function SupportTicketsPage() {
       )}
 
       {/* Create Modal */}
-      <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Yangi Tiket">
+      <Modal open={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Yangi Tiket">
         <form onSubmit={handleCreate} className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Mavzu *</label>
@@ -230,7 +230,7 @@ export default function SupportTicketsPage() {
       </Modal>
 
       {/* Ticket Detail Modal */}
-      <Modal isOpen={!!selectedTicket} onClose={() => setSelectedTicket(null)} title={selectedTicket?.subject || ""}>
+      <Modal open={!!selectedTicket} onClose={() => setSelectedTicket(null)} title={selectedTicket?.subject || ""}>
         {selectedTicket && (
           <div className="space-y-4">
             {/* Info */}

@@ -5,7 +5,40 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getSystemHealth, getRecentErrors } from "@/actions/superadmin-health-actions";
-import type { SystemHealthData } from "@/actions/superadmin-health-actions";
+
+interface SystemHealthData {
+  database: {
+    status: "healthy" | "warning" | "error";
+    totalRecords: number;
+    companiesCount: number;
+    usersCount: number;
+    ordersCount: number;
+    customersCount: number;
+  };
+  companies: {
+    total: number;
+    active: number;
+    suspended: number;
+    expiringSoon: number;
+  };
+  orders: {
+    total: number;
+    todayOrders: number;
+    pendingOrders: number;
+    deliveredToday: number;
+  };
+  storage: {
+    totalProducts: number;
+    totalApplications: number;
+    pendingApplications: number;
+    activityLogs: number;
+  };
+  performance: {
+    avgOrdersPerCompany: number;
+    avgCustomersPerCompany: number;
+    activeUsersPercent: number;
+  };
+}
 
 export default function SystemHealthPage() {
   const [health, setHealth] = useState<SystemHealthData | null>(null);

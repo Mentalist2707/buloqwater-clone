@@ -5,41 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/types";
 
-export interface SystemHealthData {
-  database: {
-    status: "healthy" | "warning" | "error";
-    totalRecords: number;
-    companiesCount: number;
-    usersCount: number;
-    ordersCount: number;
-    customersCount: number;
-  };
-  companies: {
-    total: number;
-    active: number;
-    suspended: number;
-    expiringSoon: number; // Obunasi 7 kun ichida tugaydigan
-  };
-  orders: {
-    total: number;
-    todayOrders: number;
-    pendingOrders: number;
-    deliveredToday: number;
-  };
-  storage: {
-    totalProducts: number;
-    totalApplications: number;
-    pendingApplications: number;
-    activityLogs: number;
-  };
-  performance: {
-    avgOrdersPerCompany: number;
-    avgCustomersPerCompany: number;
-    activeUsersPercent: number;
-  };
-}
-
-export async function getSystemHealth(): Promise<ActionResult<SystemHealthData>> {
+export async function getSystemHealth(): Promise<ActionResult<any>> {
   try {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== "SUPER_ADMIN") {
@@ -86,7 +52,7 @@ export async function getSystemHealth(): Promise<ActionResult<SystemHealthData>>
 
     const totalRecords = companiesCount + usersCount + ordersCount + customersCount + productsCount;
 
-    const data: SystemHealthData = {
+    const data = {
       database: {
         status: totalRecords > 0 ? "healthy" : "warning",
         totalRecords,
