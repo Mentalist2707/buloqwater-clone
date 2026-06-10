@@ -50,7 +50,27 @@ export default withAuth(
       }
     }
 
+    // ═══ SUBDOMEN XAVFSIZLIK TEKSHIRUVI ═══
+    // 1. Agar foydalanuvchi subdomen bilan login qilgan bo'lsa (masalan shifo.buloqwater.uz),
+    //    lekin hozir boshqa subdomen yoki asosiy domenga kirmoqchi bo'lsa — login sahifasiga yo'naltirish
     if (subdomain && token.subdomain && subdomain !== token.subdomain) {
+      // Boshqa kompaniyaning subdomenida — login sahifasiga
+      const loginUrl = new URL("/login", request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // 2. Agar foydalanuvchi tenant (kompaniya) xodimi bo'lsa (token.subdomain bor),
+    //    lekin hozir ASOSIY domenga (buloqwater.uz) kirgan bo'lsa — o'z subdomeniga yo'naltirish
+    if (!subdomain && token.subdomain && token.role !== "SUPER_ADMIN") {
+      // Asosiy domenga kirish ruxsat emas, tenant xodimini o'z subdomeniga yo'naltirish
+      const tenantUrl = new URL(pathname, request.url);
+      tenantUrl.hostname = `${token.subdomain}.${process.env.NEXT_PUBLIC_APP_DOMAIN || "buloqwater.uz"}`;
+      return NextResponse.redirect(tenantUrl);
+    }
+
+    // 3. Agar asosiy domenga SUPER_ADMIN bo'lmagan, subdomen ham bo'lmagan user kirsa
+    //    (masalan, xato cookie qolgan holat) — login ga yo'naltirish
+    if (!subdomain && !token.subdomain && token.role !== "SUPER_ADMIN" && token.role !== "CUSTOMER") {
       const loginUrl = new URL("/login", request.url);
       return NextResponse.redirect(loginUrl);
     }
