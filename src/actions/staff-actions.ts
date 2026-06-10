@@ -20,18 +20,50 @@ export async function getStaff(): Promise<ActionResult<any[]>> {
     });
 
     const driverIds = users.filter((u) => u.role === "DRIVER").map((u) => u.id);
+
+    // KPI: bugungi buyurtmalar statusi bo'yicha
     const driverKpis = await prisma.order.groupBy({
       by: ["driverId", "status"],
       where: { driverId: { in: driverIds }, createdAt: { gte: today } },
       _count: true,
     });
 
-    const kpiMap: Record<string, { assigned: number; delivered: number }> = {};
+    // KPI: bugungi yig'ilgan idishlar va kassa
+    const driverDeliveries = await prisma.order.findMany({
+      where: { driverId: { in: driverIds }, status: "DELIVERED", deliveredAt: { gte: today } },
+      select: { driverId: true, bottlesReturned: true, totalAmount: true, paymentType: true, paidAmount: true },
+    });
+
+    // KPI: hozir yo'ldagi buyurtmalar (IN_TRANSIT + ASSIGNED)
+    const driverActiveOrders = await prisma.order.groupBy({
+      by: ["driverId"],
+      where: { driverId: { in: driverIds }, status: { in: ["ASSIGNED", "IN_TRANSIT"] } },
+      _count: true,
+    });
+
+    const kpiMap: Record<string, { assigned: number; delivered: number; bottlesCollected: number; cashCollected: number; activeOrders: number }> = {};
+
     driverKpis.forEach((k) => {
       if (!k.driverId) return;
-      if (!kpiMap[k.driverId]) kpiMap[k.driverId] = { assigned: 0, delivered: 0 };
+      if (!kpiMap[k.driverId]) kpiMap[k.driverId] = { assigned: 0, delivered: 0, bottlesCollected: 0, cashCollected: 0, activeOrders: 0 };
       if (k.status === "DELIVERED") kpiMap[k.driverId].delivered += k._count;
       kpiMap[k.driverId].assigned += k._count;
+    });
+
+    driverDeliveries.forEach((d) => {
+      if (!d.driverId) return;
+      if (!kpiMap[d.driverId]) kpiMap[d.driverId] = { assigned: 0, delivered: 0, bottlesCollected: 0, cashCollected: 0, activeOrders: 0 };
+      kpiMap[d.driverId].bottlesCollected += d.bottlesReturned;
+      // Faqat naqd va plastik to'lovlarni kassaga hisoblash (qarzga olinganlar hisoblanmaydi)
+      if (d.paymentType !== "CREDIT") {
+        kpiMap[d.driverId].cashCollected += d.paidAmount;
+      }
+    });
+
+    driverActiveOrders.forEach((d) => {
+      if (!d.driverId) return;
+      if (!kpiMap[d.driverId]) kpiMap[d.driverId] = { assigned: 0, delivered: 0, bottlesCollected: 0, cashCollected: 0, activeOrders: 0 };
+      kpiMap[d.driverId].activeOrders = d._count;
     });
 
     const formatted = users.map((u) => ({
@@ -41,7 +73,8 @@ export async function getStaff(): Promise<ActionResult<any[]>> {
       role: u.role,
       isActive: u.isActive,
       createdAt: u.createdAt.toISOString(),
-      kpi: u.role === "DRIVER" ? kpiMap[u.id] || { assigned: 0, delivered: 0 } : undefined,
+      updatedAt: u.updatedAt.toISOString(),
+      kpi: u.role === "DRIVER" ? kpiMap[u.id] || { assigned: 0, delivered: 0, bottlesCollected: 0, cashCollected: 0, activeOrders: 0 } : undefined,
     }));
 
     return { success: true, data: formatted };
