@@ -284,3 +284,32 @@ model OrderItem {
   @@index([orderId])
   @@map("order_items")
 }
+
+
+
+// ============================================================
+// APPLICATION (Firma zayavkasi)
+// ============================================================
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Application {
+  id            String            @id @default(uuid())
+  companyName   String
+  ownerName     String
+  phone         String
+  address       String?
+  description   String?
+  status        ApplicationStatus @default(PENDING)
+  adminNote     String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("applications")
+}

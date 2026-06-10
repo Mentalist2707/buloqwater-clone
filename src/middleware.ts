@@ -10,7 +10,7 @@ export default withAuth(
 
     const subdomain = getSubdomainFromHost(hostname);
 
-    if (pathname === "/" || pathname === "/login" || pathname === "/register" || pathname.startsWith("/api/auth") || pathname === "/manifest.json" || pathname.startsWith("/icon")) {
+    if (pathname === "/" || pathname === "/login" || pathname === "/register" || pathname.startsWith("/register/") || pathname.startsWith("/api/auth") || pathname === "/manifest.json" || pathname.startsWith("/icon")) {
       // Subdomen bor bo'lsa — faqat /login ruxsat, landing va register ga yo'l yo'q
       if (subdomain && (pathname === "/" || pathname === "/register")) {
         const loginUrl = new URL("/login", request.url);
@@ -65,6 +65,7 @@ export default withAuth(
           pathname === "/" ||
           pathname === "/login" ||
           pathname === "/register" ||
+          pathname.startsWith("/register/") ||
           pathname.startsWith("/api/auth") ||
           pathname.startsWith("/_next") ||
           pathname.startsWith("/favicon") ||

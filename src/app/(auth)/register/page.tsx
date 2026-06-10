@@ -225,6 +225,15 @@ export default function RegisterPage() {
             Tizimga kirish
           </Link>
         </p>
+
+        {/* Firma egasi bo'limi */}
+        <div className="mt-6">
+          <Link href="/register/business" className="block bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md hover:border-primary-200 dark:hover:border-primary-700 transition-all text-center">
+            <span className="text-2xl block mb-2">🏢</span>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">Firma egasimisiz?</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Platformaga firma sifatida qo'shilish uchun zayavka bering</p>
+          </Link>
+        </div>
       </div>
     </div>
   );
