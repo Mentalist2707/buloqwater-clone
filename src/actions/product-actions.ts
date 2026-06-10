@@ -132,3 +132,32 @@ export async function toggleProductStatus(productId: string): Promise<ActionResu
     return { success: false, error: "Status o'zgartirishda xatolik" };
   }
 }
+
+
+// ── Global shablonlarni olish (import uchun) ──────────────────
+export async function getProductTemplates(): Promise<ActionResult<any[]>> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user.companyId) return { success: false, error: "Ruxsat yo'q" };
+
+    // Global templates kompaniyasi mavjudligini tekshirish
+    const globalCompany = await prisma.company.findUnique({
+      where: { subdomain: "global-templates" },
+    });
+
+    if (!globalCompany) return { success: true, data: [] };
+
+    const templates = await prisma.product.findMany({
+      where: { companyId: globalCompany.id, isActive: true },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true, name: true, description: true, price: true,
+        category: true, imageUrl: true, isBottle: true,
+      },
+    });
+
+    return { success: true, data: templates };
+  } catch (error) {
+    return { success: false, error: "Shablonlar yuklanmadi" };
+  }
+}
