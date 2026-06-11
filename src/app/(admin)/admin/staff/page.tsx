@@ -76,7 +76,6 @@ export default function StaffPage() {
 
   return (
     <div className="relative">
-      {/* Toast */}
       {toast && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg border animate-in ${toast.type === "success" ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200" : "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"}`}>
           <p className="text-sm font-medium">{toast.type === "success" ? "✅" : "❌"} {toast.message}</p>
@@ -89,7 +88,6 @@ export default function StaffPage() {
         action={<Button onClick={() => setIsCreateOpen(true)}>+ Yangi Xodim</Button>}
       />
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6">
         <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Ism yoki telefon..." className="max-w-xs" />
         <div className="flex items-center gap-2">
@@ -109,7 +107,6 @@ export default function StaffPage() {
         <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-4 border-primary-500 border-t-transparent rounded-full" /></div>
       ) : (
         <div className="space-y-8">
-          {/* Operatorlar */}
           {(filterRole === "ALL" || filterRole === "OPERATOR") && (
             <div>
               <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -127,7 +124,6 @@ export default function StaffPage() {
             </div>
           )}
 
-          {/* Haydovchilar */}
           {(filterRole === "ALL" || filterRole === "DRIVER") && (
             <div>
               <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -147,7 +143,6 @@ export default function StaffPage() {
         </div>
       )}
 
-      {/* ═══ Bloklash/Faollashtirish Tasdiqlash ═══ */}
       <Modal open={!!confirmAction} onClose={() => setConfirmAction(null)} title={confirmAction?.user.isActive ? "🚫 Xodimni bloklash" : "✅ Xodimni faollashtirish"}>
         {confirmAction && (
           <div className="space-y-4">
@@ -190,7 +185,6 @@ export default function StaffPage() {
         )}
       </Modal>
 
-      {/* ═══ Modal: Yangi Xodim ═══ */}
       <Modal open={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Yangi Xodim Qo'shish">
         <form onSubmit={handleCreate} className="space-y-4">
           {formError && <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">{formError}</div>}
@@ -212,14 +206,12 @@ export default function StaffPage() {
         </form>
       </Modal>
 
-      {/* ═══ Modal: Tahrirlash + Parol tiklash ═══ */}
       <Modal open={!!editUser} onClose={() => setEditUser(null)} title={`Tahrirlash: ${editUser?.name || ""}`}>
         <form onSubmit={handleEdit} className="space-y-4">
           {formError && <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">{formError}</div>}
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ism familiya</label><Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required /></div>
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Telefon</label><Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} required /></div>
 
-          {/* Parolni tiklash */}
           <div className="pt-3 border-t border-gray-100 dark:border-gray-700">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">🔑 Parolni yangilash</label>
             <Input type="password" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} placeholder="Yangi parol (bo'sh = o'zgarmaydi)" minLength={6} />
@@ -233,9 +225,7 @@ export default function StaffPage() {
   );
 }
 
-// ═══ STAFF CARD COMPONENT ═══
 function StaffCard({ user, onEdit, onBlock }: { user: any; onEdit: () => void; onBlock: () => void }) {
-  // Haydovchi statusi
   const getDriverStatus = () => {
     if (!user.isActive) return { label: "Bloklangan", color: "destructive" as const, icon: "🚫" };
     if (user.kpi?.activeOrders > 0) return { label: "Yo'nalishda", color: "default" as const, icon: "🚛" };
@@ -246,7 +236,6 @@ function StaffCard({ user, onEdit, onBlock }: { user: any; onEdit: () => void; o
 
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-xl border p-4 shadow-sm transition-all hover:shadow-md ${!user.isActive ? "opacity-60 border-red-200 dark:border-red-800" : "border-gray-100 dark:border-gray-700"}`}>
-      {/* Header: Ism + Status */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold ${user.isActive ? (user.role === "DRIVER" ? "bg-green-500" : "bg-blue-500") : "bg-gray-400"}`}>
@@ -270,10 +259,8 @@ function StaffCard({ user, onEdit, onBlock }: { user: any; onEdit: () => void; o
         </div>
       </div>
 
-      {/* KPI (haydovchilar uchun) */}
       {user.kpi && (
         <div className="mb-3 space-y-2">
-          {/* Progress bar */}
           <div>
             <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
               <span>Yetkazish</span>
@@ -287,7 +274,6 @@ function StaffCard({ user, onEdit, onBlock }: { user: any; onEdit: () => void; o
             </div>
           </div>
 
-          {/* Qo'shimcha metrikalar */}
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg px-2.5 py-1.5 border border-amber-100 dark:border-amber-800/50">
               <p className="text-[10px] text-amber-600 dark:text-amber-400">🫙 Idish yig'ildi</p>
@@ -299,7 +285,6 @@ function StaffCard({ user, onEdit, onBlock }: { user: any; onEdit: () => void; o
             </div>
           </div>
 
-          {/* Hozir yo'ldagi buyurtmalar */}
           {user.kpi.activeOrders > 0 && (
             <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
               <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
@@ -309,7 +294,6 @@ function StaffCard({ user, onEdit, onBlock }: { user: any; onEdit: () => void; o
         </div>
       )}
 
-      {/* Operator uchun oddiy statistika */}
       {user.role === "OPERATOR" && (
         <div className="mb-3 py-2 px-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800/50">
           <p className="text-[10px] text-blue-600 dark:text-blue-400">☎️ Operator</p>
@@ -317,12 +301,10 @@ function StaffCard({ user, onEdit, onBlock }: { user: any; onEdit: () => void; o
         </div>
       )}
 
-      {/* Qo'shilgan sana — pastki qismda xiralashtirilgan */}
       <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-3">
         📅 Qo'shilgan: {formatDateOnly(user.createdAt)}
       </p>
 
-      {/* Actions */}
       <div className="flex items-center gap-2">
         <Button variant="outline" size="sm" className="flex-1" onClick={onEdit}>✏️ Tahrirlash</Button>
         <Button

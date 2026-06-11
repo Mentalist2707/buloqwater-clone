@@ -127,7 +127,6 @@ export default function SupportTicketsPage() {
         action={<Button onClick={() => setIsCreateOpen(true)}>+ Yangi Tiket</Button>}
       />
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
         <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Qidirish..." className="max-w-xs" />
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
@@ -140,7 +139,6 @@ export default function SupportTicketsPage() {
         </div>
       </div>
 
-      {/* Tickets List */}
       {loading ? (
         <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-4 border-primary-500 border-t-transparent rounded-full" /></div>
       ) : filtered.length === 0 ? (
@@ -179,7 +177,6 @@ export default function SupportTicketsPage() {
         </div>
       )}
 
-      {/* Create Modal */}
       <Modal open={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Yangi Tiket">
         <form onSubmit={handleCreate} className="space-y-4">
           <div>
@@ -229,11 +226,9 @@ export default function SupportTicketsPage() {
         </form>
       </Modal>
 
-      {/* Ticket Detail Modal */}
       <Modal open={!!selectedTicket} onClose={() => setSelectedTicket(null)} title={selectedTicket?.subject || ""}>
         {selectedTicket && (
           <div className="space-y-4">
-            {/* Info */}
             <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50">
               <p className="text-sm text-gray-700 dark:text-gray-300">{selectedTicket.description}</p>
               <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-gray-500 dark:text-gray-400">
@@ -244,7 +239,6 @@ export default function SupportTicketsPage() {
               </div>
             </div>
 
-            {/* Status Actions */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Status:</span>
               {(["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] as const).map((s) => (
@@ -258,7 +252,6 @@ export default function SupportTicketsPage() {
               ))}
             </div>
 
-            {/* Replies */}
             {selectedTicket.replies.length > 0 && (
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Yozishmalar:</p>
@@ -274,7 +267,6 @@ export default function SupportTicketsPage() {
               </div>
             )}
 
-            {/* Reply Input */}
             <div className="flex items-center gap-2">
               <Input
                 value={replyText}
@@ -285,7 +277,6 @@ export default function SupportTicketsPage() {
               <Button onClick={handleReply} disabled={formLoading || !replyText.trim()} size="sm">Yuborish</Button>
             </div>
 
-            {/* Delete */}
             <div className="flex justify-end pt-2 border-t border-gray-100 dark:border-gray-700">
               <Button variant="ghost" size="sm" onClick={() => handleDelete(selectedTicket.id)} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">🗑️ O'chirish</Button>
             </div>

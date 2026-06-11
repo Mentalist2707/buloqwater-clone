@@ -120,7 +120,6 @@ export default function MessagesPage() {
         action={<Button onClick={() => setIsSendOpen(true)}>📤 Xabar Yuborish</Button>}
       />
 
-      {/* Filters */}
       <div className="flex items-center gap-2 mb-6 flex-wrap">
         {(["ALL", "INFO", "WARNING", "URGENT", "ANNOUNCEMENT"] as const).map((f) => (
           <button key={f} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filter === f ? "bg-primary-500 text-white" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"}`} onClick={() => setFilter(f)}>
@@ -129,7 +128,6 @@ export default function MessagesPage() {
         ))}
       </div>
 
-      {/* Messages List */}
       {loading ? (
         <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-4 border-primary-500 border-t-transparent rounded-full" /></div>
       ) : filtered.length === 0 ? (
@@ -162,7 +160,6 @@ export default function MessagesPage() {
         </div>
       )}
 
-      {/* Send Message Modal */}
       <Modal open={isSendOpen} onClose={() => setIsSendOpen(false)} title="Xabar Yuborish">
         <form onSubmit={handleSend} className="space-y-4">
           <div>

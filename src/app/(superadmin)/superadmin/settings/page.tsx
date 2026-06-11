@@ -122,7 +122,6 @@ export default function GlobalSettingsPage() {
           if (catSettings.length === 0) return null;
           return (
             <div key={category.key} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-              {/* Category Header */}
               <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-3">
                   <span className="text-xl">{category.icon}</span>
@@ -133,7 +132,6 @@ export default function GlobalSettingsPage() {
                 </div>
               </div>
 
-              {/* Settings List */}
               <div className="divide-y divide-gray-50 dark:divide-gray-700">
                 {catSettings.map((setting) => {
                   const isBoolean = setting.value === "true" || setting.value === "false";
@@ -175,7 +173,6 @@ export default function GlobalSettingsPage() {
         })}
       </div>
 
-      {/* Floating Save Button */}
       {changedKeys.size > 0 && (
         <div className="fixed bottom-6 right-6 z-40">
           <Button onClick={handleSaveAll} disabled={saving} size="lg" className="shadow-xl shadow-primary-500/30">

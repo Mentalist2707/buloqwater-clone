@@ -114,7 +114,6 @@ export async function replyToTicket(ticketId: string, message: string): Promise<
       },
     });
 
-    // Tiketni IN_PROGRESS ga o'zgartirish agar OPEN bo'lsa
     const ticket = await prisma.supportTicket.findUnique({ where: { id: ticketId } });
     if (ticket && ticket.status === "OPEN") {
       await prisma.supportTicket.update({

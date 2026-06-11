@@ -53,7 +53,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
   const totalWeeklyRevenue = stats.weeklyData.reduce((s, d) => s + d.revenue, 0);
   const totalWeeklyOrders = stats.weeklyData.reduce((s, d) => s + d.orders, 0);
 
-  // To'lov breakdown foizlari
   const paymentTotal = stats.paymentBreakdown.cash + stats.paymentBreakdown.click + stats.paymentBreakdown.credit;
   const cashPercent = paymentTotal > 0 ? Math.round((stats.paymentBreakdown.cash / paymentTotal) * 100) : 0;
   const clickPercent = paymentTotal > 0 ? Math.round((stats.paymentBreakdown.click / paymentTotal) * 100) : 0;
@@ -61,7 +60,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
 
   return (
     <div className="space-y-6">
-      {/* Header + Quick Actions */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Analitika</h1>
@@ -75,7 +73,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
         </div>
       </div>
 
-      {/* Alerts - Kliklanadigan */}
       {stats.alerts.length > 0 && (
         <div className="space-y-2">
           {stats.alerts.map((alert, idx) => (
@@ -102,7 +99,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
         </div>
       )}
 
-      {/* Stat Cards - Bento Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Kunlik sotuv"
@@ -122,7 +118,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
           icon={<span className="text-xl">👤</span>}
           description="Shu oy"
         />
-        {/* Idish vidjeti - kengaytirilgan */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -136,7 +131,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
               <span className="text-xl">🫙</span>
             </div>
           </div>
-          {/* Qo'shimcha tafsilotlar */}
           <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-1">
             <div className="flex items-center justify-between text-xs">
               <span className="text-gray-500 dark:text-gray-400">Jami idishlar (mijozlarda)</span>
@@ -150,9 +144,7 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
         </div>
       </div>
 
-      {/* Mini stat row - kengaytirilgan */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {/* Kutilayotgan */}
         <Link href="/admin/orders" className="block">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm hover:shadow-md transition-all h-full">
             <div className="flex items-center justify-between">
@@ -165,7 +157,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
           </div>
         </Link>
 
-        {/* Yo'lda */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm h-full">
           <div className="flex items-center justify-between">
             <div>
@@ -176,7 +167,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
           </div>
         </div>
 
-        {/* Umumiy qarz - Barchasini ko'rish tugmasi bilan */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-red-100 dark:border-red-900/50 p-4 shadow-sm h-full">
           <div className="flex items-center justify-between">
             <div>
@@ -193,7 +183,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
           )}
         </div>
 
-        {/* Faol haydovchilar + bekor qilingan */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm h-full">
           <div className="flex items-center justify-between">
             <div>
@@ -208,9 +197,7 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
         </div>
       </div>
 
-      {/* Weekly Chart + Payment Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Haftalik grafik - 2/3 kenglik */}
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -222,21 +209,17 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
             </Badge>
           </div>
 
-          {/* Chart */}
           <div className="flex items-end gap-3 h-36 px-2">
             {stats.weeklyData.map((item, idx) => (
               <div key={idx} className="flex-1 flex flex-col items-center gap-1 group">
-                {/* Hover tooltip */}
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity text-center">
                   <p className="text-xs font-bold text-gray-900 dark:text-white">{item.orders} ta</p>
                   <p className="text-[10px] text-gray-500 dark:text-gray-400">{formatCurrency(item.revenue)}</p>
                 </div>
-                {/* Bar */}
                 <div
                   className="w-full bg-gradient-to-t from-primary-500 to-primary-300 rounded-t-md transition-all group-hover:from-primary-600 group-hover:to-primary-400 min-h-[4px] cursor-pointer"
                   style={{ height: `${Math.max((item.revenue / maxRevenue) * 100, 4)}px` }}
                 />
-                {/* Label */}
                 <div className="text-center">
                   <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{item.day}</p>
                   <p className="text-[10px] text-gray-400 dark:text-gray-500">{item.date}</p>
@@ -245,7 +228,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
             ))}
           </div>
 
-          {/* Summary */}
           <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
             <div className="text-center">
               <p className="text-lg font-bold text-gray-900 dark:text-white">{totalWeeklyOrders}</p>
@@ -262,7 +244,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
           </div>
         </div>
 
-        {/* To'lov taqsimoti - 1/3 kenglik */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
           <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">Bugungi tushum taqsimoti</h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">To'lov turi bo'yicha</p>
@@ -274,20 +255,15 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
             </div>
           ) : (
             <>
-              {/* Vizual donut / ring chart */}
               <div className="relative w-32 h-32 mx-auto mb-4">
                 <svg className="w-32 h-32 -rotate-90" viewBox="0 0 36 36">
-                  {/* Background circle */}
                   <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" className="text-gray-100 dark:text-gray-700" strokeWidth="3" />
-                  {/* Cash (green) */}
                   <circle cx="18" cy="18" r="15.5" fill="none" stroke="#22c55e" strokeWidth="3"
                     strokeDasharray={`${cashPercent} ${100 - cashPercent}`}
                     strokeDashoffset="0" />
-                  {/* Click (blue) */}
                   <circle cx="18" cy="18" r="15.5" fill="none" stroke="#3b82f6" strokeWidth="3"
                     strokeDasharray={`${clickPercent} ${100 - clickPercent}`}
                     strokeDashoffset={`${-(cashPercent)}`} />
-                  {/* Credit (orange) */}
                   <circle cx="18" cy="18" r="15.5" fill="none" stroke="#f97316" strokeWidth="3"
                     strokeDasharray={`${creditPercent} ${100 - creditPercent}`}
                     strokeDashoffset={`${-(cashPercent + clickPercent)}`} />
@@ -300,7 +276,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
                 </div>
               </div>
 
-              {/* Legend */}
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -338,7 +313,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
         </div>
       </div>
 
-      {/* Export/Hisobot Modal */}
       <Modal open={isExportOpen} onClose={() => setIsExportOpen(false)} title="📊 Hisobot Yuklab Olish">
         <div className="space-y-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -346,7 +320,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
           </p>
 
           <div className="space-y-3">
-            {/* Kunlik hisobot */}
             <button
               onClick={() => handleExport("daily")}
               className="w-full flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-200 dark:hover:border-primary-800 transition-all text-left"
@@ -358,7 +331,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
               </div>
             </button>
 
-            {/* Haftalik hisobot */}
             <button
               onClick={() => handleExport("weekly")}
               className="w-full flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-200 dark:hover:border-primary-800 transition-all text-left"
@@ -370,7 +342,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
               </div>
             </button>
 
-            {/* Oylik hisobot */}
             <button
               onClick={() => handleExport("monthly")}
               className="w-full flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-200 dark:hover:border-primary-800 transition-all text-left"
@@ -382,7 +353,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
               </div>
             </button>
 
-            {/* Qarzlar */}
             <button
               onClick={() => handleExport("debts")}
               className="w-full flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-200 dark:hover:border-primary-800 transition-all text-left"
@@ -394,7 +364,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
               </div>
             </button>
 
-            {/* Idishlar */}
             <button
               onClick={() => handleExport("bottles")}
               className="w-full flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-200 dark:hover:border-primary-800 transition-all text-left"
@@ -419,7 +388,6 @@ export function AdminDashboardClient({ stats }: { stats: DashboardStats }) {
 }
 
 function handleExport(type: string) {
-  // CSV/XLSX export funksiyasi - frontend tomondan API chaqiriladi
   const exportUrl = `/api/export?type=${type}&t=${Date.now()}`;
   window.open(exportUrl, "_blank");
 }

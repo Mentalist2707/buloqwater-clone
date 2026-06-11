@@ -18,11 +18,8 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Telefon formatlash
   const formatPhoneInput = (value: string) => {
-    // Faqat raqamlarni saqlash
     const digits = value.replace(/\D/g, "");
-    // +998 bilan boshlanishi kerak
     if (digits.startsWith("998")) {
       const rest = digits.slice(3);
       if (rest.length <= 2) return `+998 (${rest}`;
@@ -37,13 +34,11 @@ export default function ProfilePage() {
   };
 
   const handlePhoneChange = (value: string) => {
-    // Raqamlar sonini tekshirish (max 9 ta raqam + 998)
     const digits = value.replace(/\D/g, "");
-    if (digits.length > 12) return; // 998 + 9 raqam = 12
+    if (digits.length > 12) return;
     setFormData({ ...formData, phone: value });
   };
 
-  // Telefon raw qiymatini olish (saqlaash uchun)
   const getRawPhone = (formatted: string) => {
     const digits = formatted.replace(/\D/g, "");
     if (digits.startsWith("998")) return `+${digits}`;
@@ -74,7 +69,6 @@ export default function ProfilePage() {
     const r = await updateProfile({ name: formData.name.trim(), phone: rawPhone });
     if (r.success) {
       showToast("success", "Profil ma'lumotlari muvaffaqiyatli yangilandi!");
-      // Profilni qayta yuklash
       const pr = await getProfile();
       if (pr.success && pr.data) setProfile(pr.data);
     } else {
@@ -85,7 +79,6 @@ export default function ProfilePage() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Validatsiya
     if (passwordData.newPassword.length < 6) { showToast("error", "Yangi parol kamida 6 ta belgidan iborat bo'lishi kerak"); return; }
     if (passwordData.newPassword !== passwordData.confirmPassword) { showToast("error", "Yangi parollar bir-biriga mos kelmaydi"); return; }
     if (passwordData.currentPassword === passwordData.newPassword) { showToast("error", "Yangi parol joriy paroldan farqli bo'lishi kerak"); return; }
@@ -101,7 +94,6 @@ export default function ProfilePage() {
     setSaving(false);
   };
 
-  // Parol kuchliligi
   const getPasswordStrength = (password: string) => {
     if (!password) return { level: 0, label: "", color: "" };
     let score = 0;
@@ -124,7 +116,6 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-2xl relative">
-      {/* Toast */}
       {toast && (
         <div className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-xl shadow-lg border animate-in max-w-sm ${toast.type === "success" ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200" : "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"}`}>
           <p className="text-sm font-medium">{toast.type === "success" ? "✅" : "❌"} {toast.text}</p>
@@ -133,12 +124,9 @@ export default function ProfilePage() {
 
       <PageHeader title="Profil" description="Shaxsiy ma'lumotlarni tahrirlash" />
 
-      {/* Profile Header Card */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm mb-6 overflow-hidden">
-        {/* Avatar + Info */}
         <div className="p-6 border-b border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-4">
-            {/* Avatar - yuklash mumkin */}
             <div className="relative group">
               <div className="w-18 h-18 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 font-bold text-2xl w-[72px] h-[72px]">
                 {profile?.name?.charAt(0)}
@@ -161,7 +149,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Profile Form */}
         <form onSubmit={handleSaveProfile} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -170,7 +157,6 @@ export default function ProfilePage() {
             <Input
               value={formData.name}
               onChange={(e) => {
-                // Faqat harflar va bo'shliq
                 const val = e.target.value.replace(/[^a-zA-Zа-яА-ЯёЁa-zA-ZʼʻOʻoʻ\s'-]/g, "");
                 setFormData({ ...formData, name: val });
               }}
@@ -202,7 +188,6 @@ export default function ProfilePage() {
         </form>
       </div>
 
-      {/* Password Change Card */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
@@ -217,7 +202,6 @@ export default function ProfilePage() {
         </div>
 
         <form onSubmit={handleChangePassword} className="p-6 space-y-4">
-          {/* Joriy parol */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Joriy parol</label>
             <div className="relative">
@@ -239,7 +223,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Yangi parol */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Yangi parol</label>
             <div className="relative">
@@ -260,7 +243,6 @@ export default function ProfilePage() {
                 {showPasswords.new ? "🙈" : "👁️"}
               </button>
             </div>
-            {/* Parol kuchliligi indikatori */}
             {passwordData.newPassword && (
               <div className="mt-2 space-y-1">
                 <div className="flex items-center gap-1">
@@ -275,7 +257,6 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* Tasdiqlash */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Yangi parolni tasdiqlash</label>
             <div className="relative">
@@ -296,7 +277,6 @@ export default function ProfilePage() {
                 {showPasswords.confirm ? "🙈" : "👁️"}
               </button>
             </div>
-            {/* Mos kelish indikatori */}
             {passwordData.confirmPassword && (
               <p className={`text-[11px] mt-1 font-medium ${passwordData.confirmPassword === passwordData.newPassword ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
                 {passwordData.confirmPassword === passwordData.newPassword ? "✅ Parollar mos" : "❌ Parollar mos kelmaydi"}

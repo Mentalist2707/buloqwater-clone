@@ -122,7 +122,6 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Noto'g'ri hisobot turi" }, { status: 400 });
     }
 
-    // UTF-8 BOM qo'shish (Excel to'g'ri ochishi uchun)
     const bom = "\uFEFF";
     const blob = bom + csvContent;
 

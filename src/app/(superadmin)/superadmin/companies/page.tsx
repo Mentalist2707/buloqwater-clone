@@ -45,18 +45,15 @@ export default function CompaniesPage() {
   const loadCompanies = async () => { setLoading(true); const r = await getCompanies(); if (r.success && r.data) setCompanies(r.data as any); setLoading(false); };
   useEffect(() => { loadCompanies(); }, []);
 
-  // Filtrlash
   const filtered = companies.filter((c) => {
     if (statusFilter !== "ALL" && c.status !== statusFilter) return false;
     if (search && !c.name.toLowerCase().includes(search.toLowerCase()) && !c.subdomain.includes(search.toLowerCase())) return false;
     return true;
   });
 
-  // Pagination
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginatedCompanies = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-  // Filter o'zgarganda sahifani resetlash
   useEffect(() => { setCurrentPage(1); }, [search, statusFilter]);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -103,7 +100,6 @@ export default function CompaniesPage() {
 
   const getDaysLeft = (sub: Company["subscription"]) => { if (!sub) return null; return Math.ceil((new Date(sub.endDate).getTime() - Date.now()) / 86400000); };
 
-  // Tizim shabloni ekanligini tekshirish
   const isSystemTemplate = (c: Company) => c.subdomain === "global-templates";
 
   const activeCount = companies.filter(c => c.status === "ACTIVE").length;
@@ -111,7 +107,6 @@ export default function CompaniesPage() {
 
   return (
     <div className="relative">
-      {/* Toast */}
       {toast && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg border animate-in ${toast.type === "success" ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200" : "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"}`}>
           <p className="text-sm font-medium">{toast.type === "success" ? "✅" : "❌"} {toast.message}</p>
@@ -120,7 +115,6 @@ export default function CompaniesPage() {
 
       <PageHeader title="Kompaniyalar" description={`Jami ${companies.length} ta kompaniya`} action={<Button onClick={() => setIsCreateOpen(true)}>+ Yangi Kompaniya</Button>} />
 
-      {/* Search + Filter Tabs */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
         <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Kompaniya nomi yoki subdomen..." className="max-w-sm" />
         <div className="flex items-center gap-2">
@@ -145,7 +139,6 @@ export default function CompaniesPage() {
         </div>
       </div>
 
-      {/* Companies Grid */}
       {loading ? (
         <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-4 border-primary-500 border-t-transparent rounded-full" /></div>
       ) : filtered.length === 0 ? (
@@ -161,7 +154,6 @@ export default function CompaniesPage() {
               const isTemplate = isSystemTemplate(company);
               return (
                 <div key={company.id} className={`bg-white dark:bg-gray-800 rounded-2xl border shadow-sm hover:shadow-md transition-all overflow-hidden ${isTemplate ? "border-purple-200 dark:border-purple-800" : company.status === "SUSPENDED" ? "border-red-200 dark:border-red-800 opacity-80" : "border-gray-100 dark:border-gray-700"}`}>
-                  {/* Header */}
                   <div className="p-5 pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
@@ -186,7 +178,6 @@ export default function CompaniesPage() {
                   </div>
 
                   <div className="px-5 pb-4 space-y-3">
-                    {/* Direktor */}
                     {company.director ? (
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-gray-400 dark:text-gray-500">👤</span>
@@ -200,7 +191,6 @@ export default function CompaniesPage() {
                       </div>
                     )}
 
-                    {/* Stats with Tooltips */}
                     <div className="flex items-center gap-1">
                       <Tooltip text="Xodimlar soni">
                         <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-medium">
@@ -219,7 +209,6 @@ export default function CompaniesPage() {
                       </Tooltip>
                     </div>
 
-                    {/* Obuna */}
                     {!isTemplate && (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -246,7 +235,6 @@ export default function CompaniesPage() {
                       </div>
                     )}
 
-                    {/* Limitlar */}
                     <div className="flex items-center gap-3 text-[11px] text-gray-400 dark:text-gray-500">
                       <Tooltip text="Maksimal mijozlar limiti">
                         <span>🎯 {company._count.customers}/{company.maxCustomers}</span>
@@ -258,7 +246,6 @@ export default function CompaniesPage() {
                     </div>
                   </div>
 
-                  {/* Actions */}
                   {!isTemplate && (
                     <div className="border-t border-gray-100 dark:border-gray-700 px-4 py-3 flex items-center justify-between bg-gray-50/50 dark:bg-gray-700/30">
                       <div className="flex items-center gap-1">
@@ -289,7 +276,6 @@ export default function CompaniesPage() {
             })}
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-8">
               <Button
@@ -326,10 +312,6 @@ export default function CompaniesPage() {
           )}
         </>
       )}
-
-      {/* ═══ MODALS ═══ */}
-
-      {/* Muzlatish/Faollashtirish Tasdiqlash Modali */}
       <Modal open={!!confirmToggle} onClose={() => setConfirmToggle(null)} title={confirmToggle?.status === "ACTIVE" ? "⚠️ Kompaniyani muzlatish" : "✅ Kompaniyani faollashtirish"}>
         {confirmToggle && (
           <div className="space-y-4">
@@ -375,7 +357,6 @@ export default function CompaniesPage() {
         )}
       </Modal>
 
-      {/* Yangi Kompaniya */}
       <Modal open={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Yangi Kompaniya Qo'shish">
         <form onSubmit={handleCreate} className="space-y-4">
           {formError && <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">{formError}</div>}
@@ -390,7 +371,6 @@ export default function CompaniesPage() {
         </form>
       </Modal>
 
-      {/* Tahrirlash */}
       <Modal open={!!editCompany} onClose={() => setEditCompany(null)} title={`Tahrirlash: ${editCompany?.name || ""}`}>
         <form onSubmit={handleEdit} className="space-y-4">
           {formError && <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm">{formError}</div>}
@@ -400,7 +380,6 @@ export default function CompaniesPage() {
         </form>
       </Modal>
 
-      {/* Obuna */}
       <Modal open={!!subscriptionCompany} onClose={() => setSubscriptionCompany(null)} title={`Obuna: ${subscriptionCompany?.name || ""}`}>
         <form onSubmit={handleExtendSub} className="space-y-4">
           <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
@@ -412,7 +391,6 @@ export default function CompaniesPage() {
         </form>
       </Modal>
 
-      {/* Sozlamalar */}
       <Modal open={!!settingsCompany} onClose={() => setSettingsCompany(null)} title={`Sozlamalar: ${settingsCompany?.name || ""}`}>
         <form onSubmit={handleSettings} className="space-y-4">
           <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Maks. mijozlar</label><Input type="number" value={settingsForm.maxCustomers} onChange={(e) => setSettingsForm({ ...settingsForm, maxCustomers: e.target.value })} min={1} /></div>
@@ -424,7 +402,6 @@ export default function CompaniesPage() {
   );
 }
 
-// ═══ Tooltip Component ═══
 function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
   return (
     <div className="relative group inline-flex">

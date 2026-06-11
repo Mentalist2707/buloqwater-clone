@@ -45,7 +45,6 @@ export async function sendMessage(input: SendMessageInput): Promise<ActionResult
     }
 
     if (input.isGlobal) {
-      // Global xabar - barcha kompaniyalarga
       const companies = await prisma.company.findMany({
         where: { status: "ACTIVE" },
         select: { id: true, name: true },
@@ -62,7 +61,6 @@ export async function sendMessage(input: SendMessageInput): Promise<ActionResult
         })),
       });
 
-      // Bitta global xabar ham saqlaymiz
       await prisma.message.create({
         data: {
           title: input.title,
@@ -74,7 +72,6 @@ export async function sendMessage(input: SendMessageInput): Promise<ActionResult
         },
       });
     } else {
-      // Bitta kompaniyaga
       await prisma.message.create({
         data: {
           title: input.title,

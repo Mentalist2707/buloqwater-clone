@@ -24,12 +24,10 @@ export default function AdminOrdersPage() {
   const [assignOrderCustomer, setAssignOrderCustomer] = useState<string>("");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  // Filters
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [dateFilter, setDateFilter] = useState<DateFilter>("ALL");
   const [search, setSearch] = useState("");
 
-  // New order
   const [customerSearch, setCustomerSearch] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
@@ -44,16 +42,13 @@ export default function AdminOrdersPage() {
   const loadData = async () => { setLoading(true); const [o, d] = await Promise.all([getOrders(), getDriversForAssign()]); if (o.success) setOrders(o.data as any); if (d.success) setDrivers(d.data as any); setLoading(false); };
   useEffect(() => { loadData(); }, []);
 
-  // Filtrlangan buyurtmalar
   const filteredOrders = useMemo(() => {
     let result = [...orders];
 
-    // Status filter
     if (statusFilter !== "ALL") {
       result = result.filter((o) => o.status === statusFilter);
     }
 
-    // Date filter
     if (dateFilter !== "ALL") {
       const now = new Date();
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -69,7 +64,6 @@ export default function AdminOrdersPage() {
       });
     }
 
-    // Search
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter((o) =>
@@ -83,7 +77,6 @@ export default function AdminOrdersPage() {
     return result;
   }, [orders, statusFilter, dateFilter, search]);
 
-  // Status counts
   const statusCounts = useMemo(() => {
     return {
       ALL: orders.length,
@@ -155,9 +148,7 @@ export default function AdminOrdersPage() {
 
       <PageHeader title="Buyurtmalar" description={`${orders.length} ta buyurtma`} action={<Button variant="success" onClick={openNewOrder}>+ Yangi Buyurtma</Button>} />
 
-      {/* ═══ FILTERS SECTION ═══ */}
       <div className="space-y-4 mb-6">
-        {/* Status Tabs */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           {([
             { key: "ALL", label: "Barchasi", icon: "📋" },
@@ -195,9 +186,7 @@ export default function AdminOrdersPage() {
           ))}
         </div>
 
-        {/* Search + Date Filter Row */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          {/* Search */}
           <div className="relative flex-1 max-w-sm">
             <Input
               value={search}
@@ -213,7 +202,6 @@ export default function AdminOrdersPage() {
             )}
           </div>
 
-          {/* Date Filter */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">📅</span>
             {([
@@ -237,7 +225,6 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
-        {/* Active filters summary */}
         {(statusFilter !== "ALL" || dateFilter !== "ALL" || search) && (
           <div className="flex items-center gap-2 text-xs">
             <span className="text-gray-400 dark:text-gray-500">Natija:</span>
@@ -254,7 +241,6 @@ export default function AdminOrdersPage() {
         )}
       </div>
 
-      {/* ═══ ORDERS LIST ═══ */}
       {loading ? <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-4 border-primary-500 border-t-transparent rounded-full" /></div> : (
         <div className="space-y-3">
           {filteredOrders.length === 0 ? (
@@ -275,16 +261,13 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
-      {/* ═══ ASSIGN DRIVER MODAL ═══ */}
       <Modal open={isAssignOpen} onClose={() => setIsAssignOpen(false)} title="🚚 Haydovchi Biriktirish">
         <div className="space-y-4">
-          {/* Buyurtma info */}
           <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600">
             <p className="text-xs text-gray-500 dark:text-gray-400">Buyurtma</p>
             <p className="text-sm font-semibold text-gray-900 dark:text-white">{assignOrderCustomer}</p>
           </div>
 
-          {/* Haydovchilar ro'yxati */}
           <div>
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Faol haydovchilarni tanlang:</p>
             {drivers.length === 0 ? (
@@ -331,7 +314,6 @@ export default function AdminOrdersPage() {
             )}
           </div>
 
-          {/* Yuklanish bo'yicha izoh */}
           <div className="pt-3 border-t border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-4 text-[11px] text-gray-400 dark:text-gray-500">
               <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500"></span> Bo'sh</span>
@@ -342,12 +324,10 @@ export default function AdminOrdersPage() {
         </div>
       </Modal>
 
-      {/* ═══ YANGI BUYURTMA MODAL ═══ */}
       <Modal open={isNewOrderOpen} onClose={() => setIsNewOrderOpen(false)} title="Yangi Buyurtma" className="max-w-xl">
         <form onSubmit={handleCreateOrder} className="space-y-5">
           {formError && <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">{formError}</div>}
 
-          {/* Mijoz */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Mijoz</label>
             {selectedCustomer ? (
@@ -382,7 +362,6 @@ export default function AdminOrdersPage() {
             )}
           </div>
 
-          {/* Mahsulotlar */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Mahsulotlar</label>
             <div className="space-y-2">
@@ -403,7 +382,6 @@ export default function AdminOrdersPage() {
             </div>
           </div>
 
-          {/* Jami */}
           <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
             <span className="text-sm text-gray-600 dark:text-gray-400">Jami:</span>
             <span className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(orderItems.reduce((s, i) => { const p = products.find(pr => pr.id === i.productId); return s + (p?.price || 0) * i.quantity; }, 0))}</span>
@@ -419,9 +397,7 @@ export default function AdminOrdersPage() {
   );
 }
 
-// ═══ ORDER ROW COMPONENT ═══
 function OrderRow({ order, onOpenAssign }: { order: any; onOpenAssign: (orderId: string, customerName: string) => void }) {
-  // Qancha vaqt o'tganini hisoblash (PENDING uchun)
   const getTimeSincePending = () => {
     if (order.status !== "PENDING") return null;
     const diff = Date.now() - new Date(order.createdAt).getTime();

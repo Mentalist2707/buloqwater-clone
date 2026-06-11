@@ -58,15 +58,12 @@ export default function ProductsPage() {
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
-  // Rasm xatolikni belgilash
   const handleImageError = (productId: string) => {
     setImgErrors((prev) => new Set(prev).add(productId));
   };
 
-  // Yangi mahsulot qo'shish - tanlov modali
   const openCreateChoice = () => { setIsCreateOpen(true); };
 
-  // Global shablonlarni yuklash
   const openTemplates = async () => {
     setIsCreateOpen(false);
     setIsTemplateOpen(true);
@@ -76,7 +73,6 @@ export default function ProductsPage() {
     setTemplateLoading(false);
   };
 
-  // Shablondan import qilish
   const importFromTemplate = (template: any) => {
     setIsTemplateOpen(false);
     setCreateForm({
@@ -146,7 +142,6 @@ export default function ProductsPage() {
         action={<Button onClick={openCreateChoice}>+ Yangi Mahsulot</Button>}
       />
 
-      {/* Category Filter */}
       <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
         <button
           className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${filterCategory === "ALL" ? "bg-primary-500 text-white shadow-md" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"}`}
@@ -167,7 +162,6 @@ export default function ProductsPage() {
         <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-4 border-primary-500 border-t-transparent rounded-full" /></div>
       ) : (
         <div className="space-y-6">
-          {/* Faol mahsulotlar */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {activeProducts.length === 0 ? (
               <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
@@ -180,7 +174,6 @@ export default function ProductsPage() {
                 const hasImgError = imgErrors.has(p.id);
                 return (
                   <div key={p.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all overflow-hidden">
-                    {/* Rasm */}
                     <div className="h-28 bg-gradient-to-br from-primary-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center relative overflow-hidden">
                       {p.imageUrl && !hasImgError ? (
                         <img
@@ -204,7 +197,6 @@ export default function ProductsPage() {
 
                     <div className="p-4">
                       <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{p.name}</h3>
-                      {/* Tavsif - line-clamp-2, min-height */}
                       <div className="min-h-[36px] mt-0.5">
                         {p.description ? (
                           <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{p.description}</p>
@@ -230,7 +222,6 @@ export default function ProductsPage() {
             )}
           </div>
 
-          {/* Nofaol mahsulotlar - kuchaytirilgan vizual kontrast */}
           {inactiveProducts.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -259,9 +250,7 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* ═══ Modal: Yangi Mahsulot Qo'shish (Tanlov + Forma) ═══ */}
       <Modal open={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Yangi Mahsulot Qo'shish">
-        {/* Agar forma bo'sh bo'lsa — tanlov ko'rsatish */}
         {!createForm.name && !formError ? (
           <div className="space-y-3">
             <p className="text-sm text-gray-600 dark:text-gray-400">Mahsulot qo'shish usulini tanlang:</p>
@@ -320,7 +309,6 @@ export default function ProductsPage() {
         )}
       </Modal>
 
-      {/* ═══ Modal: Shablonlardan Tanlash ═══ */}
       <Modal open={isTemplateOpen} onClose={() => setIsTemplateOpen(false)} title="📋 Global Shablonlardan Tanlash">
         <div className="space-y-3">
           <p className="text-sm text-gray-500 dark:text-gray-400">Superadmin yaratgan tayyor mahsulot shablonlaridan birini tanlang:</p>
@@ -363,7 +351,6 @@ export default function ProductsPage() {
         </div>
       </Modal>
 
-      {/* ═══ Modal: Tahrirlash ═══ */}
       <Modal open={!!editProduct} onClose={() => setEditProduct(null)} title={`Tahrirlash: ${editProduct?.name || ""}`}>
         <form onSubmit={handleEdit} className="space-y-4">
           {formError && <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm border border-red-200 dark:border-red-800">{formError}</div>}

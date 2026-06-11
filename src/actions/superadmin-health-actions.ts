@@ -99,7 +99,6 @@ export async function getRecentErrors(): Promise<ActionResult<any[]>> {
       return { success: false, error: "Ruxsat yo'q" };
     }
 
-    // Check companies with expired subscriptions
     const expiredSubs = await prisma.subscription.findMany({
       where: { endDate: { lt: new Date() } },
       include: { company: { select: { name: true, subdomain: true, status: true } } },

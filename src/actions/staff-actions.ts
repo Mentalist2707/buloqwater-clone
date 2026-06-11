@@ -21,20 +21,17 @@ export async function getStaff(): Promise<ActionResult<any[]>> {
 
     const driverIds = users.filter((u) => u.role === "DRIVER").map((u) => u.id);
 
-    // KPI: bugungi buyurtmalar statusi bo'yicha
     const driverKpis = await prisma.order.groupBy({
       by: ["driverId", "status"],
       where: { driverId: { in: driverIds }, createdAt: { gte: today } },
       _count: true,
     });
 
-    // KPI: bugungi yig'ilgan idishlar va kassa
     const driverDeliveries = await prisma.order.findMany({
       where: { driverId: { in: driverIds }, status: "DELIVERED", deliveredAt: { gte: today } },
       select: { driverId: true, bottlesReturned: true, totalAmount: true, paymentType: true, paidAmount: true },
     });
 
-    // KPI: hozir yo'ldagi buyurtmalar (IN_TRANSIT + ASSIGNED)
     const driverActiveOrders = await prisma.order.groupBy({
       by: ["driverId"],
       where: { driverId: { in: driverIds }, status: { in: ["ASSIGNED", "IN_TRANSIT"] } },
@@ -54,7 +51,6 @@ export async function getStaff(): Promise<ActionResult<any[]>> {
       if (!d.driverId) return;
       if (!kpiMap[d.driverId]) kpiMap[d.driverId] = { assigned: 0, delivered: 0, bottlesCollected: 0, cashCollected: 0, activeOrders: 0 };
       kpiMap[d.driverId].bottlesCollected += d.bottlesReturned;
-      // Faqat naqd va plastik to'lovlarni kassaga hisoblash (qarzga olinganlar hisoblanmaydi)
       if (d.paymentType !== "CREDIT") {
         kpiMap[d.driverId].cashCollected += d.paidAmount;
       }
@@ -140,9 +136,6 @@ export async function toggleStaffStatus(userId: string): Promise<ActionResult> {
   }
 }
 
-
-
-// ── Xodim ma'lumotlarini yangilash ────────────────────────────
 interface UpdateStaffInput {
   name?: string;
   phone?: string;

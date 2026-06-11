@@ -74,9 +74,6 @@ export async function updateProductPrice(productId: string, newPrice: number): P
   }
 }
 
-
-
-// ── Mahsulotni to'liq yangilash ───────────────────────────────
 interface UpdateProductInput {
   name?: string;
   description?: string;
@@ -111,7 +108,6 @@ export async function updateProduct(productId: string, input: UpdateProductInput
   }
 }
 
-// ── Mahsulot statusini o'zgartirish ───────────────────────────
 export async function toggleProductStatus(productId: string): Promise<ActionResult> {
   try {
     const session = await getServerSession(authOptions);
@@ -132,15 +128,11 @@ export async function toggleProductStatus(productId: string): Promise<ActionResu
     return { success: false, error: "Status o'zgartirishda xatolik" };
   }
 }
-
-
-// ── Global shablonlarni olish (import uchun) ──────────────────
 export async function getProductTemplates(): Promise<ActionResult<any[]>> {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user.companyId) return { success: false, error: "Ruxsat yo'q" };
 
-    // Global templates kompaniyasi mavjudligini tekshirish
     const globalCompany = await prisma.company.findUnique({
       where: { subdomain: "global-templates" },
     });

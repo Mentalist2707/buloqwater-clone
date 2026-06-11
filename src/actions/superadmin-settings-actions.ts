@@ -5,7 +5,6 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/types";
 
-// Default sozlamalar (agar DB'da bo'lmasa)
 const DEFAULT_SETTINGS = [
   { key: "platform_name", value: "BuloqWater", label: "Platforma nomi", description: "Asosiy platforma nomi", category: "general" },
   { key: "support_phone", value: "+998901234567", label: "Yordam telefoni", description: "Texnik yordam telefon raqami", category: "general" },
@@ -32,7 +31,6 @@ export async function getSettings(): Promise<ActionResult<any[]>> {
       orderBy: { category: "asc" },
     });
 
-    // Agar sozlamalar bo'sh bo'lsa, default qiymatlarni yaratish
     if (settings.length === 0) {
       await prisma.globalSetting.createMany({
         data: DEFAULT_SETTINGS,

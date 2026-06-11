@@ -92,7 +92,6 @@ export default function SystemHealthPage() {
         action={<Button onClick={loadData} variant="outline">🔄 Yangilash</Button>}
       />
 
-      {/* Overall Status */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -108,7 +107,6 @@ export default function SystemHealthPage() {
         </div>
       </div>
 
-      {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard emoji="🏢" title="Kompaniyalar" value={health.companies.total} details={[
           { label: "Faol", value: health.companies.active, color: "text-green-600" },
@@ -132,9 +130,7 @@ export default function SystemHealthPage() {
         ]} />
       </div>
 
-      {/* Database & Storage Details */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Database */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
             <span className="text-xl">🗄️</span>
@@ -148,7 +144,6 @@ export default function SystemHealthPage() {
           </div>
         </div>
 
-        {/* Application Queue */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
             <span className="text-xl">📋</span>
@@ -162,7 +157,6 @@ export default function SystemHealthPage() {
         </div>
       </div>
 
-      {/* Issues / Warnings */}
       {errors.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-yellow-200 dark:border-yellow-800 p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
