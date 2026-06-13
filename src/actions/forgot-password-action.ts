@@ -1,81 +1,124 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { sendOtp, verifyOtp } from "@/lib/sms";
 import bcrypt from "bcryptjs";
 import type { ActionResult } from "@/types";
 
-/**
- * Foydalanuvchi mavjudligini tekshiradi va parolni tiklash so'rovini
- * SupportTicket sifatida saqlaydi. Session talab qilinmaydi.
- */
-export async function requestPasswordReset(
-  phone: string
-): Promise<ActionResult<{ name: string; companyName: string | null }>> {
-  try {
-    // Telefon raqamni normalizatsiya qilish
-    let formatted = phone.replace(/\D/g, "");
-    if (formatted.startsWith("998") && formatted.length === 12) {
-      formatted = `+${formatted}`;
-    } else if (formatted.length === 9) {
-      formatted = `+998${formatted}`;
-    } else if (phone.startsWith("+")) {
-      formatted = phone;
-    } else {
-      formatted = `+998${formatted}`;
-    }
+// ─── Telefon normalizatsiya ──────────────────────────────────────────────────
 
-    // Foydalanuvchini qidirish
+function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("998") && digits.length === 12) return `+${digits}`;
+  if (digits.length === 9) return `+998${digits}`;
+  if (phone.startsWith("+")) return phone.trim();
+  return `+998${digits}`;
+}
+
+// ─── Step 1: Telefon raqamni tekshirib OTP yuborish ─────────────────────────
+
+export async function sendPasswordResetOtp(
+  phone: string
+): Promise<ActionResult<{ name: string; maskedPhone: string }>> {
+  try {
+    const formatted = normalizePhone(phone);
+
     const user = await prisma.user.findFirst({
       where: { phone: formatted, isActive: true },
-      include: { company: { select: { name: true, subdomain: true } } },
+      select: { name: true },
     });
 
     if (!user) {
-      // Xavfsizlik uchun: hatto topilmasa ham shu xabarni qaytarmaymiz
       return {
         success: false,
         error: "Bu telefon raqam tizimda ro'yxatdan o'tmagan",
       };
     }
 
-    // Avvalgi hal qilinmagan so'rovlarni tekshirish (spam himoya)
-    const existingTicket = await prisma.supportTicket.findFirst({
-      where: {
-        userPhone: formatted,
-        subject: "Parolni tiklash so'rovi",
-        status: { in: ["OPEN", "IN_PROGRESS"] },
-      },
+    // OTP yuborish — 6 xonali, 5 daqiqa, 3 urinish
+    await sendOtp(formatted, {
+      length: 6,
+      ttl: 300,
+      template: "BuloqWater: parolingizni tiklash kodi {code}. Hech kimga bermang!",
+      max_attempts: 3,
     });
 
-    if (existingTicket) {
-      return {
-        success: false,
-        error: "Sizning oldingi so'rovingiz hali ko'rib chiqilmoqda. Adminizga murojaat qiling.",
-      };
-    }
-
-    // SupportTicket yaratish
-    await prisma.supportTicket.create({
-      data: {
-        subject: "Parolni tiklash so'rovi",
-        description: `Foydalanuvchi ${user.name} (${formatted}) parolini unutib, tiklash so'radi.\n\nKompaniya: ${user.company?.name ?? "Yo'q"}\nRol: ${user.role}`,
-        priority: "HIGH",
-        status: "OPEN",
-        companyId: user.companyId ?? null,
-        companyName: user.company?.name ?? null,
-        userName: user.name,
-        userPhone: formatted,
-      },
-    });
+    // Telefon raqamni maskalaymiz: +998 90 ***45 67
+    const digits = formatted.replace(/\D/g, ""); // 998901234567
+    const maskedPhone = `+${digits.slice(0, 3)} ${digits.slice(3, 5)} ***${digits.slice(8, 10)} ${digits.slice(10)}`;
 
     return {
       success: true,
-      data: {
-        name: user.name,
-        companyName: user.company?.name ?? null,
-      },
+      data: { name: user.name, maskedPhone },
     };
-  } catch (error) {
-    return { success: false, error: "So'rov yuborishda xatolik yuz berdi" };
+  } catch (err) {
+    console.error("[sendPasswordResetOtp]", err);
+    return { success: false, error: "SMS yuborishda xatolik yuz berdi. Keyinroq urinib ko'ring." };
+  }
+}
+
+// ─── Step 2: OTP kodni tekshirish ────────────────────────────────────────────
+
+export async function verifyPasswordResetOtp(
+  phone: string,
+  code: string
+): Promise<ActionResult> {
+  try {
+    const formatted = normalizePhone(phone);
+
+    const result = await verifyOtp(formatted, code.trim());
+
+    if (!result.valid) {
+      return {
+        success: false,
+        error: result.message ?? "Kod noto'g'ri yoki muddati o'tgan",
+      };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error("[verifyPasswordResetOtp]", err);
+    return { success: false, error: "Kodni tekshirishda xatolik yuz berdi" };
+  }
+}
+
+// ─── Step 3: Yangi parolni saqlash ───────────────────────────────────────────
+
+export async function resetPassword(
+  phone: string,
+  newPassword: string,
+  confirmPassword: string
+): Promise<ActionResult> {
+  try {
+    if (newPassword !== confirmPassword) {
+      return { success: false, error: "Parollar mos kelmadi" };
+    }
+
+    if (newPassword.length < 6) {
+      return { success: false, error: "Parol kamida 6 ta belgidan iborat bo'lishi kerak" };
+    }
+
+    const formatted = normalizePhone(phone);
+
+    const user = await prisma.user.findFirst({
+      where: { phone: formatted, isActive: true },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return { success: false, error: "Foydalanuvchi topilmadi" };
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 12);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashed, updatedAt: new Date() },
+    });
+
+    return { success: true, message: "Parol muvaffaqiyatli o'zgartirildi" };
+  } catch (err) {
+    console.error("[resetPassword]", err);
+    return { success: false, error: "Parolni saqlashda xatolik yuz berdi" };
   }
 }
