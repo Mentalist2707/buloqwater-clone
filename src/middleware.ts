@@ -10,7 +10,7 @@ export default withAuth(
 
     const subdomain = getSubdomainFromHost(hostname);
 
-    if (pathname === "/" || pathname === "/login" || pathname === "/register" || pathname.startsWith("/register/") || pathname === "/forgot-password" || pathname.startsWith("/api/auth") || pathname === "/manifest.json" || pathname.startsWith("/icon")) {
+    if (pathname === "/" || pathname === "/login" || pathname === "/register" || pathname.startsWith("/register/") || pathname === "/forgot-password" || pathname.startsWith("/api/auth") || pathname.startsWith("/api/v1/") || pathname === "/manifest.json" || pathname.startsWith("/icon")) {
       if (subdomain && (pathname === "/" || pathname === "/register")) {
         const loginUrl = new URL("/login", request.url);
         return NextResponse.redirect(loginUrl);
@@ -78,6 +78,7 @@ export default withAuth(
           pathname.startsWith("/register/") ||
           pathname === "/forgot-password" ||
           pathname.startsWith("/api/auth") ||
+          pathname.startsWith("/api/v1/") ||
           pathname.startsWith("/_next") ||
           pathname.startsWith("/favicon") ||
           pathname === "/manifest.json"
