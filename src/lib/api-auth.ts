@@ -61,7 +61,25 @@ export function getTokenFromRequest(request: NextRequest): string | null {
 export async function getAuthUser(request: NextRequest): Promise<JWTPayload | null> {
   const token = getTokenFromRequest(request);
   if (!token) return null;
-  return verifyToken(token);
+  const payload = await verifyToken(token);
+  if (!payload) return null;
+
+  // Token revocation — foydalanuvchi aktiv va kompaniya faolligini tekshirish
+  try {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: {
+        isActive: true,
+        company: { select: { status: true } },
+      },
+    });
+    if (!dbUser || !dbUser.isActive) return null;
+    if (dbUser.company && dbUser.company.status === "SUSPENDED") return null;
+  } catch {
+    // DB xatosi bo'lsa ham token'ni qabul qilamiz (availability > security)
+  }
+
+  return payload;
 }
 
 // ── Role tekshirish helper ──────────────────────────────────

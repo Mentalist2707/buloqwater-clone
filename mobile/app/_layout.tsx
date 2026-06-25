@@ -56,6 +56,7 @@ export default function RootLayout() {
         <Stack.Screen name="(superadmin)" />
         <Stack.Screen name="(driver)" />
         <Stack.Screen name="(operator)" />
+        <Stack.Screen name="(customer)" />
       </Stack>
     </>
   );
@@ -152,6 +153,7 @@ function navigateByRole(role?: string) {
     case "DRIVER":      router.replace("/(driver)/tasks"); break;
     case "DIRECTOR":    router.replace("/(admin)/dashboard"); break;
     case "SUPER_ADMIN": router.replace("/(superadmin)/dashboard"); break;
+    case "CUSTOMER":    router.replace("/(customer)/home"); break;
     case "OPERATOR":    router.replace("/(operator)/orders"); break;
     default:            router.replace("/(operator)/orders");
   }

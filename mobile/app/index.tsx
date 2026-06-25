@@ -8,9 +8,12 @@ export default function Index() {
     return <Redirect href="/(auth)/login" />;
   }
 
-  if (user?.role === "DRIVER") {
-    return <Redirect href="/(driver)/tasks" />;
+  switch (user?.role) {
+    case "DRIVER":      return <Redirect href="/(driver)/tasks" />;
+    case "DIRECTOR":    return <Redirect href="/(admin)/dashboard" />;
+    case "SUPER_ADMIN": return <Redirect href="/(superadmin)/dashboard" />;
+    case "CUSTOMER":    return <Redirect href="/(customer)/home" />;
+    case "OPERATOR":    return <Redirect href="/(operator)/orders" />;
+    default:            return <Redirect href="/(operator)/orders" />;
   }
-
-  return <Redirect href="/(operator)/orders" />;
 }

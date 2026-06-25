@@ -104,6 +104,9 @@ export default function LoginScreen() {
       case "SUPER_ADMIN":
         router.replace("/(superadmin)/dashboard");
         break;
+      case "CUSTOMER":
+        router.replace("/(customer)/home");
+        break;
       case "OPERATOR":
         router.replace("/(operator)/orders");
         break;
