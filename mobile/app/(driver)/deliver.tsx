@@ -22,6 +22,11 @@ export default function DeliverScreen() {
     bottlesDelivered: string;
   }>();
 
+  const orderId = Array.isArray(params.orderId) ? params.orderId[0] : params.orderId || "";
+  const orderNumber = Array.isArray(params.orderNumber) ? params.orderNumber[0] : params.orderNumber || "0";
+  const totalAmount = Array.isArray(params.totalAmount) ? params.totalAmount[0] : params.totalAmount || "0";
+  const bottlesDelivered = Array.isArray(params.bottlesDelivered) ? params.bottlesDelivered[0] : params.bottlesDelivered || "0";
+
   const [paymentType, setPaymentType] = useState<PaymentOption | null>(null);
   const [bottlesReturned, setBottlesReturned] = useState("0");
   const [loading, setLoading] = useState(false);
@@ -33,7 +38,7 @@ export default function DeliverScreen() {
     }
 
     const returned = parseInt(bottlesReturned) || 0;
-    const delivered = parseInt(params.bottlesDelivered || "0");
+    const delivered = parseInt(bottlesDelivered);
 
     if (returned > delivered) {
       Alert.alert("Xatolik", "Qaytarilgan idish soni yetkazilgandan ko'p bo'lishi mumkin emas");
@@ -42,7 +47,7 @@ export default function DeliverScreen() {
 
     Alert.alert(
       "Tasdiqlash",
-      `Buyurtma #${params.orderNumber}\nTo'lov: ${PAYMENT_TYPE_LABELS[paymentType]}\nQaytarilgan idish: ${returned}`,
+      `Buyurtma #${orderNumber}\nTo'lov: ${PAYMENT_TYPE_LABELS[paymentType]}\nQaytarilgan idish: ${returned}`,
       [
         { text: "Bekor qilish", style: "cancel" },
         {
@@ -50,7 +55,7 @@ export default function DeliverScreen() {
           onPress: async () => {
             setLoading(true);
             const result = await driverService.deliverOrder({
-              orderId: params.orderId!,
+              orderId,
               paymentType,
               bottlesReturned: returned,
             });
@@ -74,16 +79,16 @@ export default function DeliverScreen() {
       {/* Order Info */}
       <Card style={styles.infoCard}>
         <Text style={styles.orderLabel}>Buyurtma</Text>
-        <Text style={styles.orderNumber}>#{params.orderNumber}</Text>
+        <Text style={styles.orderNumber}>#{orderNumber}</Text>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Summa:</Text>
           <Text style={styles.infoValue}>
-            {parseInt(params.totalAmount || "0").toLocaleString()} so'm
+            {parseInt(totalAmount).toLocaleString()} so'm
           </Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Yetkazilgan idish:</Text>
-          <Text style={styles.infoValue}>{params.bottlesDelivered} dona</Text>
+          <Text style={styles.infoValue}>{bottlesDelivered} dona</Text>
         </View>
       </Card>
 
@@ -118,7 +123,7 @@ export default function DeliverScreen() {
       {paymentType === "CREDIT" && (
         <View style={styles.creditWarning}>
           <Text style={styles.creditWarningText}>
-            ⚠️ Mijozning qarziga {parseInt(params.totalAmount || "0").toLocaleString()} so'm qo'shiladi
+            ⚠️ Mijozning qarziga {parseInt(totalAmount).toLocaleString()} so'm qo'shiladi
           </Text>
         </View>
       )}

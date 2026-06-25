@@ -23,28 +23,28 @@ export default function OperatorLayout() {
         name="orders"
         options={{
           title: "Buyurtmalar",
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>📋</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, opacity: color === Colors.primary ? 1 : 0.5 }}>📋</Text>,
         }}
       />
       <Tabs.Screen
         name="new-order"
         options={{
           title: "Yangi buyurtma",
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>➕</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, opacity: color === Colors.primary ? 1 : 0.5 }}>➕</Text>,
         }}
       />
       <Tabs.Screen
         name="customers"
         options={{
           title: "Mijozlar",
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>👥</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, opacity: color === Colors.primary ? 1 : 0.5 }}>👥</Text>,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Profil",
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>⚙️</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, opacity: color === Colors.primary ? 1 : 0.5 }}>⚙️</Text>,
         }}
       />
     </Tabs>

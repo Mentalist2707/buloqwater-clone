@@ -36,7 +36,7 @@ export default async function DriverLayout({
             <img
               src="/image.png"
               alt="BuloqWater"
-              className="w-9 h-9 dark:invert"
+              className="w-9 h-9"
             />
             <div>
               <h1 className="text-sm font-bold text-gray-900 dark:text-white">

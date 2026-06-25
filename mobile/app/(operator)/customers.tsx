@@ -1,3 +1,7 @@
+/**
+ * Operator mijozlar ekrani
+ * Web: /operator/customers — mijozlar bazasi, qidirish, yangi mijoz qo'shish
+ */
 import React, { useState, useCallback } from "react";
 import {
   View,
@@ -24,12 +28,14 @@ export default function CustomersScreen() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // New customer modal
+  // New customer modal — web bilan bir xil maydonlar
   const [showModal, setShowModal] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newPhone, setNewPhone] = useState("");
+  const [newPhone1, setNewPhone1] = useState("");
+  const [newPhone2, setNewPhone2] = useState("");
   const [newAddress, setNewAddress] = useState("");
   const [newLandmark, setNewLandmark] = useState("");
+  const [newLocationLink, setNewLocationLink] = useState("");
   const [creating, setCreating] = useState(false);
 
   const loadCustomers = async (pageNum = 1) => {
@@ -52,8 +58,14 @@ export default function CustomersScreen() {
   useFocusEffect(
     useCallback(() => {
       loadCustomers(1);
-    }, [search])
+    }, [])
   );
+
+  React.useEffect(() => {
+    if (!loading) {
+      loadCustomers(1);
+    }
+  }, [search]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -69,18 +81,33 @@ export default function CustomersScreen() {
     Linking.openURL(`tel:${phone}`);
   };
 
+  const handleOpenMap = (locationLink: string) => {
+    Linking.openURL(locationLink);
+  };
+
   const handleCreateCustomer = async () => {
-    if (!newName.trim() || !newPhone.trim() || !newAddress.trim()) {
+    if (!newName.trim() || !newPhone1.trim() || !newAddress.trim()) {
       Alert.alert("Diqqat", "Ism, telefon va manzil to'ldirilishi shart");
       return;
     }
 
     setCreating(true);
+    const phone1 = newPhone1.trim().startsWith("+")
+      ? newPhone1.trim()
+      : `+998${newPhone1.trim().replace(/\D/g, "")}`;
+    const phone2 = newPhone2.trim()
+      ? newPhone2.trim().startsWith("+")
+        ? newPhone2.trim()
+        : `+998${newPhone2.trim().replace(/\D/g, "")}`
+      : undefined;
+
     const result = await customersService.createCustomer({
       name: newName.trim(),
-      phone1: newPhone.trim(),
+      phone1,
+      phone2,
       address: newAddress.trim(),
       landmark: newLandmark.trim() || undefined,
+      locationLink: newLocationLink.trim() || undefined,
     });
 
     if (result.success) {
@@ -89,16 +116,18 @@ export default function CustomersScreen() {
       resetForm();
       loadCustomers(1);
     } else {
-      Alert.alert("Xatolik", result.error || "Xatolik yuz berdi");
+      Alert.alert("Xatolik", (result as any).error || "Xatolik yuz berdi");
     }
     setCreating(false);
   };
 
   const resetForm = () => {
     setNewName("");
-    setNewPhone("");
+    setNewPhone1("");
+    setNewPhone2("");
     setNewAddress("");
     setNewLandmark("");
+    setNewLocationLink("");
   };
 
   const renderCustomer = ({ item }: { item: Customer }) => (
@@ -110,28 +139,62 @@ export default function CustomersScreen() {
         <View style={styles.customerInfo}>
           <Text style={styles.customerName}>{item.name}</Text>
           <Text style={styles.customerAddress}>{item.address}</Text>
+          {item.landmark ? (
+            <Text style={styles.landmark}>Mo'ljal: {item.landmark}</Text>
+          ) : null}
         </View>
-        <TouchableOpacity style={styles.callBtn} onPress={() => handleCall(item.phone1)}>
-          <Text style={styles.callIcon}>📞</Text>
-        </TouchableOpacity>
+        <View style={styles.callBtns}>
+          <TouchableOpacity style={styles.callBtn} onPress={() => handleCall(item.phone1)}>
+            <Text style={styles.callIcon}>📞</Text>
+          </TouchableOpacity>
+          {item.locationLink ? (
+            <TouchableOpacity
+              style={[styles.callBtn, { backgroundColor: "#EDE9FE" }]}
+              onPress={() => handleOpenMap(item.locationLink!)}
+            >
+              <Text style={styles.callIcon}>🗺</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
 
       <View style={styles.customerMeta}>
         <View style={styles.metaItem}>
           <Text style={styles.metaLabel}>Idish</Text>
-          <Text style={styles.metaValue}>{item.bottleBalance}</Text>
+          <Text
+            style={[
+              styles.metaValue,
+              item.bottleBalance > 0 && { color: Colors.warning },
+            ]}
+          >
+            {item.bottleBalance} ta
+          </Text>
         </View>
         <View style={styles.metaItem}>
           <Text style={styles.metaLabel}>Qarz</Text>
-          <Text style={[styles.metaValue, item.debtBalance > 0 && { color: Colors.danger }]}>
-            {item.debtBalance > 0 ? `${item.debtBalance.toLocaleString()}` : "0"}
+          <Text
+            style={[
+              styles.metaValue,
+              item.debtBalance > 0 && { color: Colors.danger },
+            ]}
+          >
+            {item.debtBalance > 0 ? `${item.debtBalance.toLocaleString()} so'm` : "—"}
           </Text>
         </View>
         <View style={styles.metaItem}>
           <Text style={styles.metaLabel}>Buyurtmalar</Text>
-          <Text style={styles.metaValue}>{item._count?.orders || 0}</Text>
+          <Text style={styles.metaValue}>{item._count?.orders || 0} ta</Text>
         </View>
       </View>
+
+      {item.phone2 ? (
+        <TouchableOpacity
+          style={styles.phone2Row}
+          onPress={() => handleCall(item.phone2!)}
+        >
+          <Text style={styles.phone2Text}>📞 {item.phone2}</Text>
+        </TouchableOpacity>
+      ) : null}
     </Card>
   );
 
@@ -168,11 +231,14 @@ export default function CustomersScreen() {
       />
 
       {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => setShowModal(true)}>
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => { setShowModal(true); resetForm(); }}
+      >
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
 
-      {/* New Customer Modal */}
+      {/* New Customer Modal — web bilan bir xil maydonlar */}
       <Modal visible={showModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -185,10 +251,17 @@ export default function CustomersScreen() {
               onChangeText={setNewName}
             />
             <Input
-              label="Telefon *"
+              label="Telefon 1 *"
               placeholder="+998 90 123 45 67"
-              value={newPhone}
-              onChangeText={setNewPhone}
+              value={newPhone1}
+              onChangeText={setNewPhone1}
+              keyboardType="phone-pad"
+            />
+            <Input
+              label="Telefon 2"
+              placeholder="+998 90 123 45 67 (ixtiyoriy)"
+              value={newPhone2}
+              onChangeText={setNewPhone2}
               keyboardType="phone-pad"
             />
             <Input
@@ -199,9 +272,15 @@ export default function CustomersScreen() {
             />
             <Input
               label="Mo'ljal"
-              placeholder="Yaqin joydagi belgi"
+              placeholder="Masalan: 'Sariq darvoza yonida'"
               value={newLandmark}
               onChangeText={setNewLandmark}
+            />
+            <Input
+              label="Lokatsiya linki"
+              placeholder="Yandex Maps yoki Google Maps URL"
+              value={newLocationLink}
+              onChangeText={setNewLocationLink}
             />
 
             <View style={styles.modalActions}>
@@ -231,9 +310,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   searchContainer: { paddingHorizontal: 16, paddingTop: 12 },
   searchInput: { marginBottom: 0 },
-  list: { paddingHorizontal: 16, paddingBottom: 100, paddingTop: 4 },
+  list: { paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 },
   customerCard: { padding: 14 },
-  customerHeader: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  customerHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 10 },
   avatar: {
     width: 40,
     height: 40,
@@ -246,12 +325,16 @@ const styles = StyleSheet.create({
   customerInfo: { flex: 1, marginLeft: 12 },
   customerName: { fontSize: 15, fontWeight: "600", color: Colors.gray[800] },
   customerAddress: { fontSize: 12, color: Colors.gray[500], marginTop: 2 },
-  callBtn: { padding: 8 },
-  callIcon: { fontSize: 20 },
+  landmark: { fontSize: 11, color: Colors.gray[400], marginTop: 1, fontStyle: "italic" },
+  callBtns: { flexDirection: "row", gap: 6 },
+  callBtn: { padding: 8, backgroundColor: Colors.gray[50], borderRadius: 8 },
+  callIcon: { fontSize: 18 },
   customerMeta: { flexDirection: "row", gap: 16 },
   metaItem: { alignItems: "center" },
   metaLabel: { fontSize: 11, color: Colors.gray[500] },
   metaValue: { fontSize: 14, fontWeight: "700", color: Colors.gray[800], marginTop: 2 },
+  phone2Row: { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: Colors.gray[100] },
+  phone2Text: { fontSize: 13, color: Colors.primary },
   empty: { alignItems: "center", paddingTop: 60 },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
   emptyText: { fontSize: 16, color: Colors.gray[500] },
@@ -284,6 +367,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
+    maxHeight: "90%",
   },
   modalTitle: { fontSize: 20, fontWeight: "700", color: Colors.gray[900], marginBottom: 16 },
   modalActions: { flexDirection: "row", gap: 12, marginTop: 8 },

@@ -16,6 +16,8 @@ const TOKEN_EXPIRY = "30d"; // 30 kun
 
 export interface JWTPayload {
   userId: string;
+  /** userId bilan bir xil — qulaylik uchun alias */
+  id: string;
   role: Role;
   companyId: string | null;
   phone: string;
@@ -35,7 +37,12 @@ export async function createToken(payload: JWTPayload): Promise<string> {
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload as unknown as JWTPayload;
+    const data = payload as unknown as JWTPayload;
+    // userId → id alias (ba'zi route'lar user.id ishlatadi)
+    if (data.userId && !data.id) {
+      data.id = data.userId;
+    }
+    return data;
   } catch {
     return null;
   }

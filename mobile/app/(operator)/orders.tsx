@@ -50,9 +50,17 @@ export default function OrdersScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      setLoading(true);
       loadOrders(1);
-    }, [filter])
+    }, [])
   );
+
+  // filter o'zgarganda qayta yuklash
+  React.useEffect(() => {
+    if (!loading) {
+      loadOrders(1);
+    }
+  }, [filter]);
 
   const onRefresh = async () => {
     setRefreshing(true);

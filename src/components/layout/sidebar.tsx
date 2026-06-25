@@ -32,7 +32,7 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
           <img
             src="/image.png"
             alt="BuloqWater"
-            className="w-10 h-10 dark:invert"
+            className="w-10 h-10"
           />
           <div>
             <h1 className="text-sm font-bold text-gray-900 dark:text-white">
