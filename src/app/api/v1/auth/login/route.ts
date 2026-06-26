@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
     if (superAdmin) {
       const token = await createToken({
         userId: superAdmin.id,
+        id: superAdmin.id,
         role: superAdmin.role,
         companyId: null,
         phone: superAdmin.phone,
@@ -97,6 +98,7 @@ export async function POST(request: NextRequest) {
     if (customer) {
       const token = await createToken({
         userId: customer.id,
+        id: customer.id,
         role: customer.role,
         companyId: null,
         phone: customer.phone,
@@ -130,6 +132,7 @@ export async function POST(request: NextRequest) {
       const user = activeCompanyUsers[0];
       const token = await createToken({
         userId: user.id,
+        id: user.id,
         role: user.role,
         companyId: user.companyId,
         phone: user.phone,
