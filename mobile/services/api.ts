@@ -38,16 +38,25 @@ class ApiService {
       const response = await fetch(url, {
         method: "GET",
         headers: this.getHeaders(),
+        redirect: "manual", // Redirectlarni o'zimiz boshqaramiz
       });
 
-      const data = await response.json();
+      // Redirect statuslarini handle qilish
+      if (response.status === 301 || response.status === 302 || response.status === 307 || response.status === 308) {
+        return { 
+          success: false, 
+          error: `Server redirect qilyapti (${response.status}). API manzili to'g'ri ekanligini tekshiring` 
+        };
+      }
 
       if (response.status === 401) {
         useAuthStore.getState().logout();
       }
 
+      const data = await response.json();
       return data;
     } catch (error) {
+      console.error("API Error:", error);
       return { success: false, error: "Tarmoq xatosi. Internet aloqasini tekshiring" };
     }
   }
@@ -58,16 +67,25 @@ class ApiService {
         method: "POST",
         headers: this.getHeaders(),
         body: body ? JSON.stringify(body) : undefined,
+        redirect: "manual", // Redirectlarni o'zimiz boshqaramiz
       });
 
-      const data = await response.json();
+      // Redirect statuslarini handle qilish
+      if (response.status === 301 || response.status === 302 || response.status === 307 || response.status === 308) {
+        return { 
+          success: false, 
+          error: `Server redirect qilyapti (${response.status}). API manzili to'g'ri ekanligini tekshiring` 
+        };
+      }
 
       if (response.status === 401) {
         useAuthStore.getState().logout();
       }
 
+      const data = await response.json();
       return data;
     } catch (error) {
+      console.error("API Error:", error);
       return { success: false, error: "Tarmoq xatosi. Internet aloqasini tekshiring" };
     }
   }
@@ -78,16 +96,24 @@ class ApiService {
         method: "PUT",
         headers: this.getHeaders(),
         body: body ? JSON.stringify(body) : undefined,
+        redirect: "manual",
       });
 
-      const data = await response.json();
+      if (response.status === 301 || response.status === 302 || response.status === 307 || response.status === 308) {
+        return { 
+          success: false, 
+          error: `Server redirect qilyapti (${response.status}). API manzili to'g'ri ekanligini tekshiring` 
+        };
+      }
 
       if (response.status === 401) {
         useAuthStore.getState().logout();
       }
 
+      const data = await response.json();
       return data;
     } catch (error) {
+      console.error("API Error:", error);
       return { success: false, error: "Tarmoq xatosi. Internet aloqasini tekshiring" };
     }
   }
@@ -97,16 +123,24 @@ class ApiService {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         method: "DELETE",
         headers: this.getHeaders(),
+        redirect: "manual",
       });
 
-      const data = await response.json();
+      if (response.status === 301 || response.status === 302 || response.status === 307 || response.status === 308) {
+        return { 
+          success: false, 
+          error: `Server redirect qilyapti (${response.status}). API manzili to'g'ri ekanligini tekshiring` 
+        };
+      }
 
       if (response.status === 401) {
         useAuthStore.getState().logout();
       }
 
+      const data = await response.json();
       return data;
     } catch (error) {
+      console.error("API Error:", error);
       return { success: false, error: "Tarmoq xatosi. Internet aloqasini tekshiring" };
     }
   }
