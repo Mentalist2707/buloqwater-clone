@@ -11,6 +11,11 @@ export const authService = {
     return api.post<LoginResponse>("/auth/login", { phone, password });
   },
 
+  // Customer ro'yxatdan o'tish
+  async register(name: string, phone: string, password: string, address?: string) {
+    return api.post<LoginResponse>("/auth/register", { name, phone, password, address });
+  },
+
   // Kompaniya tanlash (bir nechta kompaniyada bo'lsa)
   async selectCompany(phone: string, password: string, companyId: string) {
     return api.post<LoginResponse>("/auth/select-company", {
