@@ -38,7 +38,6 @@ class ApiService {
       const response = await fetch(url, {
         method: "GET",
         headers: this.getHeaders(),
-        redirect: "manual", // Redirectlarni o'zimiz boshqaramiz
       });
 
       // Redirect statuslarini handle qilish
@@ -51,6 +50,7 @@ class ApiService {
 
       if (response.status === 401) {
         useAuthStore.getState().logout();
+        return { success: false, error: "Avtorizatsiya talab qilinadi" };
       }
 
       const data = await response.json();
@@ -67,7 +67,6 @@ class ApiService {
         method: "POST",
         headers: this.getHeaders(),
         body: body ? JSON.stringify(body) : undefined,
-        redirect: "manual", // Redirectlarni o'zimiz boshqaramiz
       });
 
       // Redirect statuslarini handle qilish
@@ -80,6 +79,7 @@ class ApiService {
 
       if (response.status === 401) {
         useAuthStore.getState().logout();
+        return { success: false, error: "Avtorizatsiya talab qilinadi" };
       }
 
       const data = await response.json();
@@ -96,7 +96,6 @@ class ApiService {
         method: "PUT",
         headers: this.getHeaders(),
         body: body ? JSON.stringify(body) : undefined,
-        redirect: "manual",
       });
 
       if (response.status === 301 || response.status === 302 || response.status === 307 || response.status === 308) {
@@ -108,6 +107,7 @@ class ApiService {
 
       if (response.status === 401) {
         useAuthStore.getState().logout();
+        return { success: false, error: "Avtorizatsiya talab qilinadi" };
       }
 
       const data = await response.json();
@@ -123,7 +123,6 @@ class ApiService {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         method: "DELETE",
         headers: this.getHeaders(),
-        redirect: "manual",
       });
 
       if (response.status === 301 || response.status === 302 || response.status === 307 || response.status === 308) {
@@ -135,6 +134,7 @@ class ApiService {
 
       if (response.status === 401) {
         useAuthStore.getState().logout();
+        return { success: false, error: "Avtorizatsiya talab qilinadi" };
       }
 
       const data = await response.json();

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "BuloqWater",
-    "slug": "buloqwater",
+    "slug": "buloqwater-7qz73eiq-wuf4pnrrhmdx",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -37,7 +37,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "d37d988f-83e4-45ad-a56e-25fd76fdbcd8"
+        "projectId": "558324a4-c8df-4ae6-bd7a-ce3acdfd837a"
       }
     },
     "owner": "firdavs2707"
