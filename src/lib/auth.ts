@@ -30,6 +30,20 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
+    async signIn({ user }) {
+      // User muvaffaqiyatli authenticate bo'ldi
+      return true;
+    },
+
+    async redirect({ url, baseUrl }) {
+      // Agar url relative bo'lsa (masalan /admin), to'g'ridan-to'g'ri qaytaramiz
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Agar url baseUrl bilan boshlansa, qaytaramiz
+      if (new URL(url).origin === baseUrl) return url;
+      // Aks holda baseUrl ga qaytaramiz
+      return baseUrl;
+    },
+
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;

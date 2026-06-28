@@ -75,28 +75,23 @@ function LoginForm() {
       if (result?.error) {
         setErrorMsg(result.error);
         setLoading(false);
-      } else {
+      } else if (result?.ok) {
         setSuccessMsg("✅ Kirish muvaffaqiyatli! Kutib turing...");
 
-        setTimeout(async () => {
-          try {
-            const sessionRes = await fetch("/api/auth/session");
-            const session = await sessionRes.json();
-            const role = session?.user?.role;
+        // Session olish va role ga qarab redirect
+        const sessionRes = await fetch("/api/auth/session");
+        const session = await sessionRes.json();
+        const role = session?.user?.role;
 
-            if (role === "SUPER_ADMIN") router.push("/superadmin/dashboard");
-            else if (role === "DIRECTOR") router.push("/admin");
-            else if (role === "OPERATOR") router.push("/operator/orders");
-            else if (role === "DRIVER") router.push("/driver/tasks");
-            else if (role === "CUSTOMER") router.push("/customer");
-            else router.push("/");
+        let redirectPath = "/";
+        if (role === "SUPER_ADMIN") redirectPath = "/superadmin/dashboard";
+        else if (role === "DIRECTOR") redirectPath = "/admin";
+        else if (role === "OPERATOR") redirectPath = "/operator/orders";
+        else if (role === "DRIVER") redirectPath = "/driver/tasks";
+        else if (role === "CUSTOMER") redirectPath = "/customer";
 
-            router.refresh();
-          } catch {
-            router.push("/");
-            router.refresh();
-          }
-        }, 500);
+        // Redirect
+        window.location.href = redirectPath;
       }
     } catch (err) {
       setErrorMsg("Tizimda xatolik yuz berdi");

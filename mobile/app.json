@@ -2,7 +2,7 @@
   "expo": {
     "name": "BuloqWater",
     "slug": "buloqwater-7qz73eiq-wuf4pnrrhmdx",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "buloqwater",
@@ -40,6 +40,12 @@
         "projectId": "558324a4-c8df-4ae6-bd7a-ce3acdfd837a"
       }
     },
-    "owner": "firdavs2707"
+    "owner": "firdavs2707",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/558324a4-c8df-4ae6-bd7a-ce3acdfd837a"
+    }
   }
 }
