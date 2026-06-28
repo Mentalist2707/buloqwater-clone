@@ -10,15 +10,26 @@ export default withAuth(
 
     const subdomain = getSubdomainFromHost(hostname);
 
+    // Debug logging (production'da o'chirish kerak)
+    if (token && pathname === "/") {
+      console.log("Middleware: User at homepage", { 
+        role: token.role, 
+        pathname,
+        shouldRedirect: true 
+      });
+    }
+
     // Public pathlar - hech qanday redirect qilmasdan o'tkazamiz
     if (pathname === "/" || pathname === "/login" || pathname === "/register" || pathname.startsWith("/register/") || pathname === "/forgot-password" || pathname.startsWith("/api/auth") || pathname.startsWith("/api/v1/") || pathname === "/manifest.json" || pathname.startsWith("/icon")) {
       // Agar authenticated bo'lsa va login/register'ga kirmoqchi bo'lsa, role'ga qarab redirect
       if (token && (pathname === "/login" || pathname === "/register")) {
+        console.log("Middleware: Redirecting from login/register", { role: token.role });
         return redirectToRoleHome(token.role as string, request.url);
       }
 
       // Agar authenticated bo'lsa va "/" ga kirmoqchi bo'lsa, role'ga qarab redirect
       if (token && pathname === "/") {
+        console.log("Middleware: Redirecting from homepage", { role: token.role });
         return redirectToRoleHome(token.role as string, request.url);
       }
       
