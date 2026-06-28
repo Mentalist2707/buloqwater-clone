@@ -37,6 +37,15 @@ export default function SelectCompanyScreen() {
         case "DRIVER":
           router.replace("/(driver)/tasks");
           break;
+        case "DIRECTOR":
+          router.replace("/(admin)/dashboard");
+          break;
+        case "CUSTOMER":
+          router.replace("/(customer)/home");
+          break;
+        case "OPERATOR":
+          router.replace("/(operator)/orders");
+          break;
         default:
           router.replace("/(operator)/orders");
       }
