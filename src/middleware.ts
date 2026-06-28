@@ -55,6 +55,12 @@ export default withAuth(
       }
     }
 
+    if (pathname.startsWith("/customer")) {
+      if (role !== "CUSTOMER") {
+        return redirectToRoleHome(role as string, request.url);
+      }
+    }
+
     if (subdomain && token.subdomain && subdomain !== token.subdomain) {
       const loginUrl = new URL("/login", request.url);
       return NextResponse.redirect(loginUrl);
@@ -122,6 +128,7 @@ function redirectToRoleHome(role: string, baseUrl: string): NextResponse {
     DIRECTOR: "/admin",
     OPERATOR: "/operator/orders",
     DRIVER: "/driver/tasks",
+    CUSTOMER: "/customer/customer",
   };
 
   const path = redirectMap[role] || "/login";

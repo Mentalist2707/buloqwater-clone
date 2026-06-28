@@ -88,7 +88,7 @@ function LoginForm() {
         else if (role === "DIRECTOR") redirectPath = "/admin";
         else if (role === "OPERATOR") redirectPath = "/operator/orders";
         else if (role === "DRIVER") redirectPath = "/driver/tasks";
-        else if (role === "CUSTOMER") redirectPath = "/customer";
+        else if (role === "CUSTOMER") redirectPath = "/customer/customer";
 
         // Redirect
         window.location.href = redirectPath;
