@@ -65,37 +65,20 @@ function LoginForm() {
         formattedPhone = `+998${formattedPhone}`;
       }
 
+      // NextAuth'ga redirect qilishga ruxsat beramiz
       const result = await signIn("credentials", {
         phone: formattedPhone,
         password,
         subdomain,
-        redirect: false,
+        callbackUrl: "/",  // Avval "/"ga yo'naltiramiz, middleware keyin to'g'ri joyga redirect qiladi
       });
 
+      // Agar xatolik bo'lsa, redirect false bo'lishi kerak edi
       if (result?.error) {
         setErrorMsg(result.error);
         setLoading(false);
-      } else if (result?.ok) {
-        setSuccessMsg("✅ Kirish muvaffaqiyatli! Kutib turing...");
-
-        // Biroz kutamiz sessionni yangilanishi uchun
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Session olish va role ga qarab redirect
-        const sessionRes = await fetch("/api/auth/session");
-        const session = await sessionRes.json();
-        const role = session?.user?.role;
-
-        let redirectPath = "/";
-        if (role === "SUPER_ADMIN") redirectPath = "/superadmin/dashboard";
-        else if (role === "DIRECTOR") redirectPath = "/admin";
-        else if (role === "OPERATOR") redirectPath = "/operator/orders";
-        else if (role === "DRIVER") redirectPath = "/driver/tasks";
-        else if (role === "CUSTOMER") redirectPath = "/customer/customer";
-
-        // Redirect with full page reload to ensure middleware runs
-        window.location.href = redirectPath;
       }
+      // Agar xatolik bo'lmasa, NextAuth avtomatik redirect qiladi
     } catch (err) {
       console.error("Login error:", err);
       setErrorMsg("Tizimda xatolik yuz berdi");
