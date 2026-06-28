@@ -16,6 +16,11 @@ export default withAuth(
       if (token && (pathname === "/login" || pathname === "/register")) {
         return redirectToRoleHome(token.role as string, request.url);
       }
+
+      // Agar authenticated bo'lsa va "/" ga kirmoqchi bo'lsa, role'ga qarab redirect
+      if (token && pathname === "/") {
+        return redirectToRoleHome(token.role as string, request.url);
+      }
       
       if (subdomain && (pathname === "/" || pathname === "/register")) {
         const loginUrl = new URL("/login", request.url);
