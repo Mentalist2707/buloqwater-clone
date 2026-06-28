@@ -78,6 +78,9 @@ function LoginForm() {
       } else if (result?.ok) {
         setSuccessMsg("✅ Kirish muvaffaqiyatli! Kutib turing...");
 
+        // Biroz kutamiz sessionni yangilanishi uchun
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         // Session olish va role ga qarab redirect
         const sessionRes = await fetch("/api/auth/session");
         const session = await sessionRes.json();
@@ -90,10 +93,11 @@ function LoginForm() {
         else if (role === "DRIVER") redirectPath = "/driver/tasks";
         else if (role === "CUSTOMER") redirectPath = "/customer/customer";
 
-        // Redirect
+        // Redirect with full page reload to ensure middleware runs
         window.location.href = redirectPath;
       }
     } catch (err) {
+      console.error("Login error:", err);
       setErrorMsg("Tizimda xatolik yuz berdi");
       setLoading(false);
     }
