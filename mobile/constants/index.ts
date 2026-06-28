@@ -1,7 +1,7 @@
 // API base URL — production'da o'zgartiring
 export const API_BASE_URL = __DEV__
   ? "http://192.168.1.107:3000/api/v1" // Local development
-  : "https://buloqwater.uz/api/v1";     // Production
+  : "https://buloqwater-clone.vercel.app/api/v1";     // Production
 
 // Colors
 export const Colors = {
