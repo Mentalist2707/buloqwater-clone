@@ -1,6 +1,9 @@
 /**
  * GET /api/v1/customer/addresses - Mijoz barcha manzillarini olish
  * POST /api/v1/customer/addresses - Yangi manzil qo'shish
+ * 
+ * Oddiy CUSTOMER'lar uchun UserAddress ishlatiladi
+ * Kompaniya mijozlari uchun Address (Customer bog'langan) ishlatiladi
  */
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -11,14 +14,25 @@ export async function GET(request: NextRequest) {
     const user = await getAuthUser(request);
     if (!user) return unauthorized();
 
-    // Customer topish
-    const customer = user.companyId
-      ? await prisma.customer.findFirst({ where: { companyId: user.companyId, phone1: user.phone } })
-      : await prisma.customer.findFirst({ where: { phone1: user.phone } });
+    // Oddiy CUSTOMER (companyId yo'q) - UserAddress'dan olish
+    if (user.role === "CUSTOMER" && !user.companyId) {
+      const addresses = await prisma.userAddress.findMany({
+        where: { userId: user.id },
+        orderBy: [
+          { isDefault: 'desc' },
+          { createdAt: 'desc' }
+        ]
+      });
+      return success(addresses);
+    }
+
+    // Kompaniya mijozi - Customer orqali Address'dan olish
+    const customer = await prisma.customer.findFirst({ 
+      where: { companyId: user.companyId!, phone1: user.phone } 
+    });
 
     if (!customer) return success([]);
 
-    // Barcha manzillarni olish
     const addresses = await prisma.address.findMany({
       where: { customerId: customer.id },
       orderBy: [
@@ -46,14 +60,39 @@ export async function POST(request: NextRequest) {
       return badRequest("Label va manzil kiritilishi shart");
     }
 
-    // Customer topish
-    const customer = user.companyId
-      ? await prisma.customer.findFirst({ where: { companyId: user.companyId, phone1: user.phone } })
-      : await prisma.customer.findFirst({ where: { phone1: user.phone } });
+    // Oddiy CUSTOMER (companyId yo'q) - UserAddress yaratish
+    if (user.role === "CUSTOMER" && !user.companyId) {
+      // Agar default qilinsa, boshqa manzillarni default emas qilish
+      if (isDefault) {
+        await prisma.userAddress.updateMany({
+          where: { userId: user.id, isDefault: true },
+          data: { isDefault: false }
+        });
+      }
+
+      const newAddress = await prisma.userAddress.create({
+        data: {
+          userId: user.id,
+          label: label.trim(),
+          address: address.trim(),
+          landmark: landmark?.trim() || null,
+          latitude: latitude || null,
+          longitude: longitude || null,
+          locationLink: locationLink?.trim() || null,
+          isDefault: isDefault || false,
+        }
+      });
+
+      return success(newAddress);
+    }
+
+    // Kompaniya mijozi - Customer orqali Address yaratish
+    const customer = await prisma.customer.findFirst({ 
+      where: { companyId: user.companyId!, phone1: user.phone } 
+    });
 
     if (!customer) return badRequest("Mijoz topilmadi");
 
-    // Agar default qilinsa, boshqa manzillarni default emas qilish
     if (isDefault) {
       await prisma.address.updateMany({
         where: { customerId: customer.id, isDefault: true },
@@ -61,7 +100,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Yangi manzil yaratish
     const newAddress = await prisma.address.create({
       data: {
         customerId: customer.id,

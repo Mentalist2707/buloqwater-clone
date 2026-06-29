@@ -273,7 +273,7 @@ export default function CustomerProfile() {
           <Text style={styles.cardTitle}>ℹ️ Ilova haqida</Text>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Versiya</Text>
-            <Text style={styles.infoValue}>1.2.0</Text>
+            <Text style={styles.infoValue}>1.3.0</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Platforma</Text>
@@ -395,7 +395,6 @@ export default function CustomerProfile() {
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container:  { flex: 1, backgroundColor: C.bg },
@@ -520,4 +519,3 @@ const styles = StyleSheet.create({
   saveModalBtnDisabled: { opacity: 0.5 },
   saveModalBtnText: { fontSize: 15, fontWeight: "700", color: C.white },
 });
-
