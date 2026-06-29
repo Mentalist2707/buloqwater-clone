@@ -191,11 +191,36 @@ model Customer {
   company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   orders        Order[]
+  addresses     Address[]
 
   @@unique([phone1, companyId])
   @@index([companyId])
   @@index([phone1])
   @@map("customers")
+}
+
+// ============================================================
+// ADDRESS (Mijoz manzillari - bir nechta bo'lishi mumkin)
+// ============================================================
+
+model Address {
+  id            String    @id @default(uuid())
+  label         String    // "Uy", "Ish", "Ota-onam" kabi
+  address       String
+  landmark      String?
+  latitude      Float?
+  longitude     Float?
+  locationLink  String?
+  isDefault     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  customerId    String
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([isDefault])
+  @@map("addresses")
 }
 
 // ============================================================

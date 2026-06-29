@@ -1,33 +1,86 @@
 /**
  * Customer — Buyurtmalar tarixi
+ * Organic Liquid & Claymorphism Style
  */
 import React, { useState, useCallback } from "react";
 import {
-  View, Text, StyleSheet, FlatList, RefreshControl,
-  TouchableOpacity, StatusBar,
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  RefreshControl,
+  StatusBar,
+  Platform,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { customerService } from "@/services/customer";
 import type { Order } from "@/types";
 
+// ─── Yangilangan Shaffof va Toza Rang Palitrasi ──────────────────
 const C = {
-  primary: "#00C6A2", dark: "#00A88A", light: "#E6FAF7",
-  bg: "#F0FAF8", white: "#FFFFFF", text: "#1A2E2B", sub: "#6B8F89",
+  bgGradient: ["#E6FFFA", "#EBF5FF", "#F4FAFF"], // Suyuq orqa fon
+  cardWhite: "#FFFFFF",
+  textDark: "#0F172A",
+  textSub: "#64748B",
+
+  cyan: "#06B6D4",
+  cyanLight: "#E0F7FA",
+  blue: "#0284C7",
+  blueLight: "#E0F2FE",
 };
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-  PENDING:    { label: "Kutilmoqda",   color: "#F59E0B", bg: "#FEF3C7", icon: "⏳" },
-  ASSIGNED:   { label: "Tayinlangan",  color: "#6C63FF", bg: "#EFEDFF", icon: "✅" },
-  IN_TRANSIT: { label: "Yo'lda",       color: "#00C6A2", bg: "#E6FAF7", icon: "🚚" },
-  DELIVERED:  { label: "Yetkazildi",   color: "#22C55E", bg: "#DCFCE7", icon: "🎉" },
-  CANCELLED:  { label: "Bekor qilindi",color: "#EF4444", bg: "#FEE2E2", icon: "❌" },
+// Statuslar uchun zamonaviy ranglar va Feather/Ionicons konfiguri
+const STATUS_CONFIG: Record<
+  string,
+  {
+    label: string;
+    color: string;
+    bg: string;
+    icon: keyof typeof Feather.glyphMap;
+  }
+> = {
+  PENDING: {
+    label: "Kutilmoqda",
+    color: "#F59E0B",
+    bg: "#FEF3C7",
+    icon: "clock",
+  },
+  ASSIGNED: {
+    label: "Tayinlangan",
+    color: "#6366F1",
+    bg: "#EEF2FF",
+    icon: "user-check",
+  },
+  IN_TRANSIT: {
+    label: "Yo'lda",
+    color: "#06B6D4",
+    bg: "#E0F7FA",
+    icon: "truck",
+  },
+  DELIVERED: {
+    label: "Yetkazildi",
+    color: "#10B981",
+    bg: "#D1FAE5",
+    icon: "check-circle",
+  },
+  CANCELLED: {
+    label: "Bekor qilindi",
+    color: "#F43F5E",
+    bg: "#FFE4E6",
+    icon: "x-circle",
+  },
 };
 
 function formatDate(s: string) {
   return new Date(s).toLocaleDateString("uz-UZ", {
-    day: "2-digit", month: "long", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -43,51 +96,78 @@ export default function HistoryScreen() {
     setLoading(false);
   };
 
-  useFocusEffect(useCallback(() => { load(); }, []));
-  const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, []),
+  );
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
 
   const renderOrder = ({ item: o }: { item: Order }) => {
     const s = STATUS_CONFIG[o.status] ?? STATUS_CONFIG.PENDING;
     return (
-      <View style={styles.card}>
-        {/* Header */}
+      <View style={[styles.card, styles.clayCard]}>
+        {/* Header (Buyurtma raqami va Status) */}
         <View style={styles.cardHeader}>
           <View style={styles.orderNumBox}>
             <Text style={styles.orderNum}>#{o.orderNumber}</Text>
           </View>
           <View style={[styles.statusPill, { backgroundColor: s.bg }]}>
-            <Text style={styles.statusIcon}>{s.icon}</Text>
-            <Text style={[styles.statusLabel, { color: s.color }]}>{s.label}</Text>
+            <Feather name={s.icon} size={13} color={s.color} />
+            <Text style={[styles.statusLabel, { color: s.color }]}>
+              {s.label}
+            </Text>
           </View>
         </View>
 
-        {/* Items */}
+        {/* Ichidagi mahsulotlar ro'yxati (Ichki tonlangan quti) */}
         <View style={styles.itemsBox}>
-          {o.items.map((item, i) => (
+          {o.items.map((item) => (
             <View key={item.id} style={styles.itemRow}>
-              <Text style={styles.itemDot}>•</Text>
+              <Ionicons
+                name="water"
+                size={12}
+                color={C.cyan}
+                style={styles.itemIcon}
+              />
               <Text style={styles.itemName}>{item.product.name}</Text>
               <Text style={styles.itemQty}>×{item.quantity}</Text>
-              <Text style={styles.itemPrice}>{item.totalPrice.toLocaleString()} so'm</Text>
+              <Text style={styles.itemPrice}>
+                {item.totalPrice.toLocaleString()} so'm
+              </Text>
             </View>
           ))}
         </View>
 
-        {/* Footer */}
+        {/* Footer (Sana va Jami summa) */}
         <View style={styles.cardFooter}>
           <View>
-            <Text style={styles.totalLabel}>Jami</Text>
-            <Text style={styles.totalAmount}>{o.totalAmount.toLocaleString()} so'm</Text>
+            <Text style={styles.totalLabel}>Jami summa</Text>
+            <Text style={styles.totalAmount}>
+              {o.totalAmount.toLocaleString()} so'm
+            </Text>
           </View>
           <Text style={styles.dateText}>{formatDate(o.createdAt)}</Text>
         </View>
 
-        {/* Driver info */}
+        {/* Haydovchi ma'lumotlari biriktirilgan bo'lsa */}
         {o.driver && (
           <View style={styles.driverRow}>
-            <Text style={styles.driverIcon}>🚚</Text>
-            <Text style={styles.driverName}>{o.driver.name}</Text>
-            <Text style={styles.driverPhone}>{o.driver.phone}</Text>
+            <View style={styles.driverIconBox}>
+              <MaterialCommunityIcons
+                name="truck-delivery-outline"
+                size={16}
+                color={C.blue}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.driverName}>{o.driver.name}</Text>
+              <Text style={styles.driverPhone}>{o.driver.phone}</Text>
+            </View>
           </View>
         )}
       </View>
@@ -95,74 +175,230 @@ export default function HistoryScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
+    <LinearGradient colors={C.bgGradient} style={styles.container}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent
+      />
 
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>📋 Buyurtmalar tarixi</Text>
-        <Text style={styles.headerSub}>{orders.length} ta buyurtma</Text>
+      {/* Suyuq pufakchalar dekoratsiyasi */}
+      <View style={styles.fluidBubble1} />
+      <View style={styles.fluidBubble2} />
+
+      {/* Ekran Sarlavhasi */}
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <Text style={styles.headerTitle}>Buyurtmalar tarixi</Text>
+        <View style={styles.counterBadge}>
+          <Text style={styles.headerSub}>{orders.length} ta buyurtma</Text>
+        </View>
       </View>
 
+      {/* Ro'yxat */}
       <FlatList
         data={orders}
         renderItem={renderOrder}
         keyExtractor={(o) => o.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={C.cyan}
+          />
+        }
         contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+        ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
+        showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>{loading ? "⏳" : "📋"}</Text>
-            <Text style={styles.emptyTitle}>{loading ? "Yuklanmoqda..." : "Buyurtmalar yo'q"}</Text>
+            <View style={styles.emptyIconBox}>
+              <Feather
+                name={loading ? "loader" : "clipboard"}
+                size={36}
+                color={C.cyan}
+              />
+            </View>
+            <Text style={styles.emptyTitle}>
+              {loading ? "Yuklanmoqda..." : "Buyurtmalar mavjud emas"}
+            </Text>
             <Text style={styles.emptySub}>
-              {loading ? "" : "Birinchi buyurtmangizni bering!"}
+              {loading
+                ? "Tizimdan ma'lumotlar olinmoqda"
+                : "Sizda hali birorta ham buyurtma yo'q!"}
             </Text>
           </View>
         }
       />
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
-  header:    { paddingHorizontal: 20, paddingVertical: 16 },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: C.text },
-  headerSub:   { fontSize: 13, color: C.sub, marginTop: 2 },
+  container: { flex: 1 },
 
-  list: { paddingHorizontal: 16, paddingBottom: 32 },
-
-  card: {
-    backgroundColor: C.white, borderRadius: 18, padding: 16,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
+  // Orqa fon suyuqlik effektlari
+  fluidBubble1: {
+    position: "absolute",
+    top: -40,
+    right: -60,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: "rgba(6, 182, 212, 0.05)",
   },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  orderNumBox: { backgroundColor: C.light, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
-  orderNum:    { fontSize: 13, fontWeight: "800", color: C.dark },
-  statusPill:  { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
-  statusIcon:  { fontSize: 13 },
+  fluidBubble2: {
+    position: "absolute",
+    bottom: 40,
+    left: -60,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: "rgba(2, 132, 199, 0.04)",
+  },
+
+  // Sarlavha qismi
+  header: {
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: C.textDark,
+    letterSpacing: -0.5,
+  },
+  counterBadge: {
+    backgroundColor: C.blueLight,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  headerSub: { fontSize: 12, color: C.blue, fontWeight: "700" },
+
+  list: { paddingHorizontal: 24, paddingBottom: 120 },
+
+  // Claymorphic Karta dizayni
+  card: {
+    backgroundColor: C.cardWhite,
+    borderRadius: 24,
+    padding: 18,
+  },
+  clayCard: {
+    ...Platform.select({
+      ios: {
+        shadowColor: "#0F172A",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.03,
+        shadowRadius: 16,
+      },
+      android: { elevation: 3 },
+    }),
+    borderWidth: 1,
+    borderColor: "rgba(226, 232, 240, 0.6)",
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  orderNumBox: {
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  orderNum: { fontSize: 13, fontWeight: "800", color: "#475569" },
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
   statusLabel: { fontSize: 12, fontWeight: "700" },
 
-  itemsBox:  { backgroundColor: C.bg, borderRadius: 12, padding: 10, marginBottom: 12 },
-  itemRow:   { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 4 },
-  itemDot:   { color: C.primary, fontSize: 14, width: 14 },
-  itemName:  { flex: 1, fontSize: 13, color: C.text, fontWeight: "500" },
-  itemQty:   { fontSize: 12, color: C.sub, width: 28, textAlign: "center" },
-  itemPrice: { fontSize: 13, fontWeight: "700", color: C.dark },
+  // Mahsulotlar konteyneri
+  itemsBox: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 14,
+    gap: 8,
+  },
+  itemRow: { flexDirection: "row", alignItems: "center" },
+  itemIcon: { marginRight: 6 },
+  itemName: { flex: 1, fontSize: 14, color: C.textDark, fontWeight: "600" },
+  itemQty: {
+    fontSize: 13,
+    color: C.textSub,
+    width: 34,
+    textAlign: "center",
+    fontWeight: "500",
+  },
+  itemPrice: { fontSize: 14, fontWeight: "700", color: C.textDark },
 
-  cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
-  totalLabel: { fontSize: 11, color: C.sub },
-  totalAmount: { fontSize: 18, fontWeight: "800", color: C.text },
-  dateText:   { fontSize: 11, color: C.sub },
+  // Karta pastki qismi
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+  },
+  totalLabel: {
+    fontSize: 11,
+    color: C.textSub,
+    fontWeight: "600",
+    uppercase: true,
+  },
+  totalAmount: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: C.textDark,
+    letterSpacing: -0.3,
+  },
+  dateText: { fontSize: 12, color: C.textSub, fontWeight: "500" },
 
-  driverRow:  { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#E6FAF7" },
-  driverIcon: { fontSize: 14 },
-  driverName: { fontSize: 13, fontWeight: "600", color: C.text },
-  driverPhone:{ fontSize: 12, color: C.sub },
+  // Haydovchi paneli
+  driverRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1.5,
+    borderTopColor: "rgba(241, 245, 249, 0.8)",
+  },
+  driverIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: C.blueLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  driverName: { fontSize: 13, fontWeight: "700", color: C.textDark },
+  driverPhone: {
+    fontSize: 12,
+    color: C.textSub,
+    fontWeight: "500",
+    marginTop: 1,
+  },
 
-  empty:      { alignItems: "center", paddingTop: 80 },
-  emptyIcon:  { fontSize: 52, marginBottom: 16 },
-  emptyTitle: { fontSize: 18, fontWeight: "700", color: C.text },
-  emptySub:   { fontSize: 14, color: C.sub, marginTop: 6 },
+  // Bo'sh holat oynasi
+  empty: { alignItems: "center", paddingTop: 100 },
+  emptyIconBox: {
+    width: 74,
+    height: 74,
+    borderRadius: 26,
+    backgroundColor: C.cyanLight,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  emptyTitle: { fontSize: 16, fontWeight: "700", color: C.textDark },
+  emptySub: { fontSize: 13, color: C.textSub, marginTop: 4, fontWeight: "500" },
 });

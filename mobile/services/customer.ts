@@ -13,6 +13,19 @@ export interface CustomerBalance {
   locationLink?: string;
 }
 
+export interface Address {
+  id: string;
+  label: string;
+  address: string;
+  landmark?: string;
+  latitude?: number;
+  longitude?: number;
+  locationLink?: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const customerService = {
   // Mahsulotlar vitrinasi
   async getProducts() {
@@ -34,8 +47,44 @@ export const customerService = {
     return api.get<CustomerBalance>("/customer/balance");
   },
 
-  // Manzil yangilash
+  // Manzil yangilash (eski API, backward compatibility)
   async updateAddress(data: { address: string; landmark?: string; locationLink?: string }) {
     return api.put("/customer/balance", data);
+  },
+
+  // Manzillar ro'yxatini olish
+  async getAddresses() {
+    return api.get<Address[]>("/customer/addresses");
+  },
+
+  // Yangi manzil qo'shish
+  async createAddress(data: {
+    label: string;
+    address: string;
+    landmark?: string;
+    latitude?: number;
+    longitude?: number;
+    locationLink?: string;
+    isDefault?: boolean;
+  }) {
+    return api.post<Address>("/customer/addresses", data);
+  },
+
+  // Manzilni yangilash
+  async updateAddressById(id: string, data: {
+    label?: string;
+    address?: string;
+    landmark?: string;
+    latitude?: number;
+    longitude?: number;
+    locationLink?: string;
+    isDefault?: boolean;
+  }) {
+    return api.put<Address>(`/customer/addresses/${id}`, data);
+  },
+
+  // Manzilni o'chirish
+  async deleteAddress(id: string) {
+    return api.delete(`/customer/addresses/${id}`);
   },
 };

@@ -1,38 +1,53 @@
 /**
  * Customer — Bosh sahifa
- * Balans, idish, qarz + tezkor buyurtma tugmasi
+ * Organic Liquid Glassmorphism & Claymorphism Style
  */
 import React, { useCallback, useState } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, RefreshControl,
-  TouchableOpacity, StatusBar,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  TouchableOpacity,
+  StatusBar,
+  Platform,
 } from "react-native";
 import { useFocusEffect, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuthStore } from "@/store/auth";
 import { customerService } from "@/services/customer";
 
-// ─── Rang palatrasi ──────────────────────────────────────────
+// ─── Yangilangan Shaffof va Toza Rang Palitrasi ──────────────────
 const C = {
-  primary:   "#00C6A2",
-  dark:      "#00A88A",
-  light:     "#E6FAF7",
-  accent:    "#6C63FF",
-  accentLight: "#EFEDFF",
-  warn:      "#FF6B6B",
-  warnLight: "#FFF0F0",
-  gold:      "#F59E0B",
-  goldLight: "#FEF3C7",
-  bg:        "#F0FAF8",
-  white:     "#FFFFFF",
-  text:      "#1A2E2B",
-  sub:       "#6B8F89",
+  bgGradient: ["#E6FFFA", "#EBF5FF", "#F4FAFF"], // Silliq suv foni
+  cardWhite: "#FFFFFF",
+  textDark: "#0F172A",
+  textSub: "#64748B",
+
+  // Brand ranglari (Claymorphic)
+  cyan: "#06B6D4",
+  cyanLight: "#E0F7FA",
+  blue: "#0284C7",
+  blueLight: "#E0F2FE",
+  emerald: "#10B981",
+  emeraldLight: "#D1FAE5",
+  rose: "#F43F5E",
+  roseLight: "#FFE4E6",
+  amber: "#F59E0B",
+  amberLight: "#FEF3C7",
 };
 
 export default function CustomerHome() {
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
-  const [balance, setBalance] = useState({ bottleBalance: 0, debtBalance: 0, name: "" });
+  const [balance, setBalance] = useState({
+    bottleBalance: 0,
+    debtBalance: 0,
+    name: "",
+  });
   const [refreshing, setRefreshing] = useState(false);
 
   const load = async () => {
@@ -40,212 +55,431 @@ export default function CustomerHome() {
     if (r.success && r.data) setBalance(r.data);
   };
 
-  useFocusEffect(useCallback(() => { load(); }, []));
-  const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, []),
+  );
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
 
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Xayrli tong" : hour < 17 ? "Xayrli kun" : "Xayrli kech";
+  const greeting =
+    hour < 12 ? "Xayrli tong" : hour < 17 ? "Xayrli kun" : "Xayrli kech";
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" backgroundColor={C.primary} />
+    <LinearGradient colors={C.bgGradient} style={styles.container}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent
+      />
+
+      {/* Fonda suzib yuruvchi suvli pufakchalar */}
+      <View style={styles.fluidBubble1} />
+      <View style={styles.fluidBubble2} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.white} />}
-      >
-        {/* ── Header ──────────────────────────────────────── */}
+        contentContainerStyle={{
+          paddingTop: insets.top + 16,
+          paddingBottom: 160,
+        }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={C.cyan}
+          />
+        }>
+        {/* ── Header (Premium Minimalist) ──────────────────────── */}
         <View style={styles.header}>
-          <View style={styles.headerWave} />
-          <View style={styles.headerContent}>
-            <View style={styles.headerTop}>
-              <View>
-                <Text style={styles.greeting}>{greeting} 👋</Text>
-                <Text style={styles.userName}>{user?.name || "Mijoz"}</Text>
-              </View>
-              <View style={styles.avatarBox}>
-                <Text style={styles.avatarLetter}>
-                  {(user?.name || "M").charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            </View>
+          <View style={styles.headerLeft}>
+            <Text style={styles.greeting}>{greeting} ✨</Text>
+            <Text style={styles.userName}>{user?.name || "Mijoz"}</Text>
 
             {/* Phone badge */}
             <View style={styles.phoneBadge}>
-              <Text style={styles.phoneBadgeText}>📱 {user?.phone}</Text>
+              <Feather name="phone" size={11} color={C.blue} />
+              <Text style={styles.phoneBadgeText}>{user?.phone}</Text>
             </View>
+          </View>
+
+          <View style={styles.avatarContainer}>
+            <LinearGradient
+              colors={["#06B6D4", "#0284C7"]}
+              style={styles.avatarGradient}>
+              <Text style={styles.avatarLetter}>
+                {(user?.name || "M").charAt(0).toUpperCase()}
+              </Text>
+            </LinearGradient>
           </View>
         </View>
 
-        {/* ── Balans kartalar ──────────────────────────────── */}
+        {/* ── Balans Kartalari (Claymorphism 3D Soft Style) ─────── */}
         <View style={styles.cardsRow}>
           {/* Idish balansi */}
-          <View style={[styles.balanceCard, { backgroundColor: C.accent }]}>
-            <View style={styles.cardIconBox}>
-              <Text style={styles.cardIcon}>🍶</Text>
+          <View style={[styles.balanceCard, styles.clayCard]}>
+            <View
+              style={[styles.cardIconBox, { backgroundColor: C.blueLight }]}>
+              <MaterialCommunityIcons
+                name="bottle-wine-outline"
+                size={24}
+                color={C.blue}
+              />
             </View>
             <Text style={styles.cardValue}>{balance.bottleBalance}</Text>
             <Text style={styles.cardLabel}>Idish balansi</Text>
-            <Text style={styles.cardSub}>ta idish</Text>
+            <Text style={styles.cardSub}>ta qaytarilishi kerak</Text>
           </View>
 
-          {/* Qarz */}
-          <View style={[styles.balanceCard, {
-            backgroundColor: balance.debtBalance > 0 ? C.warn : C.primary,
-          }]}>
-            <View style={styles.cardIconBox}>
-              <Text style={styles.cardIcon}>{balance.debtBalance > 0 ? "💳" : "✅"}</Text>
+          {/* Qarz balansi */}
+          <View style={[styles.balanceCard, styles.clayCard]}>
+            <View
+              style={[
+                styles.cardIconBox,
+                {
+                  backgroundColor:
+                    balance.debtBalance > 0 ? C.roseLight : C.emeraldLight,
+                },
+              ]}>
+              <Feather
+                name={balance.debtBalance > 0 ? "credit-card" : "check-circle"}
+                size={22}
+                color={balance.debtBalance > 0 ? C.rose : C.emerald}
+              />
             </View>
-            <Text style={styles.cardValue}>
+            <Text
+              style={[
+                styles.cardValue,
+                balance.debtBalance > 0 && { color: C.rose },
+              ]}>
               {balance.debtBalance > 0
                 ? `${(balance.debtBalance / 1000).toFixed(0)}K`
                 : "0"}
             </Text>
             <Text style={styles.cardLabel}>
-              {balance.debtBalance > 0 ? "Qarz" : "Qarz yo'q"}
+              {balance.debtBalance > 0 ? "Qarz balansi" : "Qarzdorlik yo'q"}
             </Text>
             <Text style={styles.cardSub}>so'm</Text>
           </View>
         </View>
 
-        {/* ── Tezkor amallar ───────────────────────────────── */}
+        {/* ── Tezkor Amallar Grid ─────────────────────────────── */}
         <Text style={styles.sectionTitle}>Tezkor amallar</Text>
         <View style={styles.quickGrid}>
           <QuickAction
-            icon="💧" label="Suv buyurtma" color={C.primary} bg={C.light}
+            icon={<Ionicons name="water-outline" size={26} color={C.cyan} />}
+            label="Suv buyurtma"
+            bg={C.cyanLight}
             onPress={() => router.push("/(customer)/order")}
           />
           <QuickAction
-            icon="📋" label="Buyurtmalar" color={C.accent} bg={C.accentLight}
+            icon={<Feather name="clipboard" size={24} color={C.blue} />}
+            label="Buyurtmalar"
+            bg={C.blueLight}
             onPress={() => router.push("/(customer)/history")}
           />
           <QuickAction
-            icon="📍" label="Manzilim" color={C.gold} bg={C.goldLight}
+            icon={<Feather name="map-pin" size={24} color={C.amber} />}
+            label="Manzilim"
+            bg={C.amberLight}
             onPress={() => router.push("/(customer)/profile")}
           />
           <QuickAction
-            icon="📞" label="Qo'ng'iroq" color="#EF4444" bg="#FEE2E2"
+            icon={<Feather name="phone-call" size={24} color={C.rose} />}
+            label="Qo'ng'iroq"
+            bg={C.roseLight}
             onPress={() => {}}
           />
         </View>
 
-        {/* ── Info card ────────────────────────────────────── */}
+        {/* ── Info Card (Lighthouse Banner) ───────────────────── */}
         <View style={styles.infoCard}>
-          <Text style={styles.infoIcon}>💡</Text>
+          <View style={styles.infoIconBox}>
+            <Feather name="help-circle" size={20} color={C.cyan} />
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoTitle}>Buyurtma qanday ishlaydi?</Text>
             <Text style={styles.infoText}>
-              Suv buyurtma bering → Haydovchi siz bilan bog'lanadi → Yetkazilgach idishni qaytaring
+              Suv buyurtma bering → Haydovchi bog'lanadi → Yetkazilgach bo'sh
+              idishni qaytaring.
             </Text>
           </View>
         </View>
-
-        <View style={{ height: 24 }} />
       </ScrollView>
 
-      {/* ── Floating buyurtma tugmasi ─────────────────────── */}
-      <TouchableOpacity
-        style={[styles.fab, { bottom: insets.bottom + 84 }]}
-        onPress={() => router.push("/(customer)/order")}
-        activeOpacity={0.85}
-      >
-        <Text style={styles.fabIcon}>💧</Text>
-        <Text style={styles.fabText}>Buyurtma berish</Text>
-      </TouchableOpacity>
-    </View>
+      {/* ── Floating Liquid Order Button (FAB) ────────────────── */}
+      <View style={[styles.fabContainer, { bottom: insets.bottom + 16 }]}>
+        <TouchableOpacity
+          style={styles.fabTouch}
+          onPress={() => router.push("/(customer)/order")}
+          activeOpacity={0.85}>
+          <LinearGradient
+            colors={["#06B6D4", "#0284C7"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.fabGradient}>
+            <Ionicons name="water" size={22} color="#FFF" />
+            <Text style={styles.fabText}>Buyurtma berish</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    </LinearGradient>
   );
 }
 
-function QuickAction({ icon, label, color, bg, onPress }: {
-  icon: string; label: string; color: string; bg: string; onPress: () => void;
-}) {
+interface QuickActionProps {
+  icon: React.ReactNode;
+  label: string;
+  bg: string;
+  onPress: () => void;
+}
+
+function QuickAction({ icon, label, bg, onPress }: QuickActionProps) {
   return (
-    <TouchableOpacity style={[styles.quickItem, { backgroundColor: bg }]} onPress={onPress} activeOpacity={0.7}>
-      <Text style={styles.quickIcon}>{icon}</Text>
-      <Text style={[styles.quickLabel, { color }]}>{label}</Text>
+    <TouchableOpacity
+      style={[styles.quickItem, { backgroundColor: bg }]}
+      onPress={onPress}
+      activeOpacity={0.7}>
+      <View style={styles.quickIconWrapper}>{icon}</View>
+      <Text style={styles.quickLabel}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  container:    { flex: 1, backgroundColor: C.bg },
+  container: { flex: 1 },
 
-  // Header
-  header:       { backgroundColor: C.primary, paddingBottom: 32, overflow: "hidden" },
-  headerWave:   {
-    position: "absolute", bottom: -20, left: -20, right: -20, height: 60,
-    backgroundColor: C.bg, borderTopLeftRadius: 40, borderTopRightRadius: 40,
+  // Orqa fon "suyuqlik" pufakchalari
+  fluidBubble1: {
+    position: "absolute",
+    top: -20,
+    left: -60,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: "rgba(6, 182, 212, 0.05)",
   },
-  headerContent:{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
-  headerTop:    { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
-  greeting:     { fontSize: 14, color: "rgba(255,255,255,0.8)", fontWeight: "500" },
-  userName:     { fontSize: 22, fontWeight: "800", color: C.white, marginTop: 2 },
-  avatarBox:    {
-    width: 46, height: 46, borderRadius: 23,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    alignItems: "center", justifyContent: "center",
+  fluidBubble2: {
+    position: "absolute",
+    top: 300,
+    right: -80,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: "rgba(2, 132, 199, 0.04)",
   },
-  avatarLetter: { fontSize: 20, fontWeight: "800", color: C.white },
-  phoneBadge:   {
+
+  // Header Section
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  headerLeft: { gap: 2 },
+  greeting: { fontSize: 14, fontWeight: "600", color: C.textSub },
+  userName: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: C.textDark,
+    letterSpacing: -0.5,
+  },
+  phoneBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: C.blueLight,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
     alignSelf: "flex-start",
-    backgroundColor: "rgba(255,255,255,0.2)",
-    paddingHorizontal: 12, paddingVertical: 5,
-    borderRadius: 20,
+    marginTop: 6,
   },
-  phoneBadgeText: { fontSize: 12, color: C.white, fontWeight: "500" },
+  phoneBadgeText: { fontSize: 12, color: C.blue, fontWeight: "700" },
 
-  // Balance cards
-  cardsRow:     { flexDirection: "row", gap: 12, paddingHorizontal: 20, marginTop: 8, marginBottom: 8 },
-  balanceCard:  {
-    flex: 1, borderRadius: 20, padding: 18,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15, shadowRadius: 12, elevation: 6,
+  avatarContainer: {
+    borderRadius: 22,
+    overflow: "hidden",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#0284C7",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.12,
+        shadowRadius: 10,
+      },
+      android: { elevation: 3 },
+    }),
   },
-  cardIconBox:  { marginBottom: 8 },
-  cardIcon:     { fontSize: 28 },
-  cardValue:    { fontSize: 30, fontWeight: "900", color: C.white },
-  cardLabel:    { fontSize: 13, fontWeight: "600", color: "rgba(255,255,255,0.9)", marginTop: 2 },
-  cardSub:      { fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 1 },
+  avatarGradient: {
+    width: 52,
+    height: 52,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarLetter: { fontSize: 20, fontWeight: "800", color: "#FFF" },
 
-  // Section
+  // Claymorphic Kartalar paneli
+  cardsRow: {
+    flexDirection: "row",
+    gap: 16,
+    paddingHorizontal: 24,
+    marginBottom: 28,
+  },
+  balanceCard: {
+    flex: 1,
+    borderRadius: 24,
+    padding: 20,
+    backgroundColor: C.cardWhite,
+  },
+  clayCard: {
+    ...Platform.select({
+      ios: {
+        shadowColor: "#0F172A",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.03,
+        shadowRadius: 16,
+      },
+      android: { elevation: 3 },
+    }),
+    borderWidth: 1,
+    borderColor: "rgba(226, 232, 240, 0.6)",
+  },
+  cardIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  cardValue: {
+    fontSize: 28,
+    fontWeight: "900",
+    color: C.textDark,
+    letterSpacing: -0.5,
+  },
+  cardLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: C.textDark,
+    marginTop: 4,
+  },
+  cardSub: { fontSize: 11, color: C.textSub, marginTop: 2, fontWeight: "500" },
+
+  // Bo'lim sarlavhasi
   sectionTitle: {
-    fontSize: 16, fontWeight: "700", color: C.text,
-    paddingHorizontal: 20, marginTop: 12, marginBottom: 12,
+    fontSize: 16,
+    fontWeight: "700",
+    color: C.textDark,
+    paddingHorizontal: 24,
+    marginBottom: 14,
   },
 
-  // Quick grid
-  quickGrid:    { flexDirection: "row", flexWrap: "wrap", gap: 12, paddingHorizontal: 20, marginBottom: 20 },
-  quickItem:    {
-    width: "46%", padding: 16, borderRadius: 16,
-    alignItems: "center", justifyContent: "center", gap: 8,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+  // Tezkor harakatlar paneli
+  quickGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 14,
+    paddingHorizontal: 24,
+    marginBottom: 24,
   },
-  quickIcon:    { fontSize: 28 },
-  quickLabel:   { fontSize: 13, fontWeight: "700", textAlign: "center" },
+  quickItem: {
+    width: "47%",
+    padding: 16,
+    borderRadius: 20,
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    height: 110,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.5)",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.01,
+        shadowRadius: 6,
+      },
+      android: { elevation: 1 },
+    }),
+  },
+  quickIconWrapper: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.4)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quickLabel: { fontSize: 14, fontWeight: "700", color: C.textDark },
 
-  // Info card
-  infoCard:     {
-    flexDirection: "row", alignItems: "flex-start", gap: 12,
-    backgroundColor: C.white, borderRadius: 16, padding: 16,
-    marginHorizontal: 20,
-    borderLeftWidth: 4, borderLeftColor: C.primary,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+  // Yo'riqnoma Info Card
+  infoCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: C.cardWhite,
+    borderRadius: 20,
+    padding: 16,
+    marginHorizontal: 24,
+    borderWidth: 1.5,
+    borderColor: "rgba(226, 232, 240, 0.8)",
   },
-  infoIcon:     { fontSize: 22, marginTop: 2 },
-  infoTitle:    { fontSize: 14, fontWeight: "700", color: C.text, marginBottom: 4 },
-  infoText:     { fontSize: 12, color: C.sub, lineHeight: 18 },
+  infoIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: C.cyanLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: C.textDark,
+    marginBottom: 2,
+  },
+  infoText: {
+    fontSize: 12,
+    color: C.textSub,
+    lineHeight: 18,
+    fontWeight: "500",
+  },
 
-  // FAB
-  fab:          {
-    position: "absolute", alignSelf: "center",
-    flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: C.primary, paddingHorizontal: 28, paddingVertical: 16,
-    borderRadius: 30,
-    shadowColor: C.primary, shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4, shadowRadius: 16, elevation: 10,
+  // Floating Action Button (Premium Liquid FAB)
+  fabContainer: {
+    position: "absolute",
+    left: 24,
+    right: 24,
+    borderRadius: 24,
+    overflow: "hidden",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#0284C7",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+      },
+      android: { elevation: 6 },
+    }),
   },
-  fabIcon:      { fontSize: 20 },
-  fabText:      { fontSize: 16, fontWeight: "800", color: C.white },
+  fabTouch: { width: "100%" },
+  fabGradient: {
+    height: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  fabText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#FFF",
+    letterSpacing: -0.1,
+  },
 });
