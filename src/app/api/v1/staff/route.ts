@@ -69,9 +69,12 @@ export async function POST(request: NextRequest) {
     if (!user.companyId) return forbidden();
 
     const body = await request.json();
-    const { name, phone, password, role } = body;
+    const { name, phone: rawPhone, password, role } = body;
 
-    if (!name || !phone || !password || !role) return badRequest("Barcha maydonlar kerak");
+    if (!name || !rawPhone || !password || !role) return badRequest("Barcha maydonlar kerak");
+
+    // Telefon normalizatsiya
+    const phone = normalizePhone(rawPhone);
 
     const existing = await prisma.user.findFirst({ where: { phone, companyId: user.companyId } });
     if (existing) return badRequest("Bu telefon raqami allaqachon ro'yxatda");
@@ -85,4 +88,17 @@ export async function POST(request: NextRequest) {
   } catch {
     return serverError();
   }
+}
+
+// Telefon normalizatsiya funksiyasi
+function normalizePhone(rawPhone: string): string {
+  let phone = rawPhone.replace(/\D/g, "");
+  if (phone.startsWith("998") && phone.length === 12) {
+    return `+${phone}`;
+  } else if (phone.length === 9) {
+    return `+998${phone}`;
+  } else if (rawPhone.startsWith("+")) {
+    return rawPhone;
+  }
+  return `+998${phone}`;
 }

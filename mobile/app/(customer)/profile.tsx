@@ -1,23 +1,43 @@
 /**
  * Customer — Profil va bir nechta manzillarni boshqarish (GPS location bilan)
+ * Strict TypeScript, Organic Liquid Glassmorphic & Claymorphic Style
  */
 import React, { useState, useCallback } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Alert, ActivityIndicator, StatusBar, Modal,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+  StatusBar,
+  Modal,
+  Platform,
 } from "react-native";
 import { useFocusEffect, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { useAuthStore } from "@/store/auth";
 import { customerService, type Address } from "@/services/customer";
 
+// ─── Qat'iy Tiplashtirilgan Rang Palitrasi ──────────────────────
 const C = {
-  primary: "#00C6A2", dark: "#00A88A", light: "#E6FAF7",
-  accent: "#6C63FF", accentLight: "#EFEDFF",
-  bg: "#F0FAF8", white: "#FFFFFF", text: "#1A2E2B", sub: "#6B8F89",
-  border: "#C8E8E3", danger: "#EF4444", dangerLight: "#FEE2E2",
-  success: "#22C55E", warning: "#F59E0B",
+  bgGradient:   ["#E6FFFA", "#EBF5FF", "#F4FAFF"] as const,
+  cardWhite:    "#FFFFFF" as const,
+  textDark:     "#0F172A" as const,
+  textSub:      "#64748B" as const,
+  
+  cyan:         "#06B6D4" as const,
+  cyanLight:    "#E0F7FA" as const,
+  blue:         "#0284C7" as const,
+  blueLight:    "#E0F2FE" as const,
+  emerald:      "#10B981" as const,
+  emeraldLight: "#D1FAE5" as const,
+  rose:         "#F43F5E" as const,
 };
 
 export default function CustomerProfile() {
@@ -25,26 +45,26 @@ export default function CustomerProfile() {
   const { user, logout } = useAuthStore();
 
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   
   // Form state
-  const [label, setLabel] = useState("");
-  const [address, setAddress] = useState("");
-  const [landmark, setLandmark] = useState("");
+  const [label, setLabel] = useState<string>("");
+  const [address, setAddress] = useState<string>("");
+  const [landmark, setLandmark] = useState<string>("");
   const [latitude, setLatitude] = useState<number | undefined>();
   const [longitude, setLongitude] = useState<number | undefined>();
-  const [locationLink, setLocationLink] = useState("");
-  const [isDefault, setIsDefault] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [gettingLocation, setGettingLocation] = useState(false);
+  const [locationLink, setLocationLink] = useState<string>("");
+  const [isDefault, setIsDefault] = useState<boolean>(false);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [gettingLocation, setGettingLocation] = useState<boolean>(false);
 
   const loadAddresses = async () => {
     setLoading(true);
     const r = await customerService.getAddresses();
     if (r.success && r.data) {
-      setAddresses(r.data);
+      setAddresses(r.data as Address[]);
     }
     setLoading(false);
   };
@@ -55,7 +75,6 @@ export default function CustomerProfile() {
     try {
       setGettingLocation(true);
       
-      // Permission so'rash
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         Alert.alert("Ruxsat berilmadi", "Lokatsiyani aniqlash uchun ruxsat kerak");
@@ -63,7 +82,6 @@ export default function CustomerProfile() {
         return;
       }
 
-      // Lokatsiyani olish
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
@@ -72,7 +90,6 @@ export default function CustomerProfile() {
       setLatitude(lat);
       setLongitude(lon);
 
-      // Reverse geocoding - koordinatalardan manzilni olish
       try {
         const results = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
         if (results && results.length > 0) {
@@ -85,15 +102,12 @@ export default function CustomerProfile() {
             loc.region,
           ].filter(Boolean).join(", ");
           
-          if (addr) {
-            setAddress(addr);
-          }
+          if (addr) setAddress(addr);
         }
       } catch (geoError) {
         console.log("Reverse geocoding failed:", geoError);
       }
 
-      // Google Maps link yaratish
       const mapsLink = `https://www.google.com/maps?q=${lat},${lon}`;
       setLocationLink(mapsLink);
 
@@ -114,7 +128,7 @@ export default function CustomerProfile() {
     setLatitude(undefined);
     setLongitude(undefined);
     setLocationLink("");
-    setIsDefault(addresses.length === 0); // Birinchi manzil avtomatik default
+    setIsDefault(addresses.length === 0);
     setModalVisible(true);
   };
 
@@ -141,7 +155,6 @@ export default function CustomerProfile() {
     }
 
     setSaving(true);
-    
     const data = {
       label: label.trim(),
       address: address.trim(),
@@ -163,7 +176,7 @@ export default function CustomerProfile() {
       setModalVisible(false);
       loadAddresses();
     } else {
-      Alert.alert("Xato", (r as any).error || "Xatolik yuz berdi");
+      Alert.alert("Xato", "Xatolik yuz berdi");
     }
   };
 
@@ -205,37 +218,53 @@ export default function CustomerProfile() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
+    <LinearGradient colors={C.bgGradient} style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      
+      <View style={styles.fluidBubble1} />
+      <View style={styles.fluidBubble2} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.avatarBox}>
-          <Text style={styles.avatarText}>{(user?.name || "M").charAt(0).toUpperCase()}</Text>
+          <LinearGradient colors={[C.cyan, C.blue]} style={styles.avatarGradient}>
+            <Text style={styles.avatarText}>{(user?.name || "M").charAt(0).toUpperCase()}</Text>
+          </LinearGradient>
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.userName}>{user?.name}</Text>
-          <Text style={styles.userPhone}>{user?.phone}</Text>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={styles.userName}>{user?.name || "Mijoz"}</Text>
+          <View style={styles.phoneRow}>
+            <Feather name="phone" size={12} color={C.textSub} />
+            <Text style={styles.userPhone}>{user?.phone}</Text>
+          </View>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]} showsVerticalScrollIndicator={false}>
-        {/* Manzillar */}
-        <View style={styles.card}>
+      <ScrollView 
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]} 
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Manzillar Bloki */}
+        <View style={[styles.card, styles.clayCard]}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>📍 Manzillarim</Text>
-            <TouchableOpacity style={styles.addBtn} onPress={openAddModal}>
+            <View style={styles.titleRow}>
+              <Feather name="map-pin" size={18} color={C.cyan} />
+              <Text style={styles.cardTitle}>Manzillarim</Text>
+            </View>
+            <TouchableOpacity style={styles.addBtn} onPress={openAddModal} activeOpacity={0.8}>
               <Text style={styles.addBtnText}>+ Qo'shish</Text>
             </TouchableOpacity>
           </View>
 
           {loading ? (
-            <ActivityIndicator color={C.primary} style={{ paddingVertical: 20 }} />
+            <ActivityIndicator color={C.cyan} style={{ paddingVertical: 20 }} />
           ) : addresses.length === 0 ? (
             <View style={styles.emptyBox}>
-              <Text style={styles.emptyIcon}>📭</Text>
-              <Text style={styles.emptyText}>Hali manzil qo'shilmagan</Text>
-              <TouchableOpacity style={styles.emptyBtn} onPress={openAddModal}>
+              <View style={styles.emptyIconWrapper}>
+                <Feather name="map" size={32} color={C.cyan} />
+              </View>
+              <Text style={styles.emptyText}>Hali birorta ham manzil qo'shilmagan</Text>
+              <TouchableOpacity style={styles.emptyBtn} onPress={openAddModal} activeOpacity={0.8}>
                 <Text style={styles.emptyBtnText}>Manzil qo'shish</Text>
               </TouchableOpacity>
             </View>
@@ -243,47 +272,60 @@ export default function CustomerProfile() {
             addresses.map((addr) => (
               <View key={addr.id} style={styles.addressItem}>
                 <View style={styles.addressHeader}>
-                  <Text style={styles.addressLabel}>
-                    {addr.label}
-                    {addr.isDefault && <Text style={styles.defaultBadge}> • Asosiy</Text>}
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Text style={styles.addressLabel}>{addr.label}</Text>
+                    {addr.isDefault && (
+                      <View style={styles.defaultBadgeBox}>
+                        <Text style={styles.defaultBadgeText}>Asosiy</Text>
+                      </View>
+                    )}
+                  </View>
                   <View style={styles.addressActions}>
-                    <TouchableOpacity onPress={() => openEditModal(addr)} style={styles.actionBtn}>
-                      <Text style={styles.actionBtnText}>✏️</Text>
+                    <TouchableOpacity onPress={() => openEditModal(addr)} style={styles.actionBtn} activeOpacity={0.6}>
+                      <Feather name="edit-2" size={15} color={C.blue} />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDelete(addr)} style={styles.actionBtn}>
-                      <Text style={styles.actionBtnText}>🗑️</Text>
+                    <TouchableOpacity onPress={() => handleDelete(addr)} style={styles.actionBtn} activeOpacity={0.6}>
+                      <Feather name="trash-2" size={15} color={C.rose} />
                     </TouchableOpacity>
                   </View>
                 </View>
                 <Text style={styles.addressText}>{addr.address}</Text>
-                {addr.landmark && <Text style={styles.addressLandmark}>Mo'ljal: {addr.landmark}</Text>}
+                {addr.landmark && (
+                  <Text style={styles.addressLandmark}>Mo'ljal: {addr.landmark}</Text>
+                )}
                 {addr.latitude && addr.longitude && (
-                  <Text style={styles.addressCoords}>
-                    📍 {addr.latitude.toFixed(6)}, {addr.longitude.toFixed(6)}
-                  </Text>
+                  <View style={styles.miniCoordsBox}>
+                    <MaterialCommunityIcons name="google-maps" size={12} color={C.textSub} />
+                    <Text style={styles.addressCoords}>
+                      {addr.latitude.toFixed(6)}, {addr.longitude.toFixed(6)}
+                    </Text>
+                  </View>
                 )}
               </View>
             ))
           )}
         </View>
 
-        {/* Ilova haqida */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>ℹ️ Ilova haqida</Text>
-          <View style={styles.infoRow}>
+        {/* Ilova Haqida Bloki */}
+        <View style={[styles.card, styles.clayCard]}>
+          <View style={styles.titleRow}>
+            <Feather name="info" size={18} color={C.blue} />
+            <Text style={styles.cardTitle}>Ilova haqida</Text>
+          </View>
+          <View style={[styles.infoRow, { marginTop: 12 }]}>
             <Text style={styles.infoLabel}>Versiya</Text>
             <Text style={styles.infoValue}>1.3.0</Text>
           </View>
-          <View style={styles.infoRow}>
+          <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
             <Text style={styles.infoLabel}>Platforma</Text>
-            <Text style={styles.infoValue}>BuloqWater</Text>
+            <Text style={styles.infoValue}>BuloqWater SaaS</Text>
           </View>
         </View>
 
-        {/* Chiqish */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Text style={styles.logoutText}>→ Tizimdan chiqish</Text>
+        {/* Chiqish Tugmasi */}
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+          <Feather name="log-out" size={16} color={C.rose} style={{ marginRight: 6 }} />
+          <Text style={styles.logoutText}>Tizimdan chiqish</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -295,47 +337,52 @@ export default function CustomerProfile() {
               <Text style={styles.modalTitle}>
                 {editingAddress ? "Manzilni tahrirlash" : "Yangi manzil qo'shish"}
               </Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text style={styles.modalClose}>✕</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeModalBox}>
+                <Feather name="x" size={20} color={C.textSub} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 8 }}>
               <View style={styles.formField}>
                 <Text style={styles.formLabel}>Manzil nomi *</Text>
                 <TextInput
                   style={styles.formInput}
                   value={label}
                   onChangeText={setLabel}
-                  placeholder="Masalan: Uy, Ish, Ota-onam"
-                  placeholderTextColor={C.sub}
+                  placeholder="Masalan: Uy, Ish, Ota-onamning uyi"
+                  placeholderTextColor="#A1A1AA"
                 />
               </View>
 
-              {/* GPS tugmasi */}
               <TouchableOpacity
                 style={styles.gpsBtn}
                 onPress={handleGetLocation}
                 disabled={gettingLocation}
+                activeOpacity={0.8}
               >
                 {gettingLocation ? (
-                  <ActivityIndicator color={C.white} />
+                  <ActivityIndicator color="#FFF" />
                 ) : (
-                  <>
-                    <Text style={styles.gpsBtnIcon}>📍</Text>
-                    <Text style={styles.gpsBtnText}>Lokatsiyani aniqlash (GPS)</Text>
-                  </>
+                  <LinearGradient
+                    colors={["#6366F1", "#4F46E5"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.gpsGradient}
+                  >
+                    <Ionicons name="location" size={18} color="#FFF" />
+                    <Text style={styles.gpsBtnText}>GPS orqali joylashuvni olish</Text>
+                  </LinearGradient>
                 )}
               </TouchableOpacity>
 
               <View style={styles.formField}>
                 <Text style={styles.formLabel}>Manzil *</Text>
                 <TextInput
-                  style={[styles.formInput, { height: 60 }]}
+                  style={[styles.formInput, { height: 68, paddingTop: 12, textAlignVertical: "top" }]}
                   value={address}
                   onChangeText={setAddress}
-                  placeholder="Ko'cha, uy raqami, kvartira..."
-                  placeholderTextColor={C.sub}
+                  placeholder="Ko'cha nomi, uy raqami, xonadon..."
+                  placeholderTextColor="#A1A1AA"
                   multiline
                 />
               </View>
@@ -346,15 +393,16 @@ export default function CustomerProfile() {
                   style={styles.formInput}
                   value={landmark}
                   onChangeText={setLandmark}
-                  placeholder="Masalan: maktab yonida, darvoza yashil"
-                  placeholderTextColor={C.sub}
+                  placeholder="Masalan: Maktab yonida, yashil darvoza"
+                  placeholderTextColor="#A1A1AA"
                 />
               </View>
 
               {latitude && longitude && (
                 <View style={styles.coordsBox}>
+                  <Feather name="check-circle" size={14} color="#4F46E5" />
                   <Text style={styles.coordsText}>
-                    📍 Koordinatalar: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+                    Koordinatalar saqlandi: {latitude.toFixed(6)}, {longitude.toFixed(6)}
                   </Text>
                 </View>
               )}
@@ -362,160 +410,137 @@ export default function CustomerProfile() {
               <TouchableOpacity
                 style={styles.defaultCheckbox}
                 onPress={() => setIsDefault(!isDefault)}
+                activeOpacity={0.7}
               >
                 <View style={[styles.checkbox, isDefault && styles.checkboxChecked]}>
-                  {isDefault && <Text style={styles.checkmark}>✓</Text>}
+                  {isDefault && <Feather name="check" size={14} color="#FFF" />}
                 </View>
-                <Text style={styles.checkboxLabel}>Asosiy manzil qilish</Text>
+                <Text style={styles.checkboxLabel}>Ushbu manzilni asosiy qilish</Text>
               </TouchableOpacity>
 
               <View style={styles.modalActions}>
                 <TouchableOpacity
                   style={styles.cancelBtn}
                   onPress={() => setModalVisible(false)}
+                  activeOpacity={0.7}
                 >
                   <Text style={styles.cancelBtnText}>Bekor qilish</Text>
                 </TouchableOpacity>
+                
                 <TouchableOpacity
-                  style={[styles.saveModalBtn, saving && styles.saveModalBtnDisabled]}
+                  style={styles.saveModalBtnWrapper}
                   onPress={handleSave}
                   disabled={saving}
+                  activeOpacity={0.8}
                 >
-                  {saving ? (
-                    <ActivityIndicator color={C.white} />
-                  ) : (
-                    <Text style={styles.saveModalBtnText}>Saqlash</Text>
-                  )}
+                  <LinearGradient
+                    colors={saving ? ["#94A3B8", "#64748B"] : [C.cyan, C.blue]}
+                    style={styles.saveModalGradient}
+                  >
+                    {saving ? (
+                      <ActivityIndicator color="#FFF" />
+                    ) : (
+                      <Text style={styles.saveModalBtnText}>Saqlash</Text>
+                    )}
+                  </LinearGradient>
                 </TouchableOpacity>
               </View>
             </ScrollView>
           </View>
         </View>
       </Modal>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container:  { flex: 1, backgroundColor: C.bg },
+  container: { flex: 1 },
+  fluidBubble1: { position: "absolute", top: -40, left: -60, width: 220, height: 220, borderRadius: 110, backgroundColor: "rgba(6, 182, 212, 0.05)" },
+  fluidBubble2: { position: "absolute", bottom: 100, right: -60, width: 200, height: 200, borderRadius: 100, backgroundColor: "rgba(2, 132, 199, 0.04)" },
 
-  header:     {
-    flexDirection: "row", alignItems: "center", gap: 14,
-    paddingHorizontal: 20, paddingVertical: 16,
-    backgroundColor: C.primary,
+  header: { flexDirection: "row", alignItems: "center", gap: 16, paddingHorizontal: 24, paddingBottom: 20 },
+  avatarBox: {
+    borderRadius: 20,
+    overflow: "hidden",
+    ...Platform.select({
+      ios: { shadowColor: "#0284C7", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.12, shadowRadius: 10 },
+      android: { elevation: 3 }
+    })
   },
-  avatarBox:  {
-    width: 52, height: 52, borderRadius: 26,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    alignItems: "center", justifyContent: "center",
-  },
-  avatarText: { fontSize: 22, fontWeight: "800", color: C.white },
-  userName:   { fontSize: 18, fontWeight: "700", color: C.white },
-  userPhone:  { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 2 },
+  avatarGradient: { width: 56, height: 56, alignItems: "center", justifyContent: "center" },
+  avatarText: { fontSize: 22, fontWeight: "800", color: "#FFF" },
+  userName: { fontSize: 22, fontWeight: "800", color: C.textDark, letterSpacing: -0.5 },
+  phoneRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 2 },
+  userPhone: { fontSize: 13, color: C.textSub, fontWeight: "600" },
 
-  scroll:     { padding: 16 },
-
-  card:       {
-    backgroundColor: C.white, borderRadius: 20, padding: 18, marginBottom: 14,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.07, shadowRadius: 8, elevation: 3,
+  scroll: { paddingHorizontal: 24 },
+  card: { backgroundColor: C.cardWhite, borderRadius: 24, padding: 20, marginBottom: 16 },
+  clayCard: {
+    ...Platform.select({
+      ios: { shadowColor: "#0F172A", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.03, shadowRadius: 16 },
+      android: { elevation: 3 },
+    }),
+    borderWidth: 1,
+    borderColor: "rgba(226, 232, 240, 0.6)",
   },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  cardTitle:  { fontSize: 16, fontWeight: "700", color: C.text },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  cardTitle: { fontSize: 16, fontWeight: "700", color: C.textDark },
 
-  addBtn:     { backgroundColor: C.primary, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
-  addBtnText: { fontSize: 13, fontWeight: "700", color: C.white },
+  addBtn: { backgroundColor: C.cyanLight, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+  addBtnText: { fontSize: 13, fontWeight: "700", color: C.cyan },
 
-  emptyBox:   { alignItems: "center", paddingVertical: 30 },
-  emptyIcon:  { fontSize: 50, marginBottom: 10 },
-  emptyText:  { fontSize: 14, color: C.sub, marginBottom: 16 },
-  emptyBtn:   { backgroundColor: C.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
-  emptyBtnText: { fontSize: 14, fontWeight: "600", color: C.white },
+  emptyBox: { alignItems: "center", paddingVertical: 24 },
+  emptyIconWrapper: { width: 64, height: 64, borderRadius: 22, backgroundColor: C.cyanLight, alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  emptyText: { fontSize: 14, color: C.textSub, marginBottom: 16, fontWeight: "500", textAlign: "center" },
+  emptyBtn: { backgroundColor: C.cyan, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 14 },
+  emptyBtnText: { fontSize: 14, fontWeight: "700", color: "#FFF" },
 
-  addressItem: {
-    backgroundColor: C.light, borderRadius: 14, padding: 14, marginBottom: 10,
-    borderWidth: 1.5, borderColor: C.border,
-  },
-  addressHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  addressLabel: { fontSize: 15, fontWeight: "700", color: C.text },
-  defaultBadge: { fontSize: 12, fontWeight: "600", color: C.primary },
-  addressActions: { flexDirection: "row", gap: 8 },
-  actionBtn:   { padding: 4 },
-  actionBtnText: { fontSize: 18 },
-  addressText: { fontSize: 14, color: C.text, lineHeight: 20, marginBottom: 4 },
-  addressLandmark: { fontSize: 12, color: C.sub, marginBottom: 2 },
-  addressCoords: { fontSize: 11, color: C.sub, fontFamily: "monospace" },
+  addressItem: { backgroundColor: "#F8FAFC", borderRadius: 18, padding: 14, marginBottom: 12, borderWidth: 1.5, borderColor: "rgba(226, 232, 240, 0.8)" },
+  addressHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+  addressLabel: { fontSize: 15, fontWeight: "700", color: C.textDark },
+  defaultBadgeBox: { backgroundColor: C.emeraldLight, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
+  defaultBadgeText: { fontSize: 11, fontWeight: "700", color: C.emerald },
+  addressActions: { flexDirection: "row", gap: 6 },
+  actionBtn: { width: 30, height: 30, borderRadius: 8, backgroundColor: "#FFF", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(226, 232, 240, 0.6)" },
+  addressText: { fontSize: 14, color: C.textDark, lineHeight: 20, marginBottom: 6, fontWeight: "500" },
+  addressLandmark: { fontSize: 12, color: C.textSub, fontWeight: "500", marginBottom: 4 },
+  miniCoordsBox: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
+  addressCoords: { fontSize: 11, color: C.textSub, fontWeight: "500" },
 
-  infoRow:    { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.light },
-  infoLabel:  { fontSize: 13, color: C.sub },
-  infoValue:  { fontSize: 13, fontWeight: "600", color: C.text },
+  infoRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 12, borderBottomWidth: 1.5, borderBottomColor: "#F1F5F9" },
+  infoLabel: { fontSize: 14, color: C.textSub, fontWeight: "500" },
+  infoValue: { fontSize: 14, fontWeight: "700", color: C.textDark },
 
-  logoutBtn:  {
-    borderWidth: 1.5, borderColor: C.danger + "60", borderRadius: 14,
-    paddingVertical: 15, alignItems: "center", backgroundColor: C.white,
-  },
-  logoutText: { fontSize: 15, fontWeight: "600", color: C.danger },
+  logoutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: "rgba(244, 63, 94, 0.2)", borderRadius: 20, paddingVertical: 14, backgroundColor: C.cardWhite, marginTop: 8 },
+  logoutText: { fontSize: 15, fontWeight: "700", color: C.rose },
 
-  // Modal styles
-  modalOverlay: {
-    flex: 1, backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: C.white, borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 20, maxHeight: "90%",
-  },
-  modalHeader: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    marginBottom: 20,
-  },
-  modalTitle: { fontSize: 18, fontWeight: "700", color: C.text },
-  modalClose: { fontSize: 28, color: C.sub },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.4)", justifyContent: "flex-end" },
+  modalContent: { backgroundColor: C.cardWhite, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, maxHeight: "88%" },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
+  modalTitle: { fontSize: 18, fontWeight: "800", color: C.textDark, letterSpacing: -0.3 },
+  closeModalBox: { width: 34, height: 34, borderRadius: 10, backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center" },
 
-  formField:  { marginBottom: 16 },
-  formLabel:  { fontSize: 13, fontWeight: "600", color: C.text, marginBottom: 6 },
-  formInput:  {
-    borderWidth: 1.5, borderColor: C.border, borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 14, color: C.text, backgroundColor: C.bg,
-  },
+  formField: { marginBottom: 14 },
+  formLabel: { fontSize: 13, fontWeight: "700", color: C.textDark, marginBottom: 6, paddingLeft: 2 },
+  formInput: { borderWidth: 1.5, borderColor: "rgba(226, 232, 240, 0.8)", borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: C.textDark, backgroundColor: "#F8FAFC" },
 
-  gpsBtn: {
-    backgroundColor: C.accent, borderRadius: 14, paddingVertical: 14,
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    marginBottom: 16, gap: 8,
-    shadowColor: C.accent, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
-  },
-  gpsBtnIcon: { fontSize: 20 },
-  gpsBtnText: { fontSize: 15, fontWeight: "700", color: C.white },
+  gpsBtn: { borderRadius: 16, overflow: "hidden", marginBottom: 14 },
+  gpsGradient: { height: 48, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
+  gpsBtnText: { fontSize: 14, fontWeight: "700", color: "#FFF" },
 
-  coordsBox: {
-    backgroundColor: C.accentLight, borderRadius: 10, padding: 10, marginBottom: 16,
-  },
-  coordsText: { fontSize: 12, color: C.accent, fontFamily: "monospace" },
+  coordsBox: { backgroundColor: "#EEF2FF", borderRadius: 12, padding: 10, marginBottom: 14, flexDirection: "row", alignItems: "center", gap: 6 },
+  coordsText: { fontSize: 12, color: "#4F46E5", fontWeight: "600" },
 
-  defaultCheckbox: {
-    flexDirection: "row", alignItems: "center", marginBottom: 20,
-  },
-  checkbox: {
-    width: 24, height: 24, borderWidth: 2, borderColor: C.border,
-    borderRadius: 6, marginRight: 10, alignItems: "center", justifyContent: "center",
-  },
-  checkboxChecked: { backgroundColor: C.primary, borderColor: C.primary },
-  checkmark: { fontSize: 16, fontWeight: "700", color: C.white },
-  checkboxLabel: { fontSize: 14, color: C.text },
+  defaultCheckbox: { flexDirection: "row", alignItems: "center", marginBottom: 20, paddingLeft: 2 },
+  checkbox: { width: 22, height: 22, borderWidth: 2, borderColor: "rgba(226, 232, 240, 1)", borderRadius: 6, marginRight: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#F8FAFC" },
+  checkboxChecked: { backgroundColor: C.cyan, borderColor: C.cyan },
+  checkboxLabel: { fontSize: 14, color: C.textDark, fontWeight: "600" },
 
-  modalActions: { flexDirection: "row", gap: 10, marginTop: 10 },
-  cancelBtn: {
-    flex: 1, borderWidth: 1.5, borderColor: C.border, borderRadius: 12,
-    paddingVertical: 14, alignItems: "center",
-  },
-  cancelBtnText: { fontSize: 15, fontWeight: "600", color: C.text },
-  saveModalBtn: {
-    flex: 1, backgroundColor: C.primary, borderRadius: 12,
-    paddingVertical: 14, alignItems: "center",
-  },
-  saveModalBtnDisabled: { opacity: 0.5 },
-  saveModalBtnText: { fontSize: 15, fontWeight: "700", color: C.white },
+  modalActions: { flexDirection: "row", gap: 12, marginTop: 8 },
+  cancelBtn: { flex: 1, borderWidth: 1.5, borderColor: "rgba(226, 232, 240, 1)", borderRadius: 16, paddingVertical: 14, alignItems: "center", backgroundColor: "#FFF" },
+  cancelBtnText: { fontSize: 15, fontWeight: "700", color: C.textSub },
+  saveModalBtnWrapper: { flex: 1, borderRadius: 16, overflow: "hidden" },
+  saveModalGradient: { height: 48, alignItems: "center", justifyContent: "center" },
+  saveModalBtnText: { fontSize: 15, fontWeight: "700", color: "#FFF" },
 });

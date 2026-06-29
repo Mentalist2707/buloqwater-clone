@@ -1,10 +1,19 @@
-"Admin buyurtmalar sahifasi — filter + haydovchi biriktirish + sana filtri"
+"Admin buyurtmalar sahifasi — To'liq xatosiz StyleSheet versiyasi"
 import React, { useState, useCallback, useMemo } from "react";
 import {
-  View, Text, StyleSheet, FlatList, RefreshControl,
-  TouchableOpacity, Alert, Modal,
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  RefreshControl,
+  TouchableOpacity,
+  Alert,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { Card, StatusBadge, Button, Input } from "@/components/ui";
 import { Colors, ORDER_STATUS_LABELS } from "@/constants";
 import { ordersService } from "@/services/orders";
@@ -20,12 +29,21 @@ const DATE_FILTERS: { key: DateFilter; label: string }[] = [
   { key: "WEEK", label: "Hafta" },
 ];
 
+const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
+  ALL:        { bg: "rgba(2, 132, 199, 0.08)", text: "#0284C7" },
+  PENDING:    { bg: "rgba(217, 119, 6, 0.08)",  text: "#D97706" },
+  ASSIGNED:   { bg: "rgba(99, 102, 241, 0.08)", text: "#6366F1" },
+  IN_TRANSIT: { bg: "rgba(14, 165, 233, 0.08)", text: "#0EA5E9" },
+  DELIVERED:  { bg: "rgba(22, 163, 74, 0.08)",  text: "#16A34A" },
+  CANCELLED:  { bg: "rgba(220, 38, 38, 0.08)",  text: "#DC2626" },
+};
+
 function getTimeSincePending(createdAt: string) {
   const diff = Date.now() - new Date(createdAt).getTime();
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 60) return `${minutes} daqiqa`;
+  if (minutes < 60) return `${minutes} m`;
   const hours = Math.floor(minutes / 60);
-  return `${hours}s ${minutes % 60}d`;
+  return `${hours}s ${minutes % 60}m`;
 }
 
 export default function AdminOrdersScreen() {
@@ -35,10 +53,14 @@ export default function AdminOrdersScreen() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [dateFilter, setDateFilter] = useState<DateFilter>("ALL");
   const [search, setSearch] = useState("");
+  
   const [assignModal, setAssignModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [assignLoading, setAssignLoading] = useState(false);
+  const [driversLoading, setDriversLoading] = useState(false);
+
+  const insets = useSafeAreaInsets();
 
   const loadOrders = async () => {
     const params: Record<string, string> = { limit: "100" };
@@ -48,15 +70,22 @@ export default function AdminOrdersScreen() {
     setLoading(false);
   };
 
-  useFocusEffect(useCallback(() => { setLoading(true); loadOrders(); }, []));
-  React.useEffect(() => { if (!loading) loadOrders(); }, [statusFilter]);
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      loadOrders();
+    }, [statusFilter])
+  );
 
-  const onRefresh = async () => { setRefreshing(true); await loadOrders(); setRefreshing(false); };
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadOrders();
+    setRefreshing(false);
+  };
 
   const filtered = useMemo(() => {
     let result = [...orders];
 
-    // Sana filtri
     if (dateFilter !== "ALL") {
       const now = new Date();
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -72,7 +101,6 @@ export default function AdminOrdersScreen() {
       });
     }
 
-    // Qidiruv
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter((o) =>
@@ -88,8 +116,10 @@ export default function AdminOrdersScreen() {
   const handleAssign = async (order: Order) => {
     setSelectedOrder(order);
     setAssignModal(true);
+    setDriversLoading(true);
     const result = await ordersService.getDrivers();
     if (result.success && result.data) setDrivers(result.data);
+    setDriversLoading(false);
   };
 
   const confirmAssign = async (driverId: string, driverName: string) => {
@@ -107,15 +137,10 @@ export default function AdminOrdersScreen() {
   };
 
   const renderOrder = ({ item }: { item: Order }) => {
-    const isUrgent =
-      item.status === "PENDING" &&
-      Date.now() - new Date(item.createdAt).getTime() > 3600000; // 1 soat
-    const isNew =
-      item.status === "PENDING" &&
-      Date.now() - new Date(item.createdAt).getTime() < 300000; // 5 daqiqa
-
-    const pendingTime =
-      item.status === "PENDING" ? getTimeSincePending(item.createdAt) : null;
+    const isUrgent = item.status === "PENDING" && Date.now() - new Date(item.createdAt).getTime() > 3600000;
+    const isNew = item.status === "PENDING" && Date.now() - new Date(item.createdAt).getTime() < 300000;
+    const pendingTime = item.status === "PENDING" ? getTimeSincePending(item.createdAt) : null;
+    const totalQty = item.items.reduce((sum, i) => sum + i.quantity, 0);
 
     return (
       <Card
@@ -126,7 +151,7 @@ export default function AdminOrdersScreen() {
         ]}
       >
         <View style={styles.orderHeader}>
-          <View style={{ gap: 4 }}>
+          <View style={{ flex: 1, gap: 6 }}>
             <View style={styles.orderNumberRow}>
               <Text style={styles.orderNumber}>#{item.orderNumber}</Text>
               {isUrgent && (
@@ -136,40 +161,65 @@ export default function AdminOrdersScreen() {
               )}
               {isNew && (
                 <View style={styles.newBadge}>
-                  <Text style={styles.newText}>🆕 Yangi</Text>
+                  <Text style={styles.newText}>✨ Yangi</Text>
                 </View>
               )}
             </View>
-            <StatusBadge status={item.status} />
-            {pendingTime && (
-              <Text style={[styles.pendingTime, isUrgent && { color: Colors.danger }]}>
-                ⏱ {pendingTime}
-              </Text>
-            )}
+            <View style={styles.badgeRow}>
+              <StatusBadge status={item.status} />
+              {pendingTime && (
+                <View style={styles.tickerBadge}>
+                  <Ionicons name="time-outline" size={12} color={isUrgent ? Colors.danger : "#D97706"} />
+                  <Text style={[styles.pendingTime, isUrgent && { color: Colors.danger }]}>
+                    {pendingTime}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
           <Text style={styles.orderAmount}>{item.totalAmount.toLocaleString()} so'm</Text>
         </View>
 
-        <Text style={styles.customerName}>{item.customer.name}</Text>
-        <Text style={styles.customerAddress}>{item.customer.address}</Text>
-        {item.customer.landmark ? (
-          <Text style={styles.landmark}>Mo'ljal: {item.customer.landmark}</Text>
-        ) : null}
-        {item.driver ? <Text style={styles.driverInfo}>🚗 {item.driver.name}</Text> : null}
+        <View style={styles.customerBlock}>
+          <Text style={styles.customerName}>{item.customer.name}</Text>
+          <Text style={styles.customerPhone}>{item.customer.phone1}</Text>
+          <View style={styles.infoLine}>
+            <Ionicons name="location-outline" size={14} color="#64748B" />
+            <Text style={styles.customerAddress} numberOfLines={2}>{item.customer.address}</Text>
+          </View>
+          {item.customer.landmark ? (
+            <Text style={styles.landmark}>Mo'ljal: {item.customer.landmark}</Text>
+          ) : null}
+        </View>
+
+        <View style={styles.itemsDivider} />
 
         <View style={styles.itemsRow}>
           {item.items.map((oi, i) => (
             <Text key={i} style={styles.itemChip}>
-              {oi.product.name} ×{oi.quantity}
+              {oi.product.name} <Text style={{ fontWeight: '700' }}>×{oi.quantity}</Text>
             </Text>
           ))}
         </View>
 
+        <View style={styles.cardFooter}>
+          <View style={styles.bottleBox}>
+            <Ionicons name="water-outline" size={14} color="#64748B" />
+            <Text style={styles.bottleLabel}>Idish: {totalQty} ta</Text>
+          </View>
+          {item.driver && (
+            <View style={styles.driverContainer}>
+              <Ionicons name="car-outline" size={14} color="#334155" />
+              <Text style={styles.driverInfo}>Haydovchi: {item.driver.name}</Text>
+            </View>
+          )}
+        </View>
+
         {item.status === "PENDING" && (
           <Button
-            title="🚚 Haydovchi biriktirish"
+            title="Haydovchi biriktirish"
             onPress={() => handleAssign(item)}
-            variant="outline"
+            variant="primary"
             size="sm"
             style={styles.assignBtn}
           />
@@ -180,37 +230,42 @@ export default function AdminOrdersScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Search */}
-      <View style={styles.searchBox}>
-        <Input
-          placeholder="🔍 Ism, telefon yoki #..."
-          value={search}
-          onChangeText={setSearch}
-          style={{ marginBottom: 0 }}
-        />
+      <View style={[styles.headerPanel, { paddingTop: insets.top > 0 ? insets.top + 8 : 14 }]}>
+        <View style={styles.searchWrapper}>
+          <Ionicons name="search-outline" size={18} color="#94A3B8" style={styles.searchIcon} />
+          <Input
+            placeholder="Ism, telefon yoki buyurtma raqami..."
+            value={search}
+            onChangeText={setSearch}
+            style={styles.searchInput}
+          />
+        </View>
       </View>
 
-      {/* Status filter tabs */}
-      <FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        data={STATUS_FILTERS}
-        keyExtractor={(i) => i}
-        style={styles.filterList}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingVertical: 8 }}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.chip, statusFilter === item && styles.chipActive]}
-            onPress={() => setStatusFilter(item)}
-          >
-            <Text style={[styles.chipText, statusFilter === item && styles.chipTextActive]}>
-              {item === "ALL" ? "Barchasi" : ORDER_STATUS_LABELS[item] || item}
-            </Text>
-          </TouchableOpacity>
-        )}
-      />
+      <View style={{ height: 34, marginBottom: 4 }}>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={STATUS_FILTERS}
+          keyExtractor={(i) => i}
+          contentContainerStyle={styles.filterListContainer}
+          renderItem={({ item }) => {
+            const isActive = statusFilter === item;
+            const config = STATUS_STYLES[item] || STATUS_STYLES.ALL;
+            return (
+              <TouchableOpacity
+                style={[styles.chip, { backgroundColor: isActive ? config.text : config.bg }]}
+                onPress={() => setStatusFilter(item)}
+              >
+                <Text style={[styles.chipText, { color: isActive ? "#FFFFFF" : config.text }]}>
+                  {item === "ALL" ? "Barchasi" : ORDER_STATUS_LABELS[item] || item}
+                </Text>
+              </TouchableOpacity>
+              
+            )}}
+         />
+      </View>
 
-      {/* Date filter */}
       <View style={styles.dateFilterRow}>
         {DATE_FILTERS.map((df) => (
           <TouchableOpacity
@@ -225,16 +280,11 @@ export default function AdminOrdersScreen() {
         ))}
       </View>
 
-      {/* Results count when filtered */}
       {(dateFilter !== "ALL" || search) && (
         <View style={styles.resultRow}>
-          <Text style={styles.resultText}>
-            {filtered.length} ta buyurtma
-          </Text>
-          <TouchableOpacity
-            onPress={() => { setDateFilter("ALL"); setSearch(""); }}
-          >
-            <Text style={styles.clearText}>Tozalash</Text>
+          <Text style={styles.resultText}>{filtered.length} ta buyurtma topildi</Text>
+          <TouchableOpacity onPress={() => { setDateFilter("ALL"); setSearch(""); }}>
+            <Text style={styles.clearText}>Filtrni tozalash</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -243,33 +293,40 @@ export default function AdminOrdersScreen() {
         data={filtered}
         renderItem={renderOrder}
         keyExtractor={(i) => i.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
         contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>📋</Text>
-            <Text style={styles.emptyText}>
-              {loading ? "Yuklanmoqda..." : "Buyurtma topilmadi"}
-            </Text>
+            {loading ? (
+              <ActivityIndicator size="large" color={Colors.primary} />
+            ) : (
+              <>
+                <Text style={styles.emptyIcon}>📦</Text>
+                <Text style={styles.emptyText}>Buyurtmalar mavjud emas</Text>
+              </>
+            )}
           </View>
         }
       />
 
-      {/* Assign Driver Modal */}
       <Modal visible={assignModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>🚚 Haydovchi tanlang</Text>
+            <View style={styles.modalIndicator} />
+            <Text style={styles.modalTitle}>Haydovchini tanlang</Text>
             <Text style={styles.modalSub}>Buyurtma #{selectedOrder?.orderNumber} · {selectedOrder?.customer.name}</Text>
 
-            {drivers.length === 0 ? (
-              <Text style={styles.modalEmpty}>Yuklanmoqda...</Text>
+            {driversLoading ? (
+              <View style={{ paddingVertical: 40 }}><ActivityIndicator color={Colors.primary} /></View>
+            ) : drivers.length === 0 ? (
+              <Text style={styles.modalEmpty}>Haydovchilar topilmadi</Text>
             ) : (
               <FlatList
                 data={drivers}
                 keyExtractor={(i) => i.id}
-                style={{ maxHeight: 300 }}
+                style={{ maxHeight: 320 }}
+                showsVerticalScrollIndicator={false}
                 renderItem={({ item }) => {
                   const load = item.activeOrdersCount;
                   const color = load === 0 ? Colors.success : load <= 3 ? Colors.primary : Colors.warning;
@@ -279,46 +336,36 @@ export default function AdminOrdersScreen() {
                       onPress={() => confirmAssign(item.id, item.name)}
                       disabled={assignLoading}
                     >
-                      <View style={[styles.driverAvatar, { backgroundColor: color }]}>
-                        <Text style={styles.driverAvatarText}>{item.name.charAt(0)}</Text>
+                      <View style={[styles.driverAvatar, { backgroundColor: color + "15" }]}>
+                        <Text style={[styles.driverAvatarText, { color }]}>{item.name.charAt(0).toUpperCase()}</Text>
                       </View>
-                      <View style={{ flex: 1 }}>
+                      <View style={{ flex: 1, gap: 2 }}>
                         <Text style={styles.driverName}>{item.name}</Text>
                         <Text style={styles.driverPhone}>{item.phone}</Text>
                       </View>
-                      <View style={[styles.driverBadge, { backgroundColor: color + "20" }]}>
+                      <View style={[styles.driverBadge, { backgroundColor: color + "10" }]}>
                         <Text style={[styles.driverBadgeText, { color }]}>
-                          {load === 0 ? "Bo'sh" : `${load} ta`}
+                          {load === 0 ? "Bo'sh" : `${load} ta buyurtma`}
                         </Text>
                       </View>
                     </TouchableOpacity>
                   );
                 }}
-                ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: Colors.gray[100] }} />}
+                ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: "#F1F5F9" }} />}
               />
             )}
 
-            {/* Load legend */}
             <View style={styles.legendRow}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: Colors.success }]} />
-                <Text style={styles.legendText}>Bo'sh</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: Colors.primary }]} />
-                <Text style={styles.legendText}>1-3 ta</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: Colors.warning }]} />
-                <Text style={styles.legendText}>4+ ta</Text>
-              </View>
+              <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: Colors.success }]} /><Text style={styles.legendText}>Bo'sh</Text></View>
+              <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: Colors.primary }]} /><Text style={styles.legendText}>1-3 ta</Text></View>
+              <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: Colors.warning }]} /><Text style={styles.legendText}>4+ ta</Text></View>
             </View>
 
             <Button
-              title="Bekor qilish"
+              title="Yopish"
               onPress={() => setAssignModal(false)}
               variant="outline"
-              style={{ marginTop: 12 }}
+              style={{ marginTop: 16, borderRadius: 12 }}
             />
           </View>
         </View>
@@ -328,61 +375,84 @@ export default function AdminOrdersScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  searchBox: { paddingHorizontal: 16, paddingTop: 12 },
-  filterList: {},
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.gray[200] },
-  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { fontSize: 13, color: Colors.gray[600] },
-  chipTextActive: { color: Colors.white, fontWeight: "600" },
-  // Date filter
-  dateFilterRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingBottom: 8 },
-  dateChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: Colors.gray[100] },
-  dateChipActive: { backgroundColor: Colors.gray[800] },
-  dateChipText: { fontSize: 12, color: Colors.gray[600] },
-  dateChipTextActive: { color: Colors.white, fontWeight: "600" },
-  // Result row
-  resultRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingBottom: 4 },
-  resultText: { fontSize: 12, color: Colors.gray[500] },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  headerPanel: { paddingHorizontal: 16, paddingBottom: 6 },
+  
+  searchWrapper: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 12, paddingHorizontal: 12, borderWidth: 1, borderColor: "#E2E8F0" },
+  searchIcon: { marginRight: 6 },
+  searchInput: { flex: 1, height: 54, borderBottomWidth: 0, backgroundColor: "transparent",marginBottom:0 },
+  
+  filterListContainer: { paddingHorizontal: 16, gap: 6 },
+  chip: { paddingHorizontal: 12, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  chipText: { fontSize: 12, fontWeight: "600" },
+  
+  dateFilterRow: { flexDirection: "row", gap: 4, paddingHorizontal: 16, backgroundColor: "#F1F5F9", padding: 3, borderRadius: 10, marginHorizontal: 16, marginBottom: 12, marginTop: 8 },
+  dateChip: { flex: 1, paddingVertical: 6, alignItems: "center", borderRadius: 8 },
+  dateChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
+  dateChipText: { fontSize: 12, color: "#64748B", fontWeight: "600" },
+  dateChipTextActive: { color: "#1E293B", fontWeight: "700" },
+  
+  resultRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 10 },
+  resultText: { fontSize: 12, color: "#64748B", fontWeight: "500" },
   clearText: { fontSize: 12, color: Colors.primary, fontWeight: "600" },
-  list: { paddingHorizontal: 16, paddingBottom: 100, paddingTop: 4 },
-  orderCard: { padding: 14 },
-  orderCardUrgent: { borderWidth: 1, borderColor: Colors.danger + "60", backgroundColor: "#FFF5F5" },
-  orderCardNew: { borderWidth: 1, borderColor: Colors.success + "60", backgroundColor: "#F0FFF4" },
-  orderHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
-  orderNumberRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 },
-  orderNumber: { fontSize: 15, fontWeight: "700", color: Colors.gray[900] },
-  urgentBadge: { backgroundColor: Colors.dangerLight, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  urgentText: { fontSize: 10, fontWeight: "600", color: Colors.danger },
-  newBadge: { backgroundColor: Colors.successLight, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  newText: { fontSize: 10, fontWeight: "600", color: Colors.success },
-  pendingTime: { fontSize: 11, color: Colors.warning, fontWeight: "500" },
-  orderAmount: { fontSize: 15, fontWeight: "700", color: Colors.primary },
-  customerName: { fontSize: 14, fontWeight: "600", color: Colors.gray[800] },
-  customerAddress: { fontSize: 12, color: Colors.gray[500], marginTop: 2 },
-  landmark: { fontSize: 12, color: Colors.gray[400], marginTop: 1, fontStyle: "italic" },
-  driverInfo: { fontSize: 12, color: Colors.secondary, marginTop: 4 },
-  itemsRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 8 },
-  itemChip: { fontSize: 11, backgroundColor: Colors.gray[100], paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, color: Colors.gray[600] },
-  assignBtn: { alignSelf: "flex-start", marginTop: 8 },
-  empty: { alignItems: "center", paddingTop: 60 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { fontSize: 16, color: Colors.gray[500] },
-  // Modal
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  modalContent: { backgroundColor: Colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "80%" },
-  modalTitle: { fontSize: 20, fontWeight: "700", color: Colors.gray[900] },
-  modalSub: { fontSize: 13, color: Colors.gray[500], marginTop: 4, marginBottom: 16 },
-  modalEmpty: { textAlign: "center", color: Colors.gray[400], paddingVertical: 20 },
-  driverRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, gap: 12 },
-  driverAvatar: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
-  driverAvatarText: { color: Colors.white, fontWeight: "700", fontSize: 16 },
-  driverName: { fontSize: 15, fontWeight: "600", color: Colors.gray[800] },
-  driverPhone: { fontSize: 12, color: Colors.gray[500] },
-  driverBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  driverBadgeText: { fontSize: 12, fontWeight: "600" },
-  legendRow: { flexDirection: "row", gap: 16, paddingTop: 8, borderTopWidth: 1, borderTopColor: Colors.gray[100], marginTop: 8 },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+  
+  list: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 100 },
+  orderCard: { padding: 16, borderRadius: 16, backgroundColor: Colors.white, borderLeftWidth: 4, borderLeftColor: "#CBD5E1", borderWidth: 1, borderColor: "#E2E8F0" },
+  orderCardUrgent: { borderLeftColor: Colors.danger, backgroundColor: "#FFF5F5" },
+  orderCardNew: { borderLeftColor: Colors.success, backgroundColor: "#F0FFF4" },
+  
+  orderHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
+  orderNumberRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  orderNumber: { fontSize: 16, fontWeight: "700", color: "#0F172A" },
+  badgeRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 },
+  urgentBadge: { backgroundColor: "#FEE2E2", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  urgentText: { fontSize: 10, fontWeight: "700", color: Colors.danger },
+  newBadge: { backgroundColor: "#DCFCE7", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  newText: { fontSize: 10, fontWeight: "700", color: Colors.success },
+  tickerBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(217, 119, 6, 0.06)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  pendingTime: { fontSize: 11, color: "#D97706", fontWeight: "600" },
+  orderAmount: { fontSize: 16, fontWeight: "800", color: Colors.primary },
+  
+  customerBlock: { gap: 4, marginBottom: 10, paddingVertical: 2 },
+  customerName: { fontSize: 14, fontWeight: "600", color: "#1E293B" },
+  customerPhone: { fontSize: 12, color: "#64748B" },
+  infoLine: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
+  customerAddress: { flex: 1, fontSize: 13, color: "#475569" },
+  landmark: { fontSize: 12, color: "#64748B", fontStyle: "italic", marginLeft: 18 },
+  
+  itemsDivider: { height: 1, backgroundColor: "#F1F5F9", marginVertical: 10 },
+  itemsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4, marginBottom: 12 },
+  itemChip: { fontSize: 12, backgroundColor: "#F1F5F9", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, color: "#334155" },
+  
+  cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  bottleBox: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#F8FAFC", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  bottleLabel: { fontSize: 12, fontWeight: "600", color: "#475569" },
+  driverContainer: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#F1F5F9", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  driverInfo: { fontSize: 12, color: "#334155", fontWeight: "600" },
+  
+  assignBtn: { marginTop: 4, borderRadius: 10, width: '100%' },
+  
+  empty: { alignItems: "center", justifyContent: "center", paddingTop: 80 },
+  emptyIcon: { fontSize: 54, marginBottom: 14 },
+  emptyText: { fontSize: 15, color: "#94A3B8", fontWeight: "500" },
+  
+  modalOverlay: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.3)", justifyContent: "flex-end" },
+  modalContent: { backgroundColor: Colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 34, maxHeight: "85%" },
+  modalIndicator: { width: 36, height: 4, backgroundColor: "#E2E8F0", borderRadius: 2, alignSelf: "center", marginBottom: 16 },
+  modalTitle: { fontSize: 18, fontWeight: "700", color: "#0F172A" },
+  modalSub: { fontSize: 13, color: "#64748B", marginTop: 4, marginBottom: 20 },
+  modalEmpty: { textAlign: "center", color: "#94A3B8", paddingVertical: 30, fontSize: 14 },
+  
+  driverRow: { flexDirection: "row", alignItems: "center", paddingVertical: 14, gap: 12 },
+  driverAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  driverAvatarText: { fontWeight: "700", fontSize: 15 },
+  driverName: { fontSize: 15, fontWeight: "600", color: "#1E293B" },
+  driverPhone: { fontSize: 12, color: "#64748B" },
+  driverBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
+  driverBadgeText: { fontSize: 11, fontWeight: "600" },
+  
+  legendRow: { flexDirection: "row", gap: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F1F5F9", marginTop: 12, justifyContent: "center" },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontSize: 11, color: Colors.gray[500] },
+  legendText: { fontSize: 12, color: "#64748B" },
 });

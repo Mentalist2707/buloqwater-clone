@@ -1,6 +1,6 @@
 /**
- * Admin/Director profil ekrani
- * Web: /admin/profile — Ism, telefon tahrirlash + parol o'zgartirish
+ * Admin/Director profil ekrani (Premium iOS / Slate Style)
+ * Ism, telefon tahrirlash + Parol o'zgartirish va xavfsizlik indikatori
  */
 import React, { useState, useCallback } from "react";
 import {
@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { useFocusEffect, router } from "expo-router";
 import { Card, Button, Input } from "@/components/ui";
@@ -47,42 +48,35 @@ const ROLE_LABELS: Record<string, string> = {
   CUSTOMER: "Mijoz",
 };
 
-function getPasswordStrength(password: string) {
-  if (!password) return { level: 0, label: "", color: Colors.gray[200] };
-  let score = 0;
-  if (password.length >= 6) score++;
-  if (password.length >= 8) score++;
-  if (/[A-Z]/.test(password)) score++;
-  if (/[0-9]/.test(password)) score++;
-  if (/[^A-Za-z0-9]/.test(password)) score++;
+function getPasswordStrength(p: string): { score: number; label: string; color: string } {
+  if (!p) return { score: 0, label: "", color: "#94A3B8" };
+  let s = 0;
+  if (p.length >= 6) s++;
+  if (/[A-Z]/.test(p)) s++;
+  if (/[0-9]/.test(p)) s++;
+  if (/[^A-Za-z0-9]/.test(p)) s++;
 
-  if (score <= 1) return { level: 1, label: "Kuchsiz", color: Colors.danger };
-  if (score <= 2) return { level: 2, label: "O'rtacha", color: Colors.warning };
-  if (score <= 3) return { level: 3, label: "Yaxshi", color: Colors.primary };
-  return { level: 4, label: "Kuchli", color: Colors.success };
+  if (s <= 1) return { score: 1, label: "Kuchsiz parol", color: "#DC2626" };
+  if (s === 2) return { score: 2, label: "O'rtacha parol", color: "#D97706" };
+  return { score: 3, label: "Kuchli xavfsiz parol", color: "#16A34A" };
 }
 
 export default function AdminProfileScreen() {
-  const { user, logout, setAuth, token } = useAuthStore();
-
+  const logoutUser = useAuthStore((s) => s.logout);
+  
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Profile form
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Password form
+  // Forma statelari
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew, setShowNew] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [savingPassword, setSavingPassword] = useState(false);
+  const [showPass, setShowPass] = useState(false);
 
-  const load = async () => {
+  const loadData = async () => {
+    setLoading(true);
     const r = await getProfile();
     if (r.success && r.data) {
       setProfile(r.data);
@@ -92,378 +86,290 @@ export default function AdminProfileScreen() {
     setLoading(false);
   };
 
-  useFocusEffect(useCallback(() => { load(); }, []));
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
 
-  const handleSaveProfile = async () => {
-    if (!name.trim()) {
-      Alert.alert("Diqqat", "Ism bo'sh bo'lishi mumkin emas");
+  const handleSave = async () => {
+    if (!name.trim() || !phone.trim()) {
+      Alert.alert("Xato", "Ism va telefon maydonlarini to'ldiring");
       return;
     }
-    setSaving(true);
-    const rawPhone = phone.startsWith("+") ? phone.replace(/\s/g, "") : `+998${phone.replace(/\D/g, "")}`;
-    const r = await updateProfile({ name: name.trim(), phone: rawPhone });
-    if (r.success) {
-      Alert.alert("✅", "Profil ma'lumotlari muvaffaqiyatli yangilandi!");
-      load();
-      // Update auth store user name
-      if (user && token) {
-        await setAuth(token, { ...user, name: name.trim() });
+
+    const payload: any = { name, phone };
+
+    if (currentPassword || newPassword) {
+      if (!currentPassword || !newPassword) {
+        Alert.alert("Xato", "Parolni o'zgartirish uchun joriy va yangi parollarni kiriting");
+        return;
       }
-    } else {
-      Alert.alert("Xatolik", (r as any).error || "Xatolik yuz berdi");
+      if (newPassword.length < 6) {
+        Alert.alert("Xato", "Yangi parol kamida 6 ta belgidan iborat bo'lishi kerak");
+        return;
+      }
+      payload.currentPassword = currentPassword;
+      payload.newPassword = newPassword;
     }
-    setSaving(false);
-  };
 
-  const handleChangePassword = async () => {
-    if (newPassword.length < 6) {
-      Alert.alert("Diqqat", "Yangi parol kamida 6 ta belgidan iborat bo'lishi kerak");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      Alert.alert("Diqqat", "Yangi parollar bir-biriga mos kelmaydi");
-      return;
-    }
-    if (currentPassword === newPassword) {
-      Alert.alert("Diqqat", "Yangi parol joriy paroldan farqli bo'lishi kerak");
-      return;
-    }
-    setSavingPassword(true);
-    const r = await updateProfile({ currentPassword, newPassword });
+    setSaving(true);
+    const r = await updateProfile(payload);
+    setSaving(false);
+
     if (r.success) {
+      Alert.alert("Muvaffaqiyatli", "Profil ma'lumotlari yangilandi");
       setCurrentPassword("");
       setNewPassword("");
-      setConfirmPassword("");
-      Alert.alert("✅", "Parol muvaffaqiyatli yangilandi!");
+      loadData();
     } else {
-      Alert.alert("Xatolik", (r as any).error || "Xatolik yuz berdi");
+      Alert.alert("Xatolik", (r as any).error || "Ma'lumotlarni saqlashda xato yuz berdi");
     }
-    setSavingPassword(false);
   };
 
   const handleLogout = () => {
-    Alert.alert("Chiqish", "Tizimdan chiqmoqchimisiz?", [
+    Alert.alert("Tizimdan chiqish", "Haqiqatan ham profilingizdan chiqmoqchimisiz?", [
       { text: "Bekor qilish", style: "cancel" },
       {
         text: "Chiqish",
         style: "destructive",
-        onPress: async () => {
-          await logout();
-          router.replace("/(auth)/login");
+        onPress: () => {
+          logoutUser();
+          router.replace("/login");
         },
       },
     ]);
   };
 
-  const passwordStrength = getPasswordStrength(newPassword);
-  const isPasswordFormValid =
-    currentPassword.length > 0 &&
-    newPassword.length >= 6 &&
-    confirmPassword === newPassword;
-
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Yuklanmoqda...</Text>
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={Colors.primary} />
       </View>
     );
   }
 
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* User Info Header */}
-      <Card style={styles.headerCard}>
-        <View style={styles.avatarRow}>
-          <View style={styles.avatarLarge}>
-            <Text style={styles.avatarText}>
-              {profile?.name?.charAt(0).toUpperCase() || "?"}
-            </Text>
-          </View>
-          <View style={styles.headerInfo}>
-            <Text style={styles.profileName}>{profile?.name}</Text>
-            <View style={styles.roleBadge}>
-              <Text style={styles.roleText}>{ROLE_LABELS[profile?.role || ""] || profile?.role}</Text>
-            </View>
-            <Text style={styles.phoneText}>{profile?.phone}</Text>
-          </View>
-        </View>
-      </Card>
+  const strength = getPasswordStrength(newPassword);
+  const initials = name ? name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : "A";
 
-      {/* Company Info */}
-      {user?.company && (
-        <Card style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Kompaniya</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Nomi:</Text>
-            <Text style={styles.infoValue}>{user.company.name}</Text>
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+      
+      {/* iOS Style Profile Header */}
+      <View style={styles.headerCard}>
+        <View style={styles.avatarCircle}>
+          <Text style={styles.avatarText}>{initials}</Text>
+        </View>
+        <Text style={styles.profileName}>{profile?.name}</Text>
+        <View style={styles.roleBadge}>
+          <Text style={styles.roleBadgeText}>
+            🛡️ {ROLE_LABELS[profile?.role || ""] || profile?.role}
+          </Text>
+        </View>
+        <Text style={styles.joinedText}>
+          Tizimda yaratilgan sana: {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString("uz-UZ") : "-"}
+        </Text>
+      </View>
+
+      {/* Asosiy Ma'lumotlar Kartasi */}
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Shaxsiy ma'lumotlar</Text>
+        <Card style={styles.infoCard}>
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>To'liq ismingiz (F.I.Sh):</Text>
+            <Input
+              placeholder="Ismingizni kiriting"
+              value={name}
+              onChangeText={setName}
+              style={styles.customInput}
+            />
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Subdomen:</Text>
-            <Text style={styles.infoValue}>{user.company.subdomain}</Text>
+
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>Telefon raqamingiz:</Text>
+            <Input
+              placeholder="998901234567"
+              keyboardType="numeric"
+              value={phone}
+              onChangeText={setPhone}
+              style={styles.customInput}
+            />
           </View>
         </Card>
-      )}
+      </View>
 
-      {/* Edit Profile */}
-      <Card style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Shaxsiy ma'lumotlar</Text>
-
-        <View style={styles.field}>
-          <Text style={styles.fieldLabel}>Ism familiya</Text>
-          <TextInput
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="Ism familiya"
-            placeholderTextColor={Colors.gray[400]}
-          />
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.fieldLabel}>Telefon raqami</Text>
-          <TextInput
-            style={styles.input}
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="+998901234567"
-            placeholderTextColor={Colors.gray[400]}
-            keyboardType="phone-pad"
-          />
-        </View>
-
-        <Button
-          title={saving ? "Saqlanmoqda..." : "💾 Saqlash"}
-          onPress={handleSaveProfile}
-          loading={saving}
-          disabled={saving || !name.trim()}
-          style={styles.saveBtn}
-        />
-      </Card>
-
-      {/* Change Password */}
-      <Card style={styles.sectionCard}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionIcon}>🔑</Text>
-          <View>
-            <Text style={styles.sectionTitle}>Parolni o'zgartirish</Text>
-            <Text style={styles.sectionSubtitle}>Xavfsizlik uchun kuchli parol tanlang</Text>
-          </View>
-        </View>
-
-        {/* Current password */}
-        <View style={styles.field}>
-          <Text style={styles.fieldLabel}>Joriy parol</Text>
-          <View style={styles.passwordRow}>
-            <TextInput
-              style={[styles.input, styles.passwordInput]}
+      {/* Xavfsizlik va Parol Kartasi */}
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Xavfsizlik va Parol o'zgartirish</Text>
+        <Card style={styles.infoCard}>
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>Joriy parolingiz:</Text>
+            <Input
+              placeholder="Eski parolni kiriting"
+              secureTextEntry={!showPass}
               value={currentPassword}
               onChangeText={setCurrentPassword}
-              placeholder="Hozirgi parolingiz"
-              placeholderTextColor={Colors.gray[400]}
-              secureTextEntry={!showCurrent}
+              style={styles.customInput}
             />
-            <TouchableOpacity
-              style={styles.eyeBtn}
-              onPress={() => setShowCurrent(!showCurrent)}
-            >
-              <Text style={styles.eyeIcon}>{showCurrent ? "🙈" : "👁️"}</Text>
-            </TouchableOpacity>
           </View>
-        </View>
 
-        {/* New password */}
-        <View style={styles.field}>
-          <Text style={styles.fieldLabel}>Yangi parol</Text>
-          <View style={styles.passwordRow}>
-            <TextInput
-              style={[styles.input, styles.passwordInput]}
-              value={newPassword}
-              onChangeText={setNewPassword}
-              placeholder="Kamida 6 ta belgi"
-              placeholderTextColor={Colors.gray[400]}
-              secureTextEntry={!showNew}
-            />
-            <TouchableOpacity
-              style={styles.eyeBtn}
-              onPress={() => setShowNew(!showNew)}
-            >
-              <Text style={styles.eyeIcon}>{showNew ? "🙈" : "👁️"}</Text>
-            </TouchableOpacity>
-          </View>
-          {/* Strength bar */}
-          {newPassword.length > 0 && (
-            <View style={styles.strengthContainer}>
-              <View style={styles.strengthBars}>
-                {[1, 2, 3, 4].map((level) => (
-                  <View
-                    key={level}
-                    style={[
-                      styles.strengthBar,
-                      {
-                        backgroundColor:
-                          level <= passwordStrength.level
-                            ? passwordStrength.color
-                            : Colors.gray[200],
-                      },
-                    ]}
-                  />
-                ))}
-              </View>
-              {passwordStrength.label ? (
-                <Text style={[styles.strengthLabel, { color: passwordStrength.color }]}>
-                  {passwordStrength.label}
-                </Text>
-              ) : null}
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>Yangi parol:</Text>
+            <View style={styles.passwordRow}>
+              <TextInput
+                placeholder="Yangi kuchli parol yarating"
+                placeholderTextColor="#94A3B8"
+                secureTextEntry={!showPass}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                style={[styles.customTextInput, styles.passwordInput]}
+              />
+              <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowPass(!showPass)}>
+                <Text style={styles.eyeIcon}>{showPass ? "👁️" : "🙈"}</Text>
+              </TouchableOpacity>
             </View>
-          )}
-        </View>
 
-        {/* Confirm password */}
-        <View style={styles.field}>
-          <Text style={styles.fieldLabel}>Yangi parolni tasdiqlash</Text>
-          <View style={styles.passwordRow}>
-            <TextInput
-              style={[
-                styles.input,
-                styles.passwordInput,
-                confirmPassword.length > 0
-                  ? confirmPassword === newPassword
-                    ? styles.inputSuccess
-                    : styles.inputError
-                  : undefined,
-              ]}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              placeholder="Yangi parolni qayta kiriting"
-              placeholderTextColor={Colors.gray[400]}
-              secureTextEntry={!showConfirm}
-            />
-            <TouchableOpacity
-              style={styles.eyeBtn}
-              onPress={() => setShowConfirm(!showConfirm)}
-            >
-              <Text style={styles.eyeIcon}>{showConfirm ? "🙈" : "👁️"}</Text>
-            </TouchableOpacity>
+            {/* Parol mustahkamligi indikatori */}
+            {newPassword.length > 0 && (
+              <View style={styles.strengthContainer}>
+                <View style={styles.strengthBars}>
+                  <View style={[styles.bar, strength.score >= 1 && { backgroundColor: strength.color }]} />
+                  <View style={[styles.bar, strength.score >= 2 && { backgroundColor: strength.color }]} />
+                  <View style={[styles.bar, strength.score >= 3 && { backgroundColor: strength.color }]} />
+                </View>
+                <Text style={[styles.strengthLabel, { color: strength.color }]}>
+                  {strength.label}
+                </Text>
+              </View>
+            )}
           </View>
-          {confirmPassword.length > 0 && (
-            <Text
-              style={[
-                styles.matchLabel,
-                { color: confirmPassword === newPassword ? Colors.success : Colors.danger },
-              ]}
-            >
-              {confirmPassword === newPassword ? "✅ Parollar mos" : "❌ Parollar mos kelmaydi"}
-            </Text>
-          )}
-        </View>
+        </Card>
+      </View>
 
+      {/* Amallar tugmalari */}
+      <View style={styles.actionsContainer}>
         <Button
-          title={savingPassword ? "O'zgartirilmoqda..." : "🔑 Parolni o'zgartirish"}
-          onPress={handleChangePassword}
-          loading={savingPassword}
-          disabled={savingPassword || !isPasswordFormValid}
+          title={saving ? "Saqlanmoqda..." : "O'zgarishlarni saqlash"}
+          onPress={handleSave}
+          disabled={saving}
           style={styles.saveBtn}
         />
-      </Card>
 
-      {/* App Info */}
-      <Card style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Ilova haqida</Text>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Versiya:</Text>
-          <Text style={styles.infoValue}>1.0.0</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Platforma:</Text>
-          <Text style={styles.infoValue}>BuloqWater Mobile</Text>
-        </View>
-      </Card>
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+          <Text style={styles.logoutText}>🚪 Tizimdan chiqish</Text>
+        </TouchableOpacity>
+      </View>
 
-      {/* Logout */}
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Tizimdan chiqish</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 16, paddingBottom: 60 },
-  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
-  loadingText: { color: Colors.gray[400], fontSize: 16 },
-  headerCard: { padding: 20, marginBottom: 12 },
-  avatarRow: { flexDirection: "row", alignItems: "center", gap: 16 },
-  avatarLarge: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.primaryLight,
+  container: { flex: 1, backgroundColor: "#F8FAFC", paddingTop:25,  },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F8FAFC" },
+  
+  // Header Profile Card
+  headerCard: {
+    alignItems: "center",
+    paddingVertical: 24,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderColor: "#E2E8F0",
+    marginBottom: 16,
+  },
+  avatarCircle: {
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: "rgba(2, 132, 199, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(2, 132, 199, 0.2)",
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: 12,
   },
-  avatarText: { fontSize: 24, fontWeight: "700", color: Colors.primaryDark },
-  headerInfo: { flex: 1 },
-  profileName: { fontSize: 18, fontWeight: "700", color: Colors.gray[900] },
+  avatarText: { fontSize: 24, fontWeight: "700", color: "#0284C7" },
+  profileName: { fontSize: 20, fontWeight: "800", color: "#0F172A" },
+  
   roleBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: Colors.primaryLight,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    marginTop: 4,
-  },
-  roleText: { fontSize: 12, fontWeight: "600", color: Colors.primaryDark },
-  phoneText: { fontSize: 13, color: Colors.gray[500], marginTop: 4 },
-  sectionCard: { padding: 16, marginBottom: 12 },
-  sectionHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
-  sectionIcon: { fontSize: 24 },
-  sectionTitle: { fontSize: 15, fontWeight: "700", color: Colors.gray[800], marginBottom: 12 },
-  sectionSubtitle: { fontSize: 12, color: Colors.gray[500], marginTop: 1 },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[100],
-  },
-  infoLabel: { fontSize: 14, color: Colors.gray[500] },
-  infoValue: { fontSize: 14, fontWeight: "500", color: Colors.gray[800] },
-  field: { marginBottom: 14 },
-  fieldLabel: { fontSize: 13, fontWeight: "600", color: Colors.gray[700], marginBottom: 6 },
-  input: {
-    backgroundColor: Colors.gray[50],
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginTop: 6,
     borderWidth: 1,
-    borderColor: Colors.gray[200],
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: Colors.gray[900],
+    borderColor: "#DBEAFE",
   },
-  inputSuccess: { borderColor: Colors.success },
-  inputError: { borderColor: Colors.danger },
-  passwordRow: { flexDirection: "row", alignItems: "center" },
-  passwordInput: { flex: 1, paddingRight: 44 },
-  eyeBtn: {
-    position: "absolute",
-    right: 12,
-    padding: 4,
+  roleBadgeText: { fontSize: 12, fontWeight: "700", color: "#1E40AF" },
+  joinedText: { fontSize: 12, color: "#94A3B8", marginTop: 8, fontWeight: "500" },
+
+  // Sections
+  sectionContainer: { paddingHorizontal: 16, marginBottom: 20 },
+  sectionTitle: { fontSize: 13, fontWeight: "600", color: "#64748B", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, marginLeft: 4 },
+  
+  infoCard: {
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  eyeIcon: { fontSize: 18 },
-  strengthContainer: { marginTop: 8, gap: 4 },
-  strengthBars: { flexDirection: "row", gap: 4 },
-  strengthBar: { flex: 1, height: 4, borderRadius: 2 },
-  strengthLabel: { fontSize: 11, fontWeight: "600" },
-  matchLabel: { fontSize: 12, fontWeight: "600", marginTop: 4 },
-  saveBtn: { marginTop: 4 },
-  logoutBtn: {
-    marginTop: 8,
-    marginBottom: 20,
-    paddingVertical: 16,
-    alignItems: "center",
+
+  field: { marginBottom: 14 },
+  fieldLabel: { fontSize: 13, fontWeight: "600", color: "#475569", marginBottom: 6 },
+  
+  customInput: {
     borderRadius: 12,
-    backgroundColor: Colors.dangerLight,
+    height: 50,
+    borderColor: "#CBD5E1",
+    backgroundColor: "#F8FAFC",
+    fontSize: 15,
+    paddingTop:0
   },
-  logoutText: { fontSize: 16, fontWeight: "600", color: Colors.danger },
+
+  // Custom styling for password field row
+  passwordRow: { position: "relative", flexDirection: "row", alignItems: "center" },
+  customTextInput: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 15,
+    color: "#0F172A",
+    height: 46,
+  },
+  passwordInput: { paddingRight: 44 },
+  eyeBtn: { position: "absolute", right: 12, padding: 6, justifyContent: "center", height: "100%" },
+  eyeIcon: { fontSize: 16 },
+
+  // Password strength
+  strengthContainer: { marginTop: 8, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
+  strengthBars: { flexDirection: "row", gap: 4, flex: 1 },
+  bar: { flex: 1, height: 4, backgroundColor: "#E2E8F0", borderRadius: 2 },
+  strengthLabel: { fontSize: 11, fontWeight: "600", textAlign: "right", minWidth: 100 },
+
+  // Buttons actions
+  actionsContainer: { paddingHorizontal: 16, gap: 12, marginTop: 10 },
+  saveBtn: { borderRadius: 12, height: 48 },
+  
+  logoutBtn: {
+    backgroundColor: "rgba(220, 38, 38, 0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(220, 38, 38, 0.15)",
+    borderRadius: 12,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+    marginBottom:60
+  },
+  logoutText: { color: "#DC2626", fontSize: 14, fontWeight: "600", },
 });
