@@ -1,6 +1,7 @@
 /**
- * Admin Dashboard — Analitika va Statistika
- * Strict TypeScript, Ultra-Minimalist Flat iOS Style with Safe Spacing
+ * 🎨 PREMIUM ADMIN DASHBOARD
+ * Ultra-Modern Glassmorphism + Gradient Design
+ * Professional Analytics Interface
  */
 import React, { useState, useCallback } from "react";
 import {
@@ -9,24 +10,43 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
+  Platform,
+  Dimensions,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
+import { Ionicons, MaterialCommunityIcons, FontAwesome5, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { adminService, type AdminStats } from "@/services/admin";
 import { useAuthStore } from "@/store/auth";
 
-// ─── Qat'iy Tiplashtirilgan Ranglar ────────────────────────
+const { width } = Dimensions.get("window");
+
+// 🎨 Premium Color Palette
 const C = {
-  primary:      "#0284C7" as const, // Elegant Toza Ko'k
-  success:      "#16A34A" as const, // Yashil
-  warning:      "#D97706" as const, // To'q sariq
-  danger:       "#DC2626" as const, // Qizil
-  textDark:     "#0F172A" as const, // Slate 900
-  textSub:      "#64748B" as const, // Slate 500
-  border:       "#E2E8F0" as const, // Slate 200
-  bgLight:      "#F8FAFC" as const, // Slate 50
-  cardBg:       "#FFFFFF" as const, // Oq
+  // Gradients
+  primaryGradient: ["#667eea", "#764ba2"],
+  successGradient: ["#11998e", "#38ef7d"],
+  warningGradient: ["#f093fb", "#f5576c"],
+  dangerGradient: ["#fa709a", "#fee140"],
+  blueGradient: ["#4facfe", "#00f2fe"],
+  purpleGradient: ["#a8edea", "#fed6e3"],
+  
+  // Solids
+  text: "#1a1a2e",
+  textLight: "#6b7280",
+  white: "#ffffff",
+  glass: "rgba(255, 255, 255, 0.15)",
+  glassDark: "rgba(255, 255, 255, 0.95)",
+  shadow: "rgba(0, 0, 0, 0.1)",
+  
+  // Accent colors
+  purple: "#667eea",
+  blue: "#4facfe",
+  green: "#11998e",
+  pink: "#f093fb",
+  orange: "#fa709a",
 };
 
 function formatCurrency(amount: number): string {
@@ -39,7 +59,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const { user } = useAuthStore();
-  const insets = useSafeAreaInsets(); // Ekran notch/status bar o'lchamini olish
+  const insets = useSafeAreaInsets();
 
   const load = async () => {
     const r = await adminService.getStats();
@@ -55,214 +75,294 @@ export default function AdminDashboard() {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />}
-      // contentContainerStyle qismiga insets.top qo'shib, tepadan dinamik joy ochamiz
-      contentContainerStyle={[
-        styles.content, 
-        { paddingTop: insets.top > 0 ? insets.top + 8 : 16 }
-      ]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Greeting — Endi status bardan pastda xavfsiz masofada joylashadi */}
-      <View style={styles.greetingBox}>
-        <Text style={styles.greetingText}>Salom, {user?.name}</Text>
-        <Text style={styles.companyText}>{user?.company?.name}</Text>
-      </View>
+    <View style={styles.container}>
+      {/* 🌊 Animated Background Gradient */}
+      <LinearGradient
+        colors={["#667eea", "#764ba2", "#f093fb"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
+      
+      {/* ✨ Floating Orbs */}
+      <View style={[styles.orb, styles.orb1]} />
+      <View style={[styles.orb, styles.orb2]} />
+      <View style={[styles.orb, styles.orb3]} />
 
-      {!stats ? (
-        <Text style={styles.loading}>Yuklanmoqda...</Text>
-      ) : (
-        <>
-          {/* Kunlik KPI */}
-          <Text style={styles.sectionTitle}>Bugungi ko'rsatkichlar</Text>
-          <View style={styles.row}>
-            <KpiCard
-              label="Sotuv"
-              value={`${formatCurrency(stats.dailySales)} so'm`}
-              icon={<MaterialCommunityIcons name="currency-usd" size={20} color={C.success} />}
-              trend={stats.salesTrend}
-              iconBg="#DCFCE7"
-            />
-            <KpiCard
-              label="Yetkazildi"
-              value={`${stats.dailyDeliveries} ta`}
-              icon={<Ionicons name="bicycle" size={20} color={C.primary} />}
-              trend={stats.deliveryTrend}
-              iconBg="#E0F2FE"
-            />
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 👋 Premium Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>Assalomu alaykum</Text>
+            <Text style={styles.userName}>{user?.name} 👑</Text>
           </View>
-          <View style={styles.row}>
-            <KpiCard
-              label="Yangi mijozlar"
-              value={`${stats.newCustomersMonth} ta`}
-              icon={<Ionicons name="person-add" size={18} color="#6366F1" />}
-              subtitle="Bu oy"
-              iconBg="#EEF2FF"
-            />
-            <KpiCard
-              label="Faol haydovchi"
-              value={`${stats.activeDrivers} ta`}
-              icon={<Ionicons name="car" size={20} color={C.warning} />}
-              iconBg="#FEF3C7"
-            />
+          <View style={styles.headerBadge}>
+            <LinearGradient
+              colors={["rgba(255,255,255,0.3)", "rgba(255,255,255,0.1)"]}
+              style={styles.badgeGradient}
+            >
+              <FontAwesome5 name="crown" size={14} color="#ffd700" />
+              <Text style={styles.badgeText}>Director</Text>
+            </LinearGradient>
           </View>
+        </View>
 
-          {/* Status kartalar */}
-          <Text style={styles.sectionTitle}>Hozirgi holat</Text>
-          <View style={styles.row}>
-            <StatusCard label="Kutilmoqda" value={stats.pendingOrders} color={C.warning} />
-            <StatusCard label="Yo'lda" value={stats.inTransitOrders} color={C.primary} />
-            <StatusCard label="Jami mijoz" value={stats.totalCustomers ?? 0} color="#6366F1" />
+        {!stats ? (
+          <View style={styles.loadingContainer}>
+            <LinearGradient
+              colors={["rgba(255,255,255,0.2)", "rgba(255,255,255,0.1)"]}
+              style={styles.loadingCard}
+            >
+              <Ionicons name="analytics" size={40} color="rgba(255,255,255,0.6)" />
+              <Text style={styles.loadingText}>Ma'lumotlar yuklanmoqda...</Text>
+            </LinearGradient>
           </View>
-
-          {/* To'lov turi breakdown */}
-          {stats.paymentBreakdown && (
-            <>
-              <Text style={styles.sectionTitle}>Bugungi to'lovlar</Text>
-              <View style={styles.row}>
-                <PaymentCard label="Naqd" amount={stats.paymentBreakdown.cash} color={C.success} />
-                <PaymentCard label="Click" amount={stats.paymentBreakdown.click} color={C.primary} />
-                <PaymentCard label="Qarz" amount={stats.paymentBreakdown.credit} color={C.warning} />
-              </View>
-            </>
-          )}
-
-          {/* Qarz va idish */}
-          <View style={styles.alertStack}>
-            {stats.totalDebt > 0 && (
-              <View style={styles.alertBox}>
-                <Ionicons name="card" size={22} color={C.danger} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.alertLabel}>Umumiy qarz miqdori</Text>
-                  <Text style={[styles.alertValue, { color: C.danger }]}>
-                    {stats.totalDebt.toLocaleString()} so'm
-                  </Text>
-                  {stats.customersWithDebt !== undefined && (
-                    <Text style={styles.alertSub}>{stats.customersWithDebt} ta mijozda mavjud</Text>
-                  )}
+        ) : (
+          <>
+            {/* 💰 Revenue Card - Hero */}
+            <LinearGradient
+              colors={["rgba(255,255,255,0.25)", "rgba(255,255,255,0.15)"]}
+              style={styles.heroCard}
+            >
+              <View style={styles.heroHeader}>
+                <View style={styles.heroIcon}>
+                  <MaterialCommunityIcons name="cash-multiple" size={28} color="#ffd700" />
                 </View>
-              </View>
-            )}
-            {stats.unreturnedBottles > 0 && (
-              <View style={styles.alertBox}>
-                <MaterialCommunityIcons name="bottle-wine" size={22} color={C.warning} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.alertLabel}>Qaytarilmagan bo'sh idishlar</Text>
-                  <Text style={[styles.alertValue, { color: C.warning }]}>
-                    {stats.unreturnedBottles} ta
-                  </Text>
-                  {stats.customersWithBottles !== undefined && (
-                    <Text style={styles.alertSub}>{stats.customersWithBottles} ta mijoz hisobida</Text>
-                  )}
-                </View>
-              </View>
-            )}
-          </View>
-
-          {/* Alerts (ogohlantirishlar) */}
-          {stats.alerts && stats.alerts.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Tizim xabarlari</Text>
-              <View style={styles.alertsContainer}>
-                {stats.alerts.map((alert: any, i: number) => {
-                  const isDanger = alert.type === "danger";
-                  const isWarning = alert.type === "warning";
-                  const activeColor = isDanger ? C.danger : isWarning ? C.warning : C.primary;
-                  
-                  return (
-                    <View key={i} style={[styles.alertItem, { borderLeftColor: activeColor }]}>
-                      <Ionicons 
-                        name={isDanger ? "alert-circle" : isWarning ? "warning" : "information-circle"} 
-                        size={18} 
-                        color={activeColor} 
-                      />
-                      <Text style={[styles.alertItemText, { color: C.textDark }]}>
-                        {alert.message}
-                      </Text>
+                <View style={styles.trendBadgeContainer}>
+                  {stats.salesTrend !== undefined && stats.salesTrend > 0 && (
+                    <View style={styles.trendBadge}>
+                      <Feather name="trending-up" size={14} color="#11998e" />
+                      <Text style={styles.trendText}>+{stats.salesTrend}%</Text>
                     </View>
-                  );
-                })}
+                  )}
+                </View>
               </View>
-            </>
-          )}
-
-          {/* Haftalik grafik */}
-          <Text style={styles.sectionTitle}>Haftalik buyurtmalar</Text>
-          <View style={styles.chartCard}>
-            <WeeklyChart data={stats.weeklyData} />
-          </View>
-
-          {/* Bekor qilingan bugun */}
-          {stats.cancelledToday !== undefined && stats.cancelledToday > 0 && (
-            <View style={styles.cancelledCard}>
-              <Ionicons name="close-circle" size={18} color={C.danger} />
-              <Text style={styles.cancelledText}>
-                Bugun {stats.cancelledToday} ta buyurtma bekor qilindi
+              <Text style={styles.heroLabel}>Bugungi Tushum</Text>
+              <Text style={styles.heroValue}>{formatCurrency(stats.dailySales)} so'm</Text>
+              <Text style={styles.heroSubtext}>
+                {stats.dailyDeliveries} ta buyurtma yetkazildi
               </Text>
+            </LinearGradient>
+
+            {/* 📊 Stats Grid */}
+            <View style={styles.statsGrid}>
+              <GlassCard
+                icon={<Ionicons name="cart" size={24} color="#667eea" />}
+                label="Bugungi Buyurtmalar"
+                value={String(stats.dailyDeliveries)}
+                gradient={C.primaryGradient}
+              />
+              <GlassCard
+                icon={<Ionicons name="people" size={24} color="#11998e" />}
+                label="Yangi Mijozlar"
+                value={String(stats.newCustomersMonth)}
+                subtitle="Bu oy"
+                gradient={C.successGradient}
+              />
+              <GlassCard
+                icon={<FontAwesome5 name="truck" size={20} color="#f093fb" />}
+                label="Faol Haydovchilar"
+                value={String(stats.activeDrivers)}
+                gradient={C.warningGradient}
+              />
+              <GlassCard
+                icon={<Ionicons name="person-circle" size={24} color="#4facfe" />}
+                label="Jami Mijozlar"
+                value={String(stats.totalCustomers ?? 0)}
+                gradient={C.blueGradient}
+              />
             </View>
-          )}
-        </>
-      )}
-    </ScrollView>
-  );
-}
 
-function KpiCard({ label, value, icon, trend, iconBg, subtitle }: {
-  label: string; value: string; icon: React.ReactNode;
-  trend?: number; iconBg: string; subtitle?: string;
-}) {
-  return (
-    <View style={styles.kpiCard}>
-      <View style={styles.kpiTop}>
-        <View style={[styles.iconWrapper, { backgroundColor: iconBg }]}>{icon}</View>
-        {trend !== undefined && trend !== 0 && (
-          <View style={[styles.trendBadge, { backgroundColor: trend > 0 ? "#DCFCE7" : "#FEE2E2" }]}>
-            <Text style={[styles.trendText, { color: trend > 0 ? C.success : C.danger }]}>
-              {trend > 0 ? "↑" : "↓"} {Math.abs(trend)}%
-            </Text>
-          </View>
+            {/* ⚡ Quick Status */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Hozirgi Holat</Text>
+              <View style={styles.statusRow}>
+                <StatusPill
+                  icon="time"
+                  label="Kutilmoqda"
+                  count={stats.pendingOrders}
+                  colors={["#ffeaa7", "#fdcb6e"]}
+                />
+                <StatusPill
+                  icon="car"
+                  label="Yo'lda"
+                  count={stats.inTransitOrders}
+                  colors={["#74b9ff", "#0984e3"]}
+                />
+              </View>
+            </View>
+
+            {/* 💳 Payment Breakdown */}
+            {stats.paymentBreakdown && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>To'lov Turlari</Text>
+                <LinearGradient
+                  colors={["rgba(255,255,255,0.2)", "rgba(255,255,255,0.1)"]}
+                  style={styles.paymentCard}
+                >
+                  <PaymentRow
+                    icon="cash"
+                    label="Naqd"
+                    amount={stats.paymentBreakdown.cash}
+                    color="#11998e"
+                  />
+                  <View style={styles.divider} />
+                  <PaymentRow
+                    icon="card"
+                    label="Click/Payme"
+                    amount={stats.paymentBreakdown.click}
+                    color="#4facfe"
+                  />
+                  <View style={styles.divider} />
+                  <PaymentRow
+                    icon="wallet"
+                    label="Qarz"
+                    amount={stats.paymentBreakdown.credit}
+                    color="#fa709a"
+                  />
+                </LinearGradient>
+              </View>
+            )}
+
+            {/* 📈 Weekly Chart */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Haftalik Statistika</Text>
+              <LinearGradient
+                colors={["rgba(255,255,255,0.2)", "rgba(255,255,255,0.1)"]}
+                style={styles.chartCard}
+              >
+                <WeeklyChart data={stats.weeklyData} />
+              </LinearGradient>
+            </View>
+
+            {/* ⚠️ Alerts */}
+            {(stats.totalDebt > 0 || stats.unreturnedBottles > 0) && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Ogohlantirishlar</Text>
+                {stats.totalDebt > 0 && (
+                  <AlertCard
+                    icon="alert-circle"
+                    title="Qarzdorlik"
+                    value={`${formatCurrency(stats.totalDebt)} so'm`}
+                    subtitle={`${stats.customersWithDebt} ta mijozda`}
+                    colors={["#fab1a0", "#ff7675"]}
+                  />
+                )}
+                {stats.unreturnedBottles > 0 && (
+                  <AlertCard
+                    icon="flask"
+                    title="Qaytarilmagan Idishlar"
+                    value={`${stats.unreturnedBottles} ta`}
+                    subtitle={`${stats.customersWithBottles} ta mijoz hisobida`}
+                    colors={["#ffeaa7", "#fdcb6e"]}
+                  />
+                )}
+              </View>
+            )}
+
+            {/* 🔔 System Alerts */}
+            {stats.alerts && stats.alerts.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Tizim Xabarlari</Text>
+                {stats.alerts.map((alert: any, i: number) => (
+                  <LinearGradient
+                    key={i}
+                    colors={["rgba(255,255,255,0.2)", "rgba(255,255,255,0.1)"]}
+                    style={styles.alertItem}
+                  >
+                    <Feather name="bell" size={16} color="#fff" />
+                    <Text style={styles.alertText}>{alert.message}</Text>
+                  </LinearGradient>
+                ))}
+              </View>
+            )}
+          </>
         )}
+      </ScrollView>
+    </View>
+  );
+}
+
+// 🎴 Glass Card Component
+function GlassCard({ icon, label, value, subtitle, gradient }: any) {
+  return (
+    <View style={styles.glassCardWrapper}>
+      <LinearGradient
+        colors={["rgba(255,255,255,0.2)", "rgba(255,255,255,0.1)"]}
+        style={styles.glassCard}
+      >
+        <View style={styles.glassCardIcon}>{icon}</View>
+        <Text style={styles.glassCardValue}>{value}</Text>
+        <Text style={styles.glassCardLabel}>{label}</Text>
+        {subtitle && <Text style={styles.glassCardSubtitle}>{subtitle}</Text>}
+      </LinearGradient>
+    </View>
+  );
+}
+
+// 💊 Status Pill Component
+function StatusPill({ icon, label, count, colors }: any) {
+  return (
+    <LinearGradient colors={colors} style={styles.statusPill}>
+      <Ionicons name={icon} size={20} color="#fff" />
+      <View style={styles.statusPillContent}>
+        <Text style={styles.statusPillCount}>{count}</Text>
+        <Text style={styles.statusPillLabel}>{label}</Text>
       </View>
-      <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
-      <Text style={styles.kpiLabel}>{label}</Text>
-      {subtitle && <Text style={styles.kpiSubtitle}>{subtitle}</Text>}
-    </View>
+    </LinearGradient>
   );
 }
 
-function StatusCard({ label, value, color }: { label: string; value: number; color: string }) {
+// 💳 Payment Row Component
+function PaymentRow({ icon, label, amount, color }: any) {
   return (
-    <View style={styles.statusCard}>
-      <Text style={[styles.statusValue, { color }]}>{value}</Text>
-      <Text style={styles.statusLabel}>{label}</Text>
+    <View style={styles.paymentRow}>
+      <View style={styles.paymentRowLeft}>
+        <Ionicons name={icon} size={20} color={color} />
+        <Text style={styles.paymentRowLabel}>{label}</Text>
+      </View>
+      <Text style={[styles.paymentRowAmount, { color }]}>
+        {formatCurrency(amount)} so'm
+      </Text>
     </View>
   );
 }
 
-function PaymentCard({ label, amount, color }: { label: string; amount: number; color: string }) {
+// ⚠️ Alert Card Component
+function AlertCard({ icon, title, value, subtitle, colors }: any) {
   return (
-    <View style={styles.paymentCard}>
-      <Text style={styles.paymentLabel}>{label}</Text>
-      <Text style={[styles.paymentAmount, { color }]}>{formatCurrency(amount)}</Text>
-      <Text style={styles.paymentSub}>so'm</Text>
-    </View>
+    <LinearGradient colors={colors} style={styles.alertCard}>
+      <Feather name={icon} size={24} color="#fff" />
+      <View style={styles.alertCardContent}>
+        <Text style={styles.alertCardTitle}>{title}</Text>
+        <Text style={styles.alertCardValue}>{value}</Text>
+        <Text style={styles.alertCardSubtitle}>{subtitle}</Text>
+      </View>
+    </LinearGradient>
   );
 }
 
-function WeeklyChart({ data }: { data: { day: string; orders: number; revenue: number }[] }) {
+// 📊 Weekly Chart Component
+function WeeklyChart({ data }: { data: { day: string; orders: number }[] }) {
   const maxOrders = Math.max(...data.map((d) => d.orders), 1);
+  
   return (
     <View style={styles.chartContainer}>
       {data.map((item, i) => (
-        <View key={i} style={styles.chartBarWrapper}>
-          <Text style={styles.chartCount}>{item.orders > 0 ? item.orders : ""}</Text>
-          <View style={styles.chartBarBg}>
-            <View
+        <View key={i} style={styles.chartBar}>
+          {item.orders > 0 && (
+            <Text style={styles.chartLabel}>{item.orders}</Text>
+          )}
+          <View style={styles.chartBarTrack}>
+            <LinearGradient
+              colors={["#667eea", "#764ba2"]}
               style={[
                 styles.chartBarFill,
-                { height: `${Math.max((item.orders / maxOrders) * 100, 5)}%` },
+                { height: `${Math.max((item.orders / maxOrders) * 100, 8)}%` }
               ]}
             />
           </View>
@@ -274,55 +374,274 @@ function WeeklyChart({ data }: { data: { day: string; orders: number; revenue: n
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bgLight },
-  // Eski qattiq "paddingTop: 12" olib tashlandi, endi u insets orqali dinamik hisoblanadi
-  content: { paddingHorizontal: 16, paddingBottom: 80 },
+  container: { flex: 1 },
   
-  greetingBox: { marginBottom: 14 },
-  greetingText: { fontSize: 22, fontWeight: "800", color: C.textDark, letterSpacing: -0.5 },
-  companyText: { fontSize: 13, color: C.textSub, fontWeight: "500", marginTop: 2 },
-  
-  loading: { textAlign: "center", color: C.textSub, paddingVertical: 40, fontWeight: "500" },
-  sectionTitle: { fontSize: 12, fontWeight: "700", color: C.textSub, marginBottom: 8, marginTop: 16, textTransform: "uppercase", letterSpacing: 0.8 },
-  
-  row: { flexDirection: "row", gap: 10, marginBottom: 10 },
-  
-  kpiCard: { flex: 1, backgroundColor: C.cardBg, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: C.border },
-  kpiTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  iconWrapper: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  trendBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  trendText: { fontSize: 10, fontWeight: "700" },
-  kpiValue: { fontSize: 18, fontWeight: "800", color: C.textDark },
-  kpiLabel: { fontSize: 12, color: C.textSub, marginTop: 2, fontWeight: "500" },
-  kpiSubtitle: { fontSize: 10, color: C.textSub, marginTop: 1 },
-  
-  statusCard: { flex: 1, backgroundColor: C.cardBg, borderRadius: 14, padding: 12, alignItems: "center", borderWidth: 1, borderColor: C.border },
-  statusValue: { fontSize: 20, fontWeight: "800" },
-  statusLabel: { fontSize: 11, color: C.textSub, marginTop: 2, fontWeight: "600", textAlign: "center" },
-  
-  paymentCard: { flex: 1, backgroundColor: C.cardBg, borderRadius: 14, padding: 12, alignItems: "center", borderWidth: 1, borderColor: C.border },
-  paymentLabel: { fontSize: 12, color: C.textSub, fontWeight: "600", marginBottom: 4 },
-  paymentAmount: { fontSize: 15, fontWeight: "800" },
-  paymentSub: { fontSize: 10, color: C.textSub, fontWeight: "500" },
-  
-  alertStack: { gap: 8, marginBottom: 4 },
-  alertBox: { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: C.cardBg, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: C.border },
-  alertLabel: { fontSize: 12, color: C.textSub, fontWeight: "500" },
-  alertValue: { fontSize: 16, fontWeight: "700", marginTop: 1 },
-  alertSub: { fontSize: 11, color: C.textSub, marginTop: 1, fontWeight: "500" },
-  
-  alertsContainer: { gap: 6, marginBottom: 4 },
-  alertItem: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, backgroundColor: C.cardBg, borderWidth: 1, borderColor: C.border, borderLeftWidth: 4 },
-  alertItemText: { flex: 1, fontSize: 13, fontWeight: "600", lineHeight: 18 },
-  
-  chartCard: { backgroundColor: C.cardBg, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: C.border },
-  chartContainer: { flexDirection: "row", alignItems: "flex-end", height: 110, gap: 8 },
-  chartBarWrapper: { flex: 1, alignItems: "center", height: "100%" },
-  chartCount: { fontSize: 9, color: C.textSub, marginBottom: 3, fontWeight: "700" },
-  chartBarBg: { flex: 1, backgroundColor: "#F1F5F9", borderRadius: 4, overflow: "hidden", width: "100%", justifyContent: "flex-end" },
-  chartBarFill: { width: "100%", backgroundColor: C.primary, borderRadius: 4 },
-  chartDay: { fontSize: 10, color: C.textSub, marginTop: 4, fontWeight: "600" },
-  
-  cancelledCard: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FEF2F2", borderRadius: 12, padding: 12, borderWidth: 1, borderColor: "#FCA5A5", marginTop: 8 },
-  cancelledText: { fontSize: 13, color: C.danger, fontWeight: "600" },
+  // Floating Orbs
+  orb: {
+    position: "absolute",
+    borderRadius: 1000,
+    opacity: 0.3,
+  },
+  orb1: { width: 300, height: 300, backgroundColor: "#667eea", top: -150, right: -100 },
+  orb2: { width: 200, height: 200, backgroundColor: "#f093fb", bottom: 100, left: -50 },
+  orb3: { width: 150, height: 150, backgroundColor: "#4facfe", top: "50%", right: -75 },
+
+  content: { paddingHorizontal: 20, paddingBottom: 100 },
+
+  // Header
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  greeting: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.8)",
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  userName: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#fff",
+    letterSpacing: -0.5,
+  },
+  headerBadge: {
+    borderRadius: 20,
+    overflow: "hidden",
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+      android: { elevation: 4 },
+    }),
+  },
+  badgeGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  badgeText: { fontSize: 13, fontWeight: "700", color: "#fff" },
+
+  // Loading
+  loadingContainer: { paddingTop: 60 },
+  loadingCard: {
+    borderRadius: 24,
+    padding: 40,
+    alignItems: "center",
+    gap: 12,
+  },
+  loadingText: { fontSize: 14, color: "rgba(255,255,255,0.8)", fontWeight: "600" },
+
+  // Hero Card
+  heroCard: {
+    borderRadius: 28,
+    padding: 24,
+    marginBottom: 20,
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 16 },
+      android: { elevation: 6 },
+    }),
+  },
+  heroHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  heroIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  trendBadgeContainer: { flexDirection: "row" },
+  trendBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  trendText: { fontSize: 13, fontWeight: "700", color: "#11998e" },
+  heroLabel: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.8)",
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  heroValue: {
+    fontSize: 36,
+    fontWeight: "800",
+    color: "#fff",
+    letterSpacing: -1,
+    marginBottom: 8,
+  },
+  heroSubtext: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.7)",
+    fontWeight: "500",
+  },
+
+  // Stats Grid
+  statsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 20,
+  },
+  glassCardWrapper: { width: (width - 52) / 2 },
+  glassCard: {
+    borderRadius: 20,
+    padding: 16,
+    alignItems: "center",
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 },
+      android: { elevation: 3 },
+    }),
+  },
+  glassCardIcon: { marginBottom: 12 },
+  glassCardValue: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#fff",
+    marginBottom: 4,
+  },
+  glassCardLabel: {
+    fontSize: 11,
+    color: "rgba(255,255,255,0.8)",
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  glassCardSubtitle: {
+    fontSize: 10,
+    color: "rgba(255,255,255,0.6)",
+    marginTop: 2,
+  },
+
+  // Section
+  section: { marginBottom: 20 },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: 12,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+
+  // Status Row
+  statusRow: { flexDirection: "row", gap: 12 },
+  statusPill: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 16,
+    borderRadius: 16,
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
+      android: { elevation: 3 },
+    }),
+  },
+  statusPillContent: { flex: 1 },
+  statusPillCount: { fontSize: 24, fontWeight: "800", color: "#fff" },
+  statusPillLabel: { fontSize: 12, color: "rgba(255,255,255,0.9)", fontWeight: "600", marginTop: 2 },
+
+  // Payment Card
+  paymentCard: {
+    borderRadius: 20,
+    padding: 20,
+    gap: 16,
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 },
+      android: { elevation: 3 },
+    }),
+  },
+  paymentRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  paymentRowLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+  paymentRowLabel: { fontSize: 15, color: "#fff", fontWeight: "600" },
+  paymentRowAmount: { fontSize: 16, fontWeight: "800" },
+  divider: { height: 1, backgroundColor: "rgba(255,255,255,0.15)" },
+
+  // Chart
+  chartCard: {
+    borderRadius: 20,
+    padding: 20,
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 },
+      android: { elevation: 3 },
+    }),
+  },
+  chartContainer: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    height: 120,
+    gap: 8,
+  },
+  chartBar: {
+    flex: 1,
+    alignItems: "center",
+    height: "100%",
+    justifyContent: "flex-end",
+  },
+  chartLabel: {
+    fontSize: 11,
+    color: "#fff",
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  chartBarTrack: {
+    flex: 1,
+    width: "100%",
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 8,
+    overflow: "hidden",
+    justifyContent: "flex-end",
+  },
+  chartBarFill: { width: "100%", borderRadius: 8 },
+  chartDay: {
+    fontSize: 11,
+    color: "rgba(255,255,255,0.8)",
+    fontWeight: "600",
+    marginTop: 8,
+  },
+
+  // Alert Card
+  alertCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    padding: 20,
+    borderRadius: 20,
+    marginBottom: 12,
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12 },
+      android: { elevation: 4 },
+    }),
+  },
+  alertCardContent: { flex: 1 },
+  alertCardTitle: { fontSize: 13, color: "#fff", fontWeight: "600", marginBottom: 4 },
+  alertCardValue: { fontSize: 22, fontWeight: "800", color: "#fff", marginBottom: 2 },
+  alertCardSubtitle: { fontSize: 12, color: "rgba(255,255,255,0.8)", fontWeight: "500" },
+
+  // Alert Item
+  alertItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 8,
+  },
+  alertText: { flex: 1, fontSize: 13, color: "#fff", fontWeight: "600", lineHeight: 18 },
 });
