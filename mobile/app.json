@@ -50,7 +50,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "558324a4-c8df-4ae6-bd7a-ce3acdfd837a"
+        "projectId": "d37d988f-83e4-45ad-a56e-25fd76fdbcd8"
       }
     },
     "owner": "firdavs2707",
@@ -58,7 +58,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/558324a4-c8df-4ae6-bd7a-ce3acdfd837a"
+      "url": "https://u.expo.dev/d37d988f-83e4-45ad-a56e-25fd76fdbcd8"
     }
   }
 }
