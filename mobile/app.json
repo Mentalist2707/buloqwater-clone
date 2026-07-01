@@ -20,6 +20,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "uz.buloqwater.mobile",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "BuloqWater manzilingizni aniqlash uchun joylashuv ma'lumotiga kirishni so'raydi",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "BuloqWater manzilingizni aniqlash uchun joylashuv ma'lumotiga kirishni so'raydi"
       }
