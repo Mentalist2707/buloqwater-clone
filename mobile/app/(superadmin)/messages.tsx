@@ -6,9 +6,11 @@
 import React, { useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, FlatList, RefreshControl,
-  TouchableOpacity, Alert, Modal, TextInput, ScrollView,
+  TouchableOpacity, Modal, TextInput, ScrollView,
 } from "react-native";
+import { Alert } from "@/utils/alert";
 import { useFocusEffect } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card, Button } from "@/components/ui";
 import { Colors } from "@/constants";
 import { api } from "@/services/api";
@@ -48,6 +50,7 @@ function formatDate(str: string) {
 }
 
 export default function MessagesScreen() {
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<Message[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -155,7 +158,7 @@ export default function MessagesScreen() {
         renderItem={renderMessage}
         keyExtractor={(m) => m.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingTop: insets.top + 16 }]}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         ListEmptyComponent={
           <View style={styles.empty}>

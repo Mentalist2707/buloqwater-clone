@@ -1,6 +1,5 @@
 /**
- * Admin xodimlar ekrani (Premium iOS / Slate Style)
- * Xodimlarni ko'rish, yaratish, tahrirlash, bloklash va KPI ko'rsatkichlari
+ * Admin (Director) xodimlar ekrani (2026 redesign)
  */
 import React, { useState, useCallback } from "react";
 import {
@@ -14,11 +13,14 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
-import { Card, Button, Input } from "@/components/ui";
-import { Colors } from "@/constants";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
+import { Button, Input, Screen } from "@/components/ui";
 import { api } from "@/services/api";
+import { theme, palette, spacing, radius, fontSize, fontWeight, shadow } from "@/constants/theme";
 
 interface StaffMember {
   id: string;
@@ -39,15 +41,12 @@ interface StaffMember {
 async function getStaff() {
   return api.get<StaffMember[]>("/staff");
 }
-
 async function createStaff(data: { name: string; phone: string; password: string; role: string }) {
   return api.post("/staff", data);
 }
-
 async function updateStaff(userId: string, data: { name: string; phone: string; password?: string }) {
   return api.put(`/staff/${userId}`, data);
 }
-
 async function toggleStaff(userId: string) {
   return api.post(`/staff/${userId}/toggle`, {});
 }
@@ -58,14 +57,13 @@ export default function AdminStaffScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [roleFilter, setRoleFilter] = useState<"ALL" | "OPERATOR" | "DRIVER">("ALL");
   const [search, setSearch] = useState("");
+  const insets = useSafeAreaInsets();
 
-  // Modal Statelari
   const [modalVisible, setModalVisible] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Forma maydonlari
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -73,16 +71,14 @@ export default function AdminStaffScreen() {
 
   const loadStaff = async () => {
     const res = await getStaff();
-    if (res.success && res.data) {
-      setStaff(res.data);
-    }
+    if (res.success && res.data) setStaff(res.data);
     setLoading(false);
   };
 
   useFocusEffect(
     useCallback(() => {
       loadStaff();
-    }, [])
+    }, []),
   );
 
   const onRefresh = async () => {
@@ -113,7 +109,7 @@ export default function AdminStaffScreen() {
 
   const handleToggleStatus = (member: StaffMember) => {
     Alert.alert(
-      member.isActive ? "⏸️ Xodimni bloklash" : "▶️ Blokdan chiqarish",
+      member.isActive ? "Xodimni bloklash" : "Blokdan chiqarish",
       `"${member.name}" xodimining holatini o'zgartirmoqchimisiz?`,
       [
         { text: "Bekor qilish", style: "cancel" },
@@ -122,14 +118,11 @@ export default function AdminStaffScreen() {
           style: member.isActive ? "destructive" : "default",
           onPress: async () => {
             const res = await toggleStaff(member.id);
-            if (res.success) {
-              loadStaff();
-            } else {
-              Alert.alert("Xatolik", (res as any).error || "Statusni o'zgartirib bo'lmadi");
-            }
+            if (res.success) loadStaff();
+            else Alert.alert("Xatolik", (res as any).error || "Statusni o'zgartirib bo'lmadi");
           },
         },
-      ]
+      ],
     );
   };
 
@@ -142,20 +135,11 @@ export default function AdminStaffScreen() {
       setErrorMsg("Yangi xodim uchun parol majburiy");
       return;
     }
-
     setSubmitting(true);
     setErrorMsg("");
-
     const payload: any = { name, phone, role };
     if (password.trim()) payload.password = password;
-
-    let res;
-    if (editingStaff) {
-      res = await updateStaff(editingStaff.id, payload);
-    } else {
-      res = await createStaff(payload);
-    }
-
+    const res = editingStaff ? await updateStaff(editingStaff.id, payload) : await createStaff(payload);
     setSubmitting(false);
     if (res.success) {
       setModalVisible(false);
@@ -177,38 +161,34 @@ export default function AdminStaffScreen() {
   const renderStaffItem = ({ item: s }: { item: StaffMember }) => {
     const isDriver = s.role === "DRIVER";
     const kpi = s.kpi;
-
+    const roleColor = isDriver ? palette.aqua500 : palette.violet500;
     return (
-      <Card style={[styles.staffCard, !s.isActive && styles.cardInactive]}>
+      <View style={[styles.staffCard, !s.isActive && styles.cardInactive]}>
         <View style={styles.cardHeader}>
           <View style={{ flex: 1, gap: 4 }}>
-            {/* Rol Badge'i */}
-            <View style={[styles.roleBadge, isDriver ? styles.driverBadgeBg : styles.operatorBadgeBg]}>
-              <Text style={[styles.roleBadgeText, isDriver ? styles.driverBadgeText : styles.operatorBadgeText]}>
-                {isDriver ? "🚗 Haydovchi" : "🎧 Operator"}
-              </Text>
+            <View style={[styles.roleBadge, { backgroundColor: roleColor + "18" }]}>
+              <Feather name={isDriver ? "truck" : "headphones"} size={11} color={roleColor} />
+              <Text style={[styles.roleBadgeText, { color: roleColor }]}>{isDriver ? "Haydovchi" : "Operator"}</Text>
             </View>
             <Text style={[styles.staffName, !s.isActive && styles.textMuted]}>{s.name}</Text>
-            <Text style={styles.staffPhone}>📞 +{s.phone}</Text>
+            <Text style={styles.staffPhone}>+{s.phone}</Text>
           </View>
-
-          {/* O'ng tarafdagi boshqaruv tugmalari */}
           <View style={styles.actionColumn}>
             <TouchableOpacity style={styles.editBtn} onPress={() => handleOpenEdit(s)}>
-              <Text style={styles.editBtnText}>✏️ Tahrirlash</Text>
+              <Feather name="edit-2" size={13} color={theme.textSecondary} />
+              <Text style={styles.editBtnText}>Tahrir</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.statusToggleBtn, s.isActive ? styles.btnBlockBg : styles.btnActiveBg]}
               onPress={() => handleToggleStatus(s)}
             >
-              <Text style={[styles.statusToggleText, s.isActive ? styles.btnBlockText : styles.btnActiveText]}>
+              <Text style={[styles.statusToggleText, { color: s.isActive ? theme.danger : theme.success }]}>
                 {s.isActive ? "Bloklash" : "Yoqish"}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* KPI Ko'rsatkichlari Dashbordi */}
         {s.isActive && kpi && (
           <View style={styles.kpiContainer}>
             <View style={styles.kpiGrid}>
@@ -219,82 +199,75 @@ export default function AdminStaffScreen() {
               {isDriver ? (
                 <>
                   <View style={styles.kpiBox}>
-                    <Text style={[styles.kpiValue, { color: "#16A34A" }]}>
-                      {kpi.cashCollected.toLocaleString()}
-                    </Text>
-                    <Text style={styles.kpiLabel}>Naqd pul (so'm)</Text>
+                    <Text style={[styles.kpiValue, { color: theme.success }]}>{kpi.cashCollected.toLocaleString()}</Text>
+                    <Text style={styles.kpiLabel}>Naqd (so'm)</Text>
                   </View>
                   <View style={styles.kpiBox}>
-                    <Text style={[styles.kpiValue, { color: "#0284C7" }]}>{kpi.bottlesCollected}</Text>
-                    <Text style={styles.kpiLabel}>Idish yig'ildi</Text>
+                    <Text style={[styles.kpiValue, { color: theme.primaryDark }]}>{kpi.bottlesCollected}</Text>
+                    <Text style={styles.kpiLabel}>Idish</Text>
                   </View>
                 </>
               ) : (
                 <View style={styles.kpiBox}>
-                  <Text style={[styles.kpiValue, { color: Colors.primary }]}>{kpi.assigned}</Text>
+                  <Text style={[styles.kpiValue, { color: theme.primary }]}>{kpi.assigned}</Text>
                   <Text style={styles.kpiLabel}>Biriktirildi</Text>
                 </View>
               )}
               {isDriver && kpi.activeOrders > 0 && (
-                <View style={[styles.kpiBox, { backgroundColor: "rgba(217, 119, 6, 0.06)" }]}>
-                  <Text style={[styles.kpiValue, { color: "#D97706" }]}>{kpi.activeOrders}</Text>
+                <View style={[styles.kpiBox, { backgroundColor: theme.warningSoft }]}>
+                  <Text style={[styles.kpiValue, { color: palette.amber600 }]}>{kpi.activeOrders}</Text>
                   <Text style={styles.kpiLabel}>Jarayonda</Text>
                 </View>
               )}
             </View>
           </View>
         )}
-      </Card>
+      </View>
     );
   };
 
   return (
-    <View style={styles.container}>
-      {/* Yuqori Panel va Qidiruv */}
-      <View style={styles.topBar}>
-        <Input
-          placeholder="🔍 Ism yoki telefon bo'yicha qidirish..."
-          value={search}
-          onChangeText={setSearch}
-          style={{ marginBottom: 0 }}
-        />
+    <Screen>
+      <View style={[styles.topBar, { paddingTop: insets.top + 12 }]}>
+        <Text style={styles.pageTitle}>Xodimlar</Text>
+        <View style={styles.searchWrapper}>
+          <Feather name="search" size={18} color={theme.textMuted} />
+          <TextInput placeholder="Ism yoki telefon..." placeholderTextColor={theme.textMuted} value={search} onChangeText={setSearch} style={styles.searchInput} />
+        </View>
       </View>
 
-      {/* Filter tugmalari */}
       <View style={styles.filterRow}>
-        {([
+        {[
           { key: "ALL" as const, label: "Barchasi" },
           { key: "DRIVER" as const, label: "Haydovchilar" },
           { key: "OPERATOR" as const, label: "Operatorlar" },
-        ]).map((f) => (
+        ].map((f) => (
           <TouchableOpacity
             key={f.key}
             style={[styles.filterChip, roleFilter === f.key && styles.filterChipActive]}
             onPress={() => setRoleFilter(f.key)}
           >
-            <Text style={[styles.filterChipText, roleFilter === f.key && styles.filterChipTextActive]}>
-              {f.label}
-            </Text>
+            <Text style={[styles.filterChipText, roleFilter === f.key && styles.filterChipTextActive]}>{f.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* Xodimlar ro'yxati */}
       <FlatList
         data={filteredStaff}
         renderItem={renderStaffItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
+        contentContainerStyle={styles.list}
+        ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
         ListEmptyComponent={
-          <View style={styles.centerBox}>
+          <View style={styles.empty}>
             {loading ? (
-              <ActivityIndicator size="large" color={Colors.primary} />
+              <ActivityIndicator size="large" color={theme.primary} />
             ) : (
               <>
-                <Text style={styles.emptyIcon}>👥</Text>
+                <View style={styles.emptyIconBox}>
+                  <Feather name="users" size={34} color={theme.primary} />
+                </View>
                 <Text style={styles.emptyText}>Xodimlar topilmadi</Text>
               </>
             )}
@@ -302,189 +275,123 @@ export default function AdminStaffScreen() {
         }
       />
 
-      {/* Floating Action Button (FAB) qo'shish */}
       {!loading && (
-        <TouchableOpacity style={styles.fabBtn} onPress={handleOpenCreate} activeOpacity={0.8}>
-          <Text style={styles.fabIcon}>＋</Text>
+        <TouchableOpacity style={[styles.fab, { bottom: insets.bottom + 92 }, shadow.brand]} onPress={handleOpenCreate} activeOpacity={0.9}>
+          <Feather name="plus" size={28} color="#fff" />
         </TouchableOpacity>
       )}
 
-      {/* Yaratish / Tahrirlash Modali */}
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 24 }]}>
             <View style={styles.modalIndicator} />
-            <Text style={styles.modalTitle}>
-              {editingStaff ? "Xodim ma'lumotlarini tahrirlash" : "Yangi xodim qo'shish"}
-            </Text>
-            <Text style={styles.modalSub}>Tizimga kirish huquqini belgilash</Text>
-
+            <Text style={styles.modalTitle}>{editingStaff ? "Xodimni tahrirlash" : "Yangi xodim qo'shish"}</Text>
             {errorMsg ? (
               <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>⚠️ {errorMsg}</Text>
+                <Feather name="alert-circle" size={14} color={theme.danger} />
+                <Text style={styles.errorText}>{errorMsg}</Text>
               </View>
             ) : null}
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.inputLabel}>F.I.Sh (Ism va familiya):</Text>
-              <Input placeholder="Masalan: Ali Valiyev" value={name} onChangeText={setName} style={styles.modalInput} />
-
-              <Text style={styles.inputLabel}>Telefon raqami:</Text>
-             <Input 
-      placeholder="998901234567" 
-      keyboardType="numeric" 
-      value={phone} 
-      onChangeText={setPhone} 
-      style={styles.modalInput} 
-    />
-              <Text style={styles.inputLabel}>Tizim uchun parol {editingStaff && "(o'zgartirish ixtiyoriy)"}:</Text>
-              <Input placeholder="Parol kiriting" secureTextEntry value={password} onChangeText={setPassword} style={styles.modalInput} />
-
-              <Text style={styles.inputLabel}>Xodim lavozimi (Roli):</Text>
-              {/* Segmented control style role row */}
+            <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: spacing.md }}>
+              <Input label="F.I.Sh" placeholder="Ali Valiyev" value={name} onChangeText={setName} icon="user" />
+              <Input label="Telefon raqami" placeholder="998901234567" keyboardType="numeric" value={phone} onChangeText={setPhone} icon="phone" />
+              <Input
+                label={`Parol ${editingStaff ? "(o'zgartirish ixtiyoriy)" : "*"}`}
+                placeholder="Parol kiriting"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+                icon="lock"
+              />
+              <Text style={styles.fieldLabel}>Xodim lavozimi</Text>
               <View style={styles.roleSegmentRow}>
-                <TouchableOpacity
-                  style={[styles.roleSegBtn, role === "DRIVER" && styles.roleSegBtnActive]}
-                  onPress={() => setRole("DRIVER")}
-                >
-                  <Text style={[styles.roleSegText, role === "DRIVER" && styles.roleSegTextActive]}>🚗 Haydovchi</Text>
+                <TouchableOpacity style={[styles.roleSegBtn, role === "DRIVER" && styles.roleSegBtnActive]} onPress={() => setRole("DRIVER")}>
+                  <Feather name="truck" size={15} color={role === "DRIVER" ? theme.primaryDark : theme.textSecondary} />
+                  <Text style={[styles.roleSegText, role === "DRIVER" && styles.roleSegTextActive]}>Haydovchi</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.roleSegBtn, role === "OPERATOR" && styles.roleSegBtnActive]}
-                  onPress={() => setRole("OPERATOR")}
-                >
-                  <Text style={[styles.roleSegText, role === "OPERATOR" && styles.roleSegTextActive]}>🎧 Operator</Text>
+                <TouchableOpacity style={[styles.roleSegBtn, role === "OPERATOR" && styles.roleSegBtnActive]} onPress={() => setRole("OPERATOR")}>
+                  <Feather name="headphones" size={15} color={role === "OPERATOR" ? theme.primaryDark : theme.textSecondary} />
+                  <Text style={[styles.roleSegText, role === "OPERATOR" && styles.roleSegTextActive]}>Operator</Text>
                 </TouchableOpacity>
               </View>
-
               <View style={styles.modalActionsRow}>
-                <Button
-                  title="Bekor qilish"
-                  variant="outline"
-                  style={styles.modalBtn}
-                  onPress={() => setModalVisible(false)}
-                  disabled={submitting}
-                />
-                <Button
-                  title={submitting ? "Saqlanmoqda..." : "Saqlash"}
-                  style={styles.modalBtn}
-                  onPress={handleSubmit}
-                  disabled={submitting}
-                />
+                <Button title="Bekor" variant="outline" style={{ flex: 1 }} onPress={() => setModalVisible(false)} disabled={submitting} />
+                <Button title="Saqlash" style={{ flex: 1 }} onPress={handleSubmit} loading={submitting} />
               </View>
             </ScrollView>
           </View>
         </View>
       </Modal>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC",paddingTop:30,paddingBottom:80 },
-  topBar: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 },
-  
-  // Filter row
-  filterRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingVertical: 8 },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0" },
-  filterChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  filterChipText: { fontSize: 12, color: "#64748B", fontWeight: "500" },
-  filterChipTextActive: { color: "#FFFFFF", fontWeight: "600" },
-
-  listContainer: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 100 },
-
-  // Xodim kartasi
-  staffCard: {
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: "#FFFFFF",
+  topBar: { paddingHorizontal: spacing.lg, paddingBottom: spacing.base, gap: spacing.md },
+  pageTitle: { fontSize: fontSize["3xl"], fontWeight: fontWeight.extrabold, color: theme.text, letterSpacing: -0.6 },
+  searchWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    backgroundColor: theme.surface,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.base,
+    height: 50,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: theme.borderSoft,
+    ...shadow.xs,
   },
-  cardInactive: { backgroundColor: "#F1F5F9", borderColor: "#CBD5E1", opacity: 0.7 },
+  searchInput: { flex: 1, fontSize: fontSize.base, color: theme.text, fontWeight: fontWeight.medium },
+
+  filterRow: { flexDirection: "row", gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.md },
+  filterChip: { paddingHorizontal: spacing.base, paddingVertical: 9, borderRadius: radius.md, backgroundColor: theme.surface, borderWidth: 1.5, borderColor: theme.border },
+  filterChipActive: { backgroundColor: theme.primary, borderColor: theme.primary },
+  filterChipText: { fontSize: fontSize.sm, color: theme.textSecondary, fontWeight: fontWeight.bold },
+  filterChipTextActive: { color: "#fff" },
+
+  list: { paddingHorizontal: spacing.lg, paddingTop: 4, paddingBottom: 110 },
+  staffCard: { padding: spacing.base, borderRadius: radius.xl, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.borderSoft, ...shadow.sm },
+  cardInactive: { opacity: 0.6 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  
-  // Role badges
-  roleBadge: { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginBottom: 2 },
-  driverBadgeBg: { backgroundColor: "rgba(2, 132, 199, 0.08)" },
-  operatorBadgeBg: { backgroundColor: "rgba(99, 102, 241, 0.08)" },
-  roleBadgeText: { fontSize: 11, fontWeight: "700" },
-  driverBadgeText: { color: "#0284C7" },
-  operatorBadgeText: { color: "#6366F1" },
+  roleBadge: { flexDirection: "row", alignItems: "center", gap: 5, alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.sm },
+  roleBadgeText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
+  staffName: { fontSize: fontSize.md, fontWeight: fontWeight.extrabold, color: theme.text, marginTop: 4 },
+  staffPhone: { fontSize: fontSize.sm, color: theme.textSecondary, marginTop: 2, fontWeight: fontWeight.semibold },
+  textMuted: { color: theme.textMuted, textDecorationLine: "line-through" },
 
-  staffName: { fontSize: 16, fontWeight: "700", color: "#0F172A", marginTop: 4 },
-  staffPhone: { fontSize: 13, color: "#64748B", marginTop: 2 },
-  textMuted: { color: "#94A3B8", textDecorationLine: "line-through" },
+  actionColumn: { alignItems: "flex-end", gap: spacing.sm },
+  editBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: theme.surfaceAlt, paddingHorizontal: 10, paddingVertical: 7, borderRadius: radius.sm },
+  editBtnText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, color: theme.textSecondary },
+  statusToggleBtn: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: radius.sm, borderWidth: 1 },
+  statusToggleText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
+  btnBlockBg: { backgroundColor: theme.dangerSoft, borderColor: palette.rose400 + "44" },
+  btnActiveBg: { backgroundColor: theme.successSoft, borderColor: palette.mint400 + "44" },
 
-  // Harakatlar ustuni
-  actionColumn: { alignItems: "flex-end", gap: 8 },
-  editBtn: { backgroundColor: "#F1F5F9", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: "#E2E8F0" },
-  editBtnText: { fontSize: 12, fontWeight: "600", color: "#334155" },
-  
-  statusToggleBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },
-  statusToggleText: { fontSize: 12, fontWeight: "600" },
-  btnBlockBg: { backgroundColor: "rgba(220, 38, 38, 0.05)", borderColor: "rgba(220, 38, 38, 0.2)" },
-  btnBlockText: { color: "#DC2626" },
-  btnActiveBg: { backgroundColor: "rgba(22, 163, 74, 0.05)", borderColor: "rgba(22, 163, 74, 0.2)" },
-  btnActiveText: { color: "#16A34A" },
+  kpiContainer: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: theme.border },
+  kpiGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  kpiBox: { flex: 1, minWidth: "28%", backgroundColor: theme.bg, padding: spacing.sm, borderRadius: radius.sm, borderWidth: 1, borderColor: theme.border },
+  kpiValue: { fontSize: fontSize.base, fontWeight: fontWeight.extrabold, color: theme.text },
+  kpiLabel: { fontSize: 10, color: theme.textSecondary, marginTop: 2, fontWeight: fontWeight.medium },
 
-  // KPI Dashboard grid ko'rinishi
-  kpiContainer: { marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F1F5F9" },
-  kpiGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  kpiBox: { flex: 1, minWidth: "28%", backgroundColor: "#F8FAFC", padding: 8, borderRadius: 10, borderWidth: 1, borderColor: "#F1F5F9" },
-  kpiValue: { fontSize: 14, fontWeight: "800", color: "#1E293B" },
-  kpiLabel: { fontSize: 10, color: "#64748B", marginTop: 2, fontWeight: "500" },
+  empty: { alignItems: "center", justifyContent: "center", paddingTop: 90 },
+  emptyIconBox: { width: 78, height: 78, borderRadius: radius["2xl"], backgroundColor: theme.primarySoft, alignItems: "center", justifyContent: "center", marginBottom: spacing.base },
+  emptyText: { fontSize: fontSize.md, color: theme.textSecondary, fontWeight: fontWeight.semibold },
 
-  // Bo'sh holat
-  centerBox: { alignItems: "center", justifyContent: "center", paddingTop: 80 },
-  emptyIcon: { fontSize: 54, marginBottom: 14 },
-  emptyText: { fontSize: 15, color: "#94A3B8", fontWeight: "500" },
+  fab: { position: "absolute", right: spacing.xl, width: 60, height: 60, borderRadius: 30, backgroundColor: theme.primary, alignItems: "center", justifyContent: "center" },
 
-  // Floating button (FAB)
-  fabBtn: { position: "absolute", bottom: 75, right: 24, width: 54, height: 54, borderRadius: 27, backgroundColor: Colors.primary, alignItems: "center", justifyContent: "center", shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 5 },
-  fabIcon: { fontSize: 24, color: "#FFFFFF", fontWeight: "600" },
+  modalOverlay: { flex: 1, backgroundColor: theme.overlay, justifyContent: "flex-end" },
+  modalContent: { backgroundColor: theme.surface, borderTopLeftRadius: radius["2xl"], borderTopRightRadius: radius["2xl"], padding: spacing.xl, maxHeight: "90%" },
+  modalIndicator: { width: 40, height: 4, backgroundColor: theme.border, borderRadius: 2, alignSelf: "center", marginBottom: spacing.base },
+  modalTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.extrabold, color: theme.text },
+  errorContainer: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: theme.dangerSoft, padding: spacing.md, borderRadius: radius.md, marginTop: spacing.md },
+  errorText: { color: theme.danger, fontSize: fontSize.sm, fontWeight: fontWeight.semibold, flex: 1 },
 
-  // Modal (iOS Bottom Sheet style)
-  modalOverlay: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.4)", justifyContent: "flex-end" },
-  modalContent: { backgroundColor: "#FFFFFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 5, maxHeight: "90%" },
-  modalIndicator: { width: 36, height: 4, backgroundColor: "#E2E8F0", borderRadius: 2, alignSelf: "center", marginBottom: 18 },
-  modalTitle: { fontSize: 19, fontWeight: "800", color: "#0F172A" },
-  modalSub: { fontSize: 14, color: "#64748B", marginTop: 4, marginBottom: 16 },
-  
-  errorContainer: { backgroundColor: "rgba(220, 38, 38, 0.06)", padding: 12, borderRadius: 10, marginBottom: 14, borderWidth: 1, borderColor: "rgba(220, 38, 38, 0.15)" },
-  errorText: { color: "#DC2626", fontSize: 13, fontWeight: "600" },
-  
-  inputLabel: { 
-    fontSize: 14, // 15 dan 14 ga tushirish vizual yengillik beradi
-    fontWeight: "600", 
-    color: "#64748B", // Biroz ochroq rang
-    marginBottom: 6,  // paddingTop o'rniga marginBottom ishlating
-  },
-  modalInput: { 
-    borderRadius: 12, 
-    height: 48, 
-    borderColor: "#E2E8F0", // Border rangini ochroq qildik
-    backgroundColor: "#F8FAFC", 
-    fontSize: 15,
-    paddingHorizontal: 16, 
-    borderWidth: 1, 
-    color: "#0F172A",
-    textAlignVertical: 'center', // Android uchun
-  },
-  // Custom Segmented Control for Roles
-  roleSegmentRow: { flexDirection: "row", backgroundColor: "#F1F5F9", padding: 4, borderRadius: 12, marginVertical: 10 },
-  roleSegBtn: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: 8 },
-  roleSegBtnActive: { backgroundColor: "#FFFFFF", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
-  roleSegText: { fontSize: 13, color: "#64748B", fontWeight: "600" },
-  roleSegTextActive: { color: "#0F172A", fontWeight: "700" },
+  fieldLabel: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: theme.textSecondary, marginBottom: 6, paddingLeft: 2 },
+  roleSegmentRow: { flexDirection: "row", backgroundColor: theme.surfaceAlt, padding: 4, borderRadius: radius.md, marginBottom: spacing.md },
+  roleSegBtn: { flex: 1, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6, paddingVertical: 11, borderRadius: radius.sm },
+  roleSegBtnActive: { backgroundColor: theme.surface, ...shadow.xs },
+  roleSegText: { fontSize: fontSize.sm, color: theme.textSecondary, fontWeight: fontWeight.semibold },
+  roleSegTextActive: { color: theme.text, fontWeight: fontWeight.bold },
 
-  modalActionsRow: { flexDirection: "row", gap: 10, marginTop: 24 },
-  modalBtn: { flex: 1, borderRadius: 12, height: 46 },
-
-  
+  modalActionsRow: { flexDirection: "row", gap: spacing.md, marginTop: spacing.base },
 });

@@ -1,142 +1,116 @@
 /**
- * Admin Layout — Pastki navigatsiya paneli (Tabs)
- * Strict TypeScript, Ultra-Minimalist Flat Style
+ * Admin (Director) Layout — zamonaviy suzuvchi tab paneli (2026)
  */
 import { Tabs } from "expo-router";
 import { StyleSheet, Platform, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { theme, radius, shadow } from "@/constants/theme";
+import { useNotificationsStore } from "@/store/notifications";
 
-// ─── Qat'iy Tiplashtirilgan Toza Ranglar ────────────────────────
-const C = {
-  primary:   "#0284C7" as const, // Elegant Toza Ko'k (Faol)
-  inactive:  "#94A3B8" as const, // Slate 400 (Nofaol)
-  border:    "#E2E8F0" as const, // Yupqa ajratuvchi chiziq
-  bgWhite:   "#FFFFFF" as const, // Toza oq fon
-};
+function TabIcon({ focused, name }: { focused: boolean; name: any }) {
+  return (
+    <View style={styles.iconWrap}>
+      <View style={focused ? styles.iconActive : styles.iconInactive}>
+        <Ionicons name={name} size={20} color={focused ? "#FFFFFF" : theme.textMuted} />
+      </View>
+    </View>
+  );
+}
 
 export default function AdminLayout() {
+  const unread = useNotificationsStore((s) => s.unreadCount);
   return (
     <Tabs
       screenOptions={{
-        // Tepasi butunlay yopiladi, yopishib turaveradi
         headerShown: false,
-        
-        // Pastki panel sozlamalari
-        tabBarActiveTintColor: C.primary,
-        tabBarInactiveTintColor: C.inactive,
+        tabBarActiveTintColor: theme.primaryDark,
+        tabBarInactiveTintColor: theme.textMuted,
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabBarLabel,
+        tabBarItemStyle: { paddingTop: 6 },
       }}
     >
-      {/* 1. Dashboard (Analitika) */}
       <Tabs.Screen
         name="dashboard"
         options={{
           title: "Analitika",
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.iconWrapper}>
-              <Ionicons 
-                name={focused ? "stats-chart" : "stats-chart-outline"} 
-                size={22} 
-                color={focused ? C.primary : C.inactive} 
-              />
-            </View>
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} name={focused ? "stats-chart" : "stats-chart-outline"} />,
         }}
       />
-
-      {/* 2. Orders (Buyurtmalar) */}
       <Tabs.Screen
         name="orders"
         options={{
           title: "Buyurtmalar",
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.iconWrapper}>
-              <Ionicons 
-                name={focused ? "clipboard" : "clipboard-outline"} 
-                size={22} 
-                color={focused ? C.primary : C.inactive} 
-              />
-            </View>
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} name={focused ? "clipboard" : "clipboard-outline"} />,
         }}
       />
-
-      {/* 3. Products (Mahsulotlar) */}
       <Tabs.Screen
-        name="products"
+        name="customers"
         options={{
-          title: "Mahsulotlar",
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.iconWrapper}>
-              <Ionicons 
-                name={focused ? "cube" : "cube-outline"} 
-                size={22} 
-                color={focused ? C.primary : C.inactive} 
-              />
-            </View>
-          ),
+          title: "Mijozlar",
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} name={focused ? "person" : "person-outline"} />,
         }}
       />
-
-      {/* 4. Staff (Xodimlar) */}
       <Tabs.Screen
         name="staff"
         options={{
           title: "Xodimlar",
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.iconWrapper}>
-              <Ionicons 
-                name={focused ? "people" : "people-outline"} 
-                size={22} 
-                color={focused ? C.primary : C.inactive} 
-              />
-            </View>
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} name={focused ? "people" : "people-outline"} />,
         }}
       />
-
-      {/* 5. Profile (Profil) */}
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: "Xabarlar",
+          tabBarBadge: unread > 0 ? unread : undefined,
+          tabBarBadgeStyle: styles.badge,
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} name={focused ? "notifications" : "notifications-outline"} />,
+        }}
+      />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Profil",
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.iconWrapper}>
-              <Ionicons 
-                name={focused ? "settings" : "settings-outline"} 
-                size={22} 
-                color={focused ? C.primary : C.inactive} 
-              />
-            </View>
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} name={focused ? "settings" : "settings-outline"} />,
         }}
       />
+      <Tabs.Screen name="products" options={{ href: null }} />
     </Tabs>
   );
 }
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: C.bgWhite,
     position: "absolute",
-    borderTopWidth: 1,
-    borderTopColor: C.border,
-    height: Platform.OS === "ios" ? 84 : 64,
-    paddingBottom: Platform.OS === "ios" ? 26 : 10,
-    paddingTop: 8,
-    elevation: 0,
-    shadowOpacity: 0,
+    left: 12,
+    right: 12,
+    bottom: Platform.OS === "ios" ? 28 : 16,
+    height: 68,
+    borderRadius: radius.xl,
+    backgroundColor: "rgba(255,255,255,0.98)",
+    borderTopWidth: 0,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    paddingHorizontal: 4,
+    ...shadow.lg,
   },
-  tabBarLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    marginTop: 2,
-  },
-  iconWrapper: {
+  tabBarLabel: { fontSize: 10, fontWeight: "700", marginTop: -2 },
+  badge: { backgroundColor: theme.danger, fontSize: 10, fontWeight: "800" },
+  iconWrap: { alignItems: "center", justifyContent: "center" },
+  iconActive: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
-    height: 28,
-    width: 28,
+    backgroundColor: theme.primary,
+  },
+  iconInactive: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: theme.surfaceAlt,
   },
 });

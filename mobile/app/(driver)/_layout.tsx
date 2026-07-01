@@ -1,22 +1,29 @@
 import { Stack } from "expo-router";
-import { Colors } from "@/constants";
 
 export default function DriverLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: Colors.primary },
-        headerTintColor: Colors.white,
-        headerTitleStyle: { fontWeight: "600" },
+        headerShown: false, // Header butunlay yopildi
+        contentStyle: {
+          backgroundColor: "transparent", // Gradient ko'rinishi uchun
+        },
+        animation: "slide_from_right",
       }}
     >
       <Stack.Screen
         name="tasks"
-        options={{ title: "Buyurtmalar", headerBackVisible: false }}
+        options={{
+          headerShown: false,
+        }}
       />
+
       <Stack.Screen
         name="deliver"
-        options={{ title: "Yetkazish", presentation: "modal" }}
+        options={{
+          headerShown: false,
+          presentation: "modal",
+        }}
       />
     </Stack>
   );

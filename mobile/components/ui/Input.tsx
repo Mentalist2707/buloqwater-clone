@@ -1,6 +1,16 @@
 import React, { useState } from "react";
-import { View, TextInput, Text, StyleSheet, TouchableOpacity, ViewStyle } from "react-native";
-import { Colors } from "@/constants";
+import {
+  View,
+  TextInput,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  StyleProp,
+  ViewStyle,
+  TextStyle,
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { theme, radius, spacing, fontSize, fontWeight } from "@/constants/theme";
 
 interface InputProps {
   label?: string;
@@ -12,9 +22,14 @@ interface InputProps {
   error?: string;
   multiline?: boolean;
   numberOfLines?: number;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle | TextStyle>;
   editable?: boolean;
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  placeholderTextColor?: string;
+  maxLength?: number;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  icon?: React.ComponentProps<typeof Feather>["name"];
 }
 
 export function Input({
@@ -30,12 +45,17 @@ export function Input({
   style,
   editable = true,
   autoCapitalize = "none",
+  placeholderTextColor,
+  maxLength,
+  onFocus,
+  onBlur,
+  icon,
 }: InputProps) {
   const [isSecure, setIsSecure] = useState(secureTextEntry);
   const [isFocused, setIsFocused] = useState(false);
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, style as StyleProp<ViewStyle>]}>
       {label && <Text style={styles.label}>{label}</Text>}
       <View
         style={[
@@ -43,12 +63,24 @@ export function Input({
           isFocused && styles.focused,
           error && styles.errorBorder,
           !editable && styles.disabled,
+          multiline && styles.multilineBox,
         ]}
       >
+        {icon && (
+          <Feather
+            name={icon}
+            size={18}
+            color={isFocused ? theme.primary : theme.textMuted}
+            style={styles.leadingIcon}
+          />
+        )}
         <TextInput
-          style={[styles.input, multiline && { height: numberOfLines * 20 + 20, textAlignVertical: "top" }]}
+          style={[
+            styles.input,
+            multiline && { height: numberOfLines * 20 + 20, textAlignVertical: "top" },
+          ]}
           placeholder={placeholder}
-          placeholderTextColor={Colors.gray[400]}
+          placeholderTextColor={placeholderTextColor ?? theme.textMuted}
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={isSecure}
@@ -57,12 +89,23 @@ export function Input({
           numberOfLines={numberOfLines}
           editable={editable}
           autoCapitalize={autoCapitalize}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          maxLength={maxLength}
+          onFocus={() => {
+            setIsFocused(true);
+            onFocus?.();
+          }}
+          onBlur={() => {
+            setIsFocused(false);
+            onBlur?.();
+          }}
         />
         {secureTextEntry && (
-          <TouchableOpacity onPress={() => setIsSecure(!isSecure)} style={styles.eyeButton}>
-            <Text style={styles.eyeText}>{isSecure ? "👁" : "🙈"}</Text>
+          <TouchableOpacity
+            onPress={() => setIsSecure(!isSecure)}
+            style={styles.eyeButton}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Feather name={isSecure ? "eye" : "eye-off"} size={18} color={theme.textMuted} />
           </TouchableOpacity>
         )}
       </View>
@@ -72,36 +115,40 @@ export function Input({
 }
 
 const styles = StyleSheet.create({
-  container: { marginBottom: 16 },
+  container: { marginBottom: spacing.base },
   label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: Colors.gray[700],
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: theme.textSecondary,
     marginBottom: 6,
+    paddingLeft: 2,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1.5,
-    borderColor: Colors.gray[200],
-    borderRadius: 12,
-    backgroundColor: Colors.white,
+    borderColor: theme.border,
+    borderRadius: radius.lg,
+    backgroundColor: theme.surface,
+    height: 52,
   },
-  focused: { borderColor: Colors.primary },
-  errorBorder: { borderColor: Colors.danger },
-  disabled: { backgroundColor: Colors.gray[100] },
+  multilineBox: { height: undefined, alignItems: "flex-start", paddingVertical: 6 },
+  focused: { borderColor: theme.primary, backgroundColor: theme.primaryTint },
+  errorBorder: { borderColor: theme.danger },
+  disabled: { backgroundColor: theme.surfaceAlt },
+  leadingIcon: { marginLeft: spacing.base },
   input: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: Colors.gray[900],
+    paddingHorizontal: spacing.base,
+    fontSize: fontSize.md,
+    color: theme.text,
   },
-  eyeButton: { paddingHorizontal: 12 },
-  eyeText: { fontSize: 18 },
+  eyeButton: { paddingHorizontal: spacing.md },
   errorText: {
-    fontSize: 12,
-    color: Colors.danger,
+    fontSize: fontSize.xs,
+    color: theme.danger,
     marginTop: 4,
+    paddingLeft: 2,
+    fontWeight: fontWeight.medium,
   },
 });

@@ -3,42 +3,46 @@ export const API_BASE_URL = __DEV__
   ? "http://192.168.1.107:3000/api/v1" // Local development
   : "https://buloqwater-clone.vercel.app/api/v1";     // Production
 
-// Colors
+// ── Dizayn tizimi (2026) ────────────────────────────────────
+export * from "./theme";
+import { palette } from "./theme";
+
+// Colors — orqaga muvofiqlik uchun (yangi palitraga bog'langan)
 export const Colors = {
-  primary: "#0EA5E9",       // sky-500
-  primaryDark: "#0284C7",   // sky-600
-  primaryLight: "#E0F2FE",  // sky-100
-  secondary: "#6366F1",     // indigo-500
-  success: "#22C55E",       // green-500
-  successLight: "#DCFCE7",  // green-100
-  warning: "#F59E0B",       // amber-500
-  warningLight: "#FEF3C7",  // amber-100
-  danger: "#EF4444",        // red-500
-  dangerLight: "#FEE2E2",   // red-100
+  primary: palette.aqua500,       // aqua-500
+  primaryDark: palette.ocean600,  // ocean-600
+  primaryLight: palette.aqua100,  // aqua-100
+  secondary: palette.violet500,   // violet-500
+  success: palette.mint500,       // mint-500
+  successLight: palette.mint100,
+  warning: palette.amber500,
+  warningLight: palette.amber100,
+  danger: palette.rose500,
+  dangerLight: palette.rose100,
   gray: {
-    50: "#F9FAFB",
-    100: "#F3F4F6",
-    200: "#E5E7EB",
-    300: "#D1D5DB",
-    400: "#9CA3AF",
-    500: "#6B7280",
-    600: "#4B5563",
-    700: "#374151",
-    800: "#1F2937",
-    900: "#111827",
+    50: palette.slate50,
+    100: palette.slate100,
+    200: palette.slate200,
+    300: palette.slate300,
+    400: palette.slate400,
+    500: palette.slate500,
+    600: palette.slate600,
+    700: palette.slate700,
+    800: palette.slate800,
+    900: palette.slate900,
   },
-  white: "#FFFFFF",
-  black: "#000000",
-  background: "#F8FAFC",
+  white: palette.white,
+  black: palette.black,
+  background: palette.slate50,
 };
 
 // Order Status labels
 export const ORDER_STATUS_LABELS: Record<string, string> = {
-  PENDING: "Kutilmoqda",
-  ASSIGNED: "Tayinlangan",
+  PENDING: "Yangi",
+  ASSIGNED: "Haydovchiga berildi",
   IN_TRANSIT: "Yo'lda",
   DELIVERED: "Yetkazildi",
-  CANCELLED: "Bekor qilingan",
+  CANCELLED: "Bekor qilindi",
 };
 
 export const ORDER_STATUS_COLORS: Record<string, string> = {

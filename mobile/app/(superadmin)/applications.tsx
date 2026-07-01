@@ -4,9 +4,11 @@
 import React, { useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, FlatList, RefreshControl,
-  TouchableOpacity, Alert, Modal,
+  TouchableOpacity, Modal,
 } from "react-native";
+import { Alert } from "@/utils/alert";
 import { useFocusEffect } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card, Button, Input } from "@/components/ui";
 import { Colors } from "@/constants";
 import { api } from "@/services/api";
@@ -48,6 +50,7 @@ function isInDateFilter(createdAt: string, df: DateFilter): boolean {
 }
 
 export default function ApplicationsScreen() {
+  const insets = useSafeAreaInsets();
   const [applications, setApplications] = useState<Application[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -181,7 +184,7 @@ export default function ApplicationsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Status filter */}
       <View style={styles.filterRow}>
         {([

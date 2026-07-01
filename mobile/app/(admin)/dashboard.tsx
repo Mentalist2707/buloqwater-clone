@@ -1,7 +1,5 @@
 /**
- * 🎨 PREMIUM ADMIN DASHBOARD
- * Ultra-Modern Glassmorphism + Gradient Design
- * Professional Analytics Interface
+ * Admin (Director) Dashboard — 2026 redesign
  */
 import React, { useState, useCallback } from "react";
 import {
@@ -10,44 +8,18 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  Platform,
   Dimensions,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur";
-import { Ionicons, MaterialCommunityIcons, FontAwesome5, Feather } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { adminService, type AdminStats } from "@/services/admin";
 import { useAuthStore } from "@/store/auth";
+import { Screen } from "@/components/ui";
+import { theme, palette, gradients, spacing, radius, fontSize, fontWeight, shadow } from "@/constants/theme";
 
 const { width } = Dimensions.get("window");
-
-// 🎨 Premium Color Palette
-const C = {
-  // Gradients
-  primaryGradient: ["#667eea", "#764ba2"],
-  successGradient: ["#11998e", "#38ef7d"],
-  warningGradient: ["#f093fb", "#f5576c"],
-  dangerGradient: ["#fa709a", "#fee140"],
-  blueGradient: ["#4facfe", "#00f2fe"],
-  purpleGradient: ["#a8edea", "#fed6e3"],
-  
-  // Solids
-  text: "#1a1a2e",
-  textLight: "#6b7280",
-  white: "#ffffff",
-  glass: "rgba(255, 255, 255, 0.15)",
-  glassDark: "rgba(255, 255, 255, 0.95)",
-  shadow: "rgba(0, 0, 0, 0.1)",
-  
-  // Accent colors
-  purple: "#667eea",
-  blue: "#4facfe",
-  green: "#11998e",
-  pink: "#f093fb",
-  orange: "#fa709a",
-};
 
 function formatCurrency(amount: number): string {
   if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M`;
@@ -66,7 +38,11 @@ export default function AdminDashboard() {
     if (r.success && r.data) setStats(r.data as AdminStats);
   };
 
-  useFocusEffect(useCallback(() => { load(); }, []));
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, []),
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -75,173 +51,95 @@ export default function AdminDashboard() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* 🌊 Animated Background Gradient */}
-      <LinearGradient
-        colors={["#667eea", "#764ba2", "#f093fb"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFillObject}
-      />
-      
-      {/* ✨ Floating Orbs */}
-      <View style={[styles.orb, styles.orb1]} />
-      <View style={[styles.orb, styles.orb2]} />
-      <View style={[styles.orb, styles.orb3]} />
-
+    <Screen>
       <ScrollView
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* 👋 Premium Header */}
+        {/* Header */}
         <View style={styles.header}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.greeting}>Assalomu alaykum</Text>
-            <Text style={styles.userName}>{user?.name} 👑</Text>
+            <Text style={styles.userName} numberOfLines={1}>
+              {user?.name}
+            </Text>
           </View>
-          <View style={styles.headerBadge}>
-            <LinearGradient
-              colors={["rgba(255,255,255,0.3)", "rgba(255,255,255,0.1)"]}
-              style={styles.badgeGradient}
-            >
-              <FontAwesome5 name="crown" size={14} color="#ffd700" />
-              <Text style={styles.badgeText}>Director</Text>
-            </LinearGradient>
+          <View style={styles.roleBadge}>
+            <Feather name="award" size={13} color={palette.amber600} />
+            <Text style={styles.roleBadgeText}>Director</Text>
           </View>
         </View>
 
         {!stats ? (
-          <View style={styles.loadingContainer}>
-            <LinearGradient
-              colors={["rgba(255,255,255,0.2)", "rgba(255,255,255,0.1)"]}
-              style={styles.loadingCard}
-            >
-              <Ionicons name="analytics" size={40} color="rgba(255,255,255,0.6)" />
-              <Text style={styles.loadingText}>Ma'lumotlar yuklanmoqda...</Text>
-            </LinearGradient>
+          <View style={styles.loadingCard}>
+            <Ionicons name="analytics-outline" size={38} color={theme.textMuted} />
+            <Text style={styles.loadingText}>Ma'lumotlar yuklanmoqda...</Text>
           </View>
         ) : (
           <>
-            {/* 💰 Revenue Card - Hero */}
-            <LinearGradient
-              colors={["rgba(255,255,255,0.25)", "rgba(255,255,255,0.15)"]}
-              style={styles.heroCard}
-            >
+            {/* Hero revenue */}
+            <LinearGradient colors={gradients.ocean} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.heroCard, shadow.brand]}>
+              <View style={styles.heroWave} pointerEvents="none" />
               <View style={styles.heroHeader}>
-                <View style={styles.heroIcon}>
-                  <MaterialCommunityIcons name="cash-multiple" size={28} color="#ffd700" />
+                <View style={styles.heroIconBg}>
+                  <MaterialCommunityIcons name="cash-multiple" size={26} color="#fff" />
                 </View>
-                <View style={styles.trendBadgeContainer}>
-                  {stats.salesTrend !== undefined && stats.salesTrend > 0 && (
-                    <View style={styles.trendBadge}>
-                      <Feather name="trending-up" size={14} color="#11998e" />
-                      <Text style={styles.trendText}>+{stats.salesTrend}%</Text>
-                    </View>
-                  )}
-                </View>
+                {stats.salesTrend !== undefined && stats.salesTrend > 0 && (
+                  <View style={styles.trendBadge}>
+                    <Feather name="trending-up" size={13} color={theme.success} />
+                    <Text style={styles.trendText}>+{stats.salesTrend}%</Text>
+                  </View>
+                )}
               </View>
-              <Text style={styles.heroLabel}>Bugungi Tushum</Text>
-              <Text style={styles.heroValue}>{formatCurrency(stats.dailySales)} so'm</Text>
-              <Text style={styles.heroSubtext}>
-                {stats.dailyDeliveries} ta buyurtma yetkazildi
+              <Text style={styles.heroLabel}>Bugungi tushum</Text>
+              <Text style={styles.heroValue}>
+                {formatCurrency(stats.dailySales)} <Text style={styles.heroCurrency}>so'm</Text>
               </Text>
+              <View style={styles.heroFooter}>
+                <Feather name="check-circle" size={14} color="rgba(255,255,255,0.85)" />
+                <Text style={styles.heroSubtext}>{stats.dailyDeliveries} ta buyurtma bajarildi</Text>
+              </View>
             </LinearGradient>
 
-            {/* 📊 Stats Grid */}
+            {/* Stats grid */}
             <View style={styles.statsGrid}>
-              <GlassCard
-                icon={<Ionicons name="cart" size={24} color="#667eea" />}
-                label="Bugungi Buyurtmalar"
-                value={String(stats.dailyDeliveries)}
-                gradient={C.primaryGradient}
-              />
-              <GlassCard
-                icon={<Ionicons name="people" size={24} color="#11998e" />}
-                label="Yangi Mijozlar"
-                value={String(stats.newCustomersMonth)}
-                subtitle="Bu oy"
-                gradient={C.successGradient}
-              />
-              <GlassCard
-                icon={<FontAwesome5 name="truck" size={20} color="#f093fb" />}
-                label="Faol Haydovchilar"
-                value={String(stats.activeDrivers)}
-                gradient={C.warningGradient}
-              />
-              <GlassCard
-                icon={<Ionicons name="person-circle" size={24} color="#4facfe" />}
-                label="Jami Mijozlar"
-                value={String(stats.totalCustomers ?? 0)}
-                gradient={C.blueGradient}
-              />
+              <StatCard icon="shopping-cart" label="Bugungi buyurtmalar" value={String(stats.dailyDeliveries)} color={palette.aqua500} />
+              <StatCard icon="user-plus" label="Yangi mijozlar" value={String(stats.newCustomersMonth)} sub="Bu oy" color={palette.mint500} />
+              <StatCard icon="truck" label="Faol haydovchilar" value={String(stats.activeDrivers)} color={palette.amber500} />
+              <StatCard icon="users" label="Jami mijozlar" value={String(stats.totalCustomers ?? 0)} color={palette.ocean500} />
             </View>
 
-            {/* ⚡ Quick Status */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Hozirgi Holat</Text>
-              <View style={styles.statusRow}>
-                <StatusPill
-                  icon="time"
-                  label="Kutilmoqda"
-                  count={stats.pendingOrders}
-                  colors={["#ffeaa7", "#fdcb6e"]}
-                />
-                <StatusPill
-                  icon="car"
-                  label="Yo'lda"
-                  count={stats.inTransitOrders}
-                  colors={["#74b9ff", "#0984e3"]}
-                />
-              </View>
+            {/* Status */}
+            <Text style={styles.sectionTitle}>Hozirgi holat</Text>
+            <View style={styles.statusRow}>
+              <StatusPill icon="clock" label="Kutilmoqda" count={stats.pendingOrders} color={palette.amber500} />
+              <StatusPill icon="navigation" label="Yo'lda" count={stats.inTransitOrders} color={palette.ocean500} />
             </View>
 
-            {/* 💳 Payment Breakdown */}
+            {/* Payment breakdown */}
             {stats.paymentBreakdown && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>To'lov Turlari</Text>
-                <LinearGradient
-                  colors={["rgba(255,255,255,0.2)", "rgba(255,255,255,0.1)"]}
-                  style={styles.paymentCard}
-                >
-                  <PaymentRow
-                    icon="cash"
-                    label="Naqd"
-                    amount={stats.paymentBreakdown.cash}
-                    color="#11998e"
-                  />
+              <>
+                <Text style={styles.sectionTitle}>To'lov turlari</Text>
+                <View style={styles.card}>
+                  <PaymentRow icon="dollar-sign" label="Naqd" amount={stats.paymentBreakdown.cash} color={theme.success} />
                   <View style={styles.divider} />
-                  <PaymentRow
-                    icon="card"
-                    label="Click/Payme"
-                    amount={stats.paymentBreakdown.click}
-                    color="#4facfe"
-                  />
+                  <PaymentRow icon="credit-card" label="Click/Payme" amount={stats.paymentBreakdown.click} color={theme.primaryDark} />
                   <View style={styles.divider} />
-                  <PaymentRow
-                    icon="wallet"
-                    label="Qarz"
-                    amount={stats.paymentBreakdown.credit}
-                    color="#fa709a"
-                  />
-                </LinearGradient>
-              </View>
+                  <PaymentRow icon="book" label="Qarz" amount={stats.paymentBreakdown.credit} color={theme.danger} />
+                </View>
+              </>
             )}
 
-            {/* 📈 Weekly Chart */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Haftalik Statistika</Text>
-              <LinearGradient
-                colors={["rgba(255,255,255,0.2)", "rgba(255,255,255,0.1)"]}
-                style={styles.chartCard}
-              >
-                <WeeklyChart data={stats.weeklyData} />
-              </LinearGradient>
+            {/* Weekly chart */}
+            <Text style={styles.sectionTitle}>Haftalik statistika</Text>
+            <View style={styles.card}>
+              <WeeklyChart data={stats.weeklyData} />
             </View>
 
-            {/* ⚠️ Alerts */}
+            {/* Alerts */}
             {(stats.totalDebt > 0 || stats.unreturnedBottles > 0) && (
-              <View style={styles.section}>
+              <>
                 <Text style={styles.sectionTitle}>Ogohlantirishlar</Text>
                 {stats.totalDebt > 0 && (
                   <AlertCard
@@ -249,122 +147,109 @@ export default function AdminDashboard() {
                     title="Qarzdorlik"
                     value={`${formatCurrency(stats.totalDebt)} so'm`}
                     subtitle={`${stats.customersWithDebt} ta mijozda`}
-                    colors={["#fab1a0", "#ff7675"]}
+                    color={theme.danger}
+                    bg={theme.dangerSoft}
                   />
                 )}
                 {stats.unreturnedBottles > 0 && (
                   <AlertCard
-                    icon="flask"
-                    title="Qaytarilmagan Idishlar"
+                    icon="droplet"
+                    title="Qaytarilmagan idishlar"
                     value={`${stats.unreturnedBottles} ta`}
                     subtitle={`${stats.customersWithBottles} ta mijoz hisobida`}
-                    colors={["#ffeaa7", "#fdcb6e"]}
+                    color={palette.amber600}
+                    bg={theme.warningSoft}
                   />
                 )}
-              </View>
+              </>
             )}
 
-            {/* 🔔 System Alerts */}
+            {/* System alerts */}
             {stats.alerts && stats.alerts.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Tizim Xabarlari</Text>
+              <>
+                <Text style={styles.sectionTitle}>Tizim xabarlari</Text>
                 {stats.alerts.map((alert: any, i: number) => (
-                  <LinearGradient
-                    key={i}
-                    colors={["rgba(255,255,255,0.2)", "rgba(255,255,255,0.1)"]}
-                    style={styles.alertItem}
-                  >
-                    <Feather name="bell" size={16} color="#fff" />
+                  <View key={i} style={styles.alertItem}>
+                    <View style={styles.alertItemIcon}>
+                      <Feather name="bell" size={16} color={theme.primaryDark} />
+                    </View>
                     <Text style={styles.alertText}>{alert.message}</Text>
-                  </LinearGradient>
+                  </View>
                 ))}
-              </View>
+              </>
             )}
           </>
         )}
       </ScrollView>
-    </View>
+    </Screen>
   );
 }
 
-// 🎴 Glass Card Component
-function GlassCard({ icon, label, value, subtitle, gradient }: any) {
+function StatCard({ icon, label, value, sub, color }: { icon: keyof typeof Feather.glyphMap; label: string; value: string; sub?: string; color: string }) {
   return (
-    <View style={styles.glassCardWrapper}>
-      <LinearGradient
-        colors={["rgba(255,255,255,0.2)", "rgba(255,255,255,0.1)"]}
-        style={styles.glassCard}
-      >
-        <View style={styles.glassCardIcon}>{icon}</View>
-        <Text style={styles.glassCardValue}>{value}</Text>
-        <Text style={styles.glassCardLabel}>{label}</Text>
-        {subtitle && <Text style={styles.glassCardSubtitle}>{subtitle}</Text>}
-      </LinearGradient>
-    </View>
-  );
-}
-
-// 💊 Status Pill Component
-function StatusPill({ icon, label, count, colors }: any) {
-  return (
-    <LinearGradient colors={colors} style={styles.statusPill}>
-      <Ionicons name={icon} size={20} color="#fff" />
-      <View style={styles.statusPillContent}>
-        <Text style={styles.statusPillCount}>{count}</Text>
-        <Text style={styles.statusPillLabel}>{label}</Text>
+    <View style={styles.statCard}>
+      <View style={[styles.statIconBg, { backgroundColor: color + "18" }]}>
+        <Feather name={icon} size={20} color={color} />
       </View>
-    </LinearGradient>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+      {sub && <Text style={styles.statSub}>{sub}</Text>}
+    </View>
   );
 }
 
-// 💳 Payment Row Component
-function PaymentRow({ icon, label, amount, color }: any) {
+function StatusPill({ icon, label, count, color }: { icon: keyof typeof Feather.glyphMap; label: string; count: number; color: string }) {
+  return (
+    <View style={[styles.statusPill, { borderColor: color + "33" }]}>
+      <View style={[styles.statusPillIcon, { backgroundColor: color + "18" }]}>
+        <Feather name={icon} size={20} color={color} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.statusCount, { color }]}>{count}</Text>
+        <Text style={styles.statusLabel}>{label}</Text>
+      </View>
+    </View>
+  );
+}
+
+function PaymentRow({ icon, label, amount, color }: { icon: keyof typeof Feather.glyphMap; label: string; amount: number; color: string }) {
   return (
     <View style={styles.paymentRow}>
       <View style={styles.paymentRowLeft}>
-        <Ionicons name={icon} size={20} color={color} />
+        <View style={[styles.paymentIcon, { backgroundColor: color + "18" }]}>
+          <Feather name={icon} size={16} color={color} />
+        </View>
         <Text style={styles.paymentRowLabel}>{label}</Text>
       </View>
-      <Text style={[styles.paymentRowAmount, { color }]}>
-        {formatCurrency(amount)} so'm
-      </Text>
+      <Text style={[styles.paymentRowAmount, { color }]}>{formatCurrency(amount)} so'm</Text>
     </View>
   );
 }
 
-// ⚠️ Alert Card Component
-function AlertCard({ icon, title, value, subtitle, colors }: any) {
+function AlertCard({ icon, title, value, subtitle, color, bg }: { icon: keyof typeof Feather.glyphMap; title: string; value: string; subtitle: string; color: string; bg: string }) {
   return (
-    <LinearGradient colors={colors} style={styles.alertCard}>
-      <Feather name={icon} size={24} color="#fff" />
-      <View style={styles.alertCardContent}>
+    <View style={[styles.alertCard, { backgroundColor: bg, borderColor: color + "33" }]}>
+      <View style={[styles.alertCardIcon, { backgroundColor: color + "22" }]}>
+        <Feather name={icon} size={22} color={color} />
+      </View>
+      <View style={{ flex: 1 }}>
         <Text style={styles.alertCardTitle}>{title}</Text>
-        <Text style={styles.alertCardValue}>{value}</Text>
+        <Text style={[styles.alertCardValue, { color }]}>{value}</Text>
         <Text style={styles.alertCardSubtitle}>{subtitle}</Text>
       </View>
-    </LinearGradient>
+    </View>
   );
 }
 
-// 📊 Weekly Chart Component
 function WeeklyChart({ data }: { data: { day: string; orders: number }[] }) {
   const maxOrders = Math.max(...data.map((d) => d.orders), 1);
-  
   return (
     <View style={styles.chartContainer}>
       {data.map((item, i) => (
         <View key={i} style={styles.chartBar}>
-          {item.orders > 0 && (
-            <Text style={styles.chartLabel}>{item.orders}</Text>
-          )}
+          {item.orders > 0 && <Text style={styles.chartLabel}>{item.orders}</Text>}
           <View style={styles.chartBarTrack}>
-            <LinearGradient
-              colors={["#667eea", "#764ba2"]}
-              style={[
-                styles.chartBarFill,
-                { height: `${Math.max((item.orders / maxOrders) * 100, 8)}%` }
-              ]}
-            />
+            <LinearGradient colors={gradients.brand} style={[styles.chartBarFill, { height: `${Math.max((item.orders / maxOrders) * 100, 8)}%` }]} />
           </View>
           <Text style={styles.chartDay}>{item.day}</Text>
         </View>
@@ -374,274 +259,134 @@ function WeeklyChart({ data }: { data: { day: string; orders: number }[] }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  
-  // Floating Orbs
-  orb: {
-    position: "absolute",
-    borderRadius: 1000,
-    opacity: 0.3,
-  },
-  orb1: { width: 300, height: 300, backgroundColor: "#667eea", top: -150, right: -100 },
-  orb2: { width: 200, height: 200, backgroundColor: "#f093fb", bottom: 100, left: -50 },
-  orb3: { width: 150, height: 150, backgroundColor: "#4facfe", top: "50%", right: -75 },
+  content: { paddingHorizontal: spacing.lg, paddingBottom: 110 },
 
-  content: { paddingHorizontal: 20, paddingBottom: 100 },
-
-  // Header
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  greeting: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.8)",
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  userName: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#fff",
-    letterSpacing: -0.5,
-  },
-  headerBadge: {
-    borderRadius: 20,
-    overflow: "hidden",
-    ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
-      android: { elevation: 4 },
-    }),
-  },
-  badgeGradient: {
+  header: { flexDirection: "row", alignItems: "center", marginBottom: spacing.lg },
+  greeting: { fontSize: fontSize.sm, color: theme.textSecondary, fontWeight: fontWeight.semibold },
+  userName: { fontSize: fontSize["2xl"], fontWeight: fontWeight.extrabold, color: theme.text, letterSpacing: -0.5 },
+  roleBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    gap: 5,
+    backgroundColor: theme.warningSoft,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: radius.md,
   },
-  badgeText: { fontSize: 13, fontWeight: "700", color: "#fff" },
+  roleBadgeText: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: palette.amber600 },
 
-  // Loading
-  loadingContainer: { paddingTop: 60 },
   loadingCard: {
-    borderRadius: 24,
+    borderRadius: radius.xl,
     padding: 40,
     alignItems: "center",
-    gap: 12,
+    gap: spacing.md,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
   },
-  loadingText: { fontSize: 14, color: "rgba(255,255,255,0.8)", fontWeight: "600" },
+  loadingText: { fontSize: fontSize.base, color: theme.textSecondary, fontWeight: fontWeight.semibold },
 
-  // Hero Card
-  heroCard: {
-    borderRadius: 28,
-    padding: 24,
-    marginBottom: 20,
-    ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 16 },
-      android: { elevation: 6 },
-    }),
-  },
-  heroHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  heroIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  trendBadgeContainer: { flexDirection: "row" },
-  trendBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(255,255,255,0.9)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  trendText: { fontSize: 13, fontWeight: "700", color: "#11998e" },
-  heroLabel: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.8)",
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  heroValue: {
-    fontSize: 36,
-    fontWeight: "800",
-    color: "#fff",
-    letterSpacing: -1,
-    marginBottom: 8,
-  },
-  heroSubtext: {
-    fontSize: 13,
-    color: "rgba(255,255,255,0.7)",
-    fontWeight: "500",
-  },
+  heroCard: { borderRadius: radius["2xl"], padding: spacing.xl, marginBottom: spacing.lg, overflow: "hidden" },
+  heroWave: { position: "absolute", right: -50, top: -40, width: 170, height: 170, borderRadius: 85, backgroundColor: "rgba(255,255,255,0.08)" },
+  heroHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: spacing.lg },
+  heroIconBg: { width: 56, height: 56, borderRadius: radius.lg, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
+  trendBadge: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#fff", paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.md },
+  trendText: { fontSize: fontSize.sm, fontWeight: fontWeight.extrabold, color: theme.success },
+  heroLabel: { fontSize: fontSize.sm, color: "rgba(255,255,255,0.9)", fontWeight: fontWeight.semibold, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
+  heroValue: { fontSize: fontSize["4xl"], fontWeight: fontWeight.black, color: "#fff", letterSpacing: -1.5 },
+  heroCurrency: { fontSize: fontSize.lg, color: "rgba(255,255,255,0.85)", fontWeight: fontWeight.semibold },
+  heroFooter: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: spacing.base, paddingTop: spacing.base, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.18)" },
+  heroSubtext: { fontSize: fontSize.sm, color: "rgba(255,255,255,0.85)", fontWeight: fontWeight.semibold },
 
-  // Stats Grid
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    marginBottom: 20,
+  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md, marginBottom: spacing.sm },
+  statCard: {
+    width: (width - spacing.lg * 2 - spacing.md) / 2,
+    backgroundColor: theme.surface,
+    borderRadius: radius.xl,
+    padding: spacing.base,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    ...shadow.xs,
   },
-  glassCardWrapper: { width: (width - 52) / 2 },
-  glassCard: {
-    borderRadius: 20,
-    padding: 16,
-    alignItems: "center",
-    ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 },
-      android: { elevation: 3 },
-    }),
-  },
-  glassCardIcon: { marginBottom: 12 },
-  glassCardValue: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#fff",
-    marginBottom: 4,
-  },
-  glassCardLabel: {
-    fontSize: 11,
-    color: "rgba(255,255,255,0.8)",
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  glassCardSubtitle: {
-    fontSize: 10,
-    color: "rgba(255,255,255,0.6)",
-    marginTop: 2,
-  },
+  statIconBg: { width: 46, height: 46, borderRadius: radius.md, alignItems: "center", justifyContent: "center", marginBottom: spacing.md },
+  statValue: { fontSize: fontSize["2xl"], fontWeight: fontWeight.black, color: theme.text, letterSpacing: -1 },
+  statLabel: { fontSize: fontSize.xs, color: theme.textSecondary, fontWeight: fontWeight.bold, marginTop: 2, lineHeight: 15 },
+  statSub: { fontSize: 10, color: theme.textMuted, marginTop: 2, fontWeight: fontWeight.semibold },
 
-  // Section
-  section: { marginBottom: 20 },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#fff",
-    marginBottom: 12,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    color: theme.textSecondary,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
     textTransform: "uppercase",
     letterSpacing: 1,
+    paddingLeft: 2,
   },
 
-  // Status Row
-  statusRow: { flexDirection: "row", gap: 12 },
+  statusRow: { flexDirection: "row", gap: spacing.md },
   statusPill: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    padding: 16,
-    borderRadius: 16,
-    ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
-      android: { elevation: 3 },
-    }),
+    gap: spacing.md,
+    padding: spacing.base,
+    borderRadius: radius.lg,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    ...shadow.xs,
   },
-  statusPillContent: { flex: 1 },
-  statusPillCount: { fontSize: 24, fontWeight: "800", color: "#fff" },
-  statusPillLabel: { fontSize: 12, color: "rgba(255,255,255,0.9)", fontWeight: "600", marginTop: 2 },
+  statusPillIcon: { width: 44, height: 44, borderRadius: radius.md, alignItems: "center", justifyContent: "center" },
+  statusCount: { fontSize: fontSize["2xl"], fontWeight: fontWeight.black, letterSpacing: -1 },
+  statusLabel: { fontSize: fontSize.xs, color: theme.textSecondary, fontWeight: fontWeight.bold, marginTop: 2 },
 
-  // Payment Card
-  paymentCard: {
-    borderRadius: 20,
-    padding: 20,
-    gap: 16,
-    ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 },
-      android: { elevation: 3 },
-    }),
+  card: {
+    backgroundColor: theme.surface,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    ...shadow.sm,
   },
-  paymentRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  paymentRowLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-  paymentRowLabel: { fontSize: 15, color: "#fff", fontWeight: "600" },
-  paymentRowAmount: { fontSize: 16, fontWeight: "800" },
-  divider: { height: 1, backgroundColor: "rgba(255,255,255,0.15)" },
+  paymentRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: spacing.sm },
+  paymentRowLeft: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  paymentIcon: { width: 36, height: 36, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
+  paymentRowLabel: { fontSize: fontSize.base, color: theme.text, fontWeight: fontWeight.bold },
+  paymentRowAmount: { fontSize: fontSize.md, fontWeight: fontWeight.black, letterSpacing: -0.5 },
+  divider: { height: 1, backgroundColor: theme.border, marginVertical: spacing.xs },
 
-  // Chart
-  chartCard: {
-    borderRadius: 20,
-    padding: 20,
-    ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 },
-      android: { elevation: 3 },
-    }),
-  },
-  chartContainer: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    height: 120,
-    gap: 8,
-  },
-  chartBar: {
-    flex: 1,
-    alignItems: "center",
-    height: "100%",
-    justifyContent: "flex-end",
-  },
-  chartLabel: {
-    fontSize: 11,
-    color: "#fff",
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  chartBarTrack: {
-    flex: 1,
-    width: "100%",
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 8,
-    overflow: "hidden",
-    justifyContent: "flex-end",
-  },
-  chartBarFill: { width: "100%", borderRadius: 8 },
-  chartDay: {
-    fontSize: 11,
-    color: "rgba(255,255,255,0.8)",
-    fontWeight: "600",
-    marginTop: 8,
-  },
+  chartContainer: { flexDirection: "row", alignItems: "flex-end", height: 140, gap: spacing.sm },
+  chartBar: { flex: 1, alignItems: "center", height: "100%", justifyContent: "flex-end" },
+  chartLabel: { fontSize: fontSize.xs, color: theme.text, fontWeight: fontWeight.extrabold, marginBottom: 6 },
+  chartBarTrack: { flex: 1, width: "100%", backgroundColor: theme.surfaceAlt, borderRadius: radius.sm, overflow: "hidden", justifyContent: "flex-end" },
+  chartBarFill: { width: "100%", borderRadius: radius.sm },
+  chartDay: { fontSize: 10, color: theme.textSecondary, fontWeight: fontWeight.bold, marginTop: 8, textTransform: "uppercase" },
 
-  // Alert Card
   alertCard: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
-    padding: 20,
-    borderRadius: 20,
-    marginBottom: 12,
-    ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12 },
-      android: { elevation: 4 },
-    }),
+    gap: spacing.md,
+    padding: spacing.base,
+    borderRadius: radius.xl,
+    marginBottom: spacing.md,
+    borderWidth: 1,
   },
-  alertCardContent: { flex: 1 },
-  alertCardTitle: { fontSize: 13, color: "#fff", fontWeight: "600", marginBottom: 4 },
-  alertCardValue: { fontSize: 22, fontWeight: "800", color: "#fff", marginBottom: 2 },
-  alertCardSubtitle: { fontSize: 12, color: "rgba(255,255,255,0.8)", fontWeight: "500" },
+  alertCardIcon: { width: 46, height: 46, borderRadius: radius.md, alignItems: "center", justifyContent: "center" },
+  alertCardTitle: { fontSize: fontSize.xs, color: theme.textSecondary, fontWeight: fontWeight.bold, textTransform: "uppercase", letterSpacing: 0.5 },
+  alertCardValue: { fontSize: fontSize.xl, fontWeight: fontWeight.black, marginTop: 2, letterSpacing: -0.5 },
+  alertCardSubtitle: { fontSize: fontSize.sm, color: theme.textSecondary, fontWeight: fontWeight.medium, marginTop: 2 },
 
-  // Alert Item
   alertItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 8,
+    gap: spacing.md,
+    padding: spacing.base,
+    borderRadius: radius.lg,
+    marginBottom: spacing.sm,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
   },
-  alertText: { flex: 1, fontSize: 13, color: "#fff", fontWeight: "600", lineHeight: 18 },
+  alertItemIcon: { width: 38, height: 38, borderRadius: radius.md, backgroundColor: theme.primarySoft, alignItems: "center", justifyContent: "center" },
+  alertText: { flex: 1, fontSize: fontSize.base, color: theme.text, fontWeight: fontWeight.semibold, lineHeight: 20 },
 });

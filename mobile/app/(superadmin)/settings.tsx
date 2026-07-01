@@ -5,9 +5,10 @@
 import React, { useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, ScrollView, RefreshControl,
-  TouchableOpacity, Alert, Switch, ActivityIndicator,
+  TouchableOpacity, Switch, ActivityIndicator,
   TextInput, Platform,
 } from "react-native";
+import { Alert } from "@/utils/alert";
 import { useFocusEffect, router } from "expo-router";
 import { Card } from "@/components/ui";
 import { Colors } from "@/constants";

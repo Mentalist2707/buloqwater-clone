@@ -53,6 +53,21 @@ enum ProductCategory {
   ACCESSORIES  // 🔧 Aksessuarlar
 }
 
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum NotificationType {
+  INVITATION            // mijozga taklif keldi (customer ko'radi)
+  INVITATION_ACCEPTED   // taklif qabul qilindi (director/operator ko'radi)
+  INVITATION_REJECTED   // taklif rad etildi
+  ORDER                 // buyurtma bilan bog'liq
+  SYSTEM                // tizim xabari
+}
+
 // ============================================================
 // COMPANY (Kompaniya) - Multi-tenant asosi
 // ============================================================
@@ -76,6 +91,7 @@ model Company {
   orders        Order[]
   subscription  Subscription?
   activityLogs  ActivityLog[]
+  invitations   CustomerInvitation[] @relation("InvitationCompany")
 
   @@index([subdomain])
   @@map("companies")
@@ -163,6 +179,11 @@ model User {
   createdOrders   Order[] @relation("OperatorOrders")
   userAddresses   UserAddress[]
 
+  notifications        Notification[]
+  customerProfiles     Customer[]           @relation("CustomerUser")
+  receivedInvitations  CustomerInvitation[] @relation("InvitationTarget")
+  sentInvitations      CustomerInvitation[] @relation("InvitationSender")
+
   @@unique([phone, companyId])
   @@index([companyId])
   @@index([role])
@@ -191,12 +212,16 @@ model Customer {
   companyId     String
   company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
+  userId        String?
+  user          User?     @relation("CustomerUser", fields: [userId], references: [id], onDelete: SetNull)
+
   orders        Order[]
   addresses     Address[]
 
   @@unique([phone1, companyId])
   @@index([companyId])
   @@index([phone1])
+  @@index([userId])
   @@map("customers")
 }
 
@@ -469,4 +494,51 @@ model Message {
   @@index([type])
   @@index([createdAt])
   @@map("messages")
+}
+
+// ============================================================
+// NOTIFICATION (Bildirishnoma) — foydalanuvchiga yo'naltirilgan
+// ============================================================
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType @default(SYSTEM)
+  title     String
+  body      String
+  data      String?          // JSON: invitationId, companyName, phone, orderId, ...
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ============================================================
+// CUSTOMER INVITATION (Mijozlikka taklif)
+// ============================================================
+
+model CustomerInvitation {
+  id            String           @id @default(uuid())
+  status        InvitationStatus @default(PENDING)
+  phone         String
+  createdAt     DateTime         @default(now())
+  respondedAt   DateTime?
+  expiresAt     DateTime
+
+  fromCompanyId String
+  fromCompany   Company          @relation("InvitationCompany", fields: [fromCompanyId], references: [id], onDelete: Cascade)
+
+  toUserId      String
+  toUser        User             @relation("InvitationTarget", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  invitedById   String
+  invitedBy     User             @relation("InvitationSender", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([toUserId, status])
+  @@index([fromCompanyId])
+  @@map("customer_invitations")
 }

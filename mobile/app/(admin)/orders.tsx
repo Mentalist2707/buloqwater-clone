@@ -1,4 +1,6 @@
-"Admin buyurtmalar sahifasi — To'liq xatosiz StyleSheet versiyasi"
+/**
+ * Admin (Director) buyurtmalar sahifasi (2026 redesign)
+ */
 import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
@@ -10,14 +12,16 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { Card, StatusBadge, Button, Input } from "@/components/ui";
-import { Colors, ORDER_STATUS_LABELS } from "@/constants";
+import { Feather } from "@expo/vector-icons";
+import { StatusBadge, Button, Screen } from "@/components/ui";
+import { ORDER_STATUS_LABELS } from "@/constants";
 import { ordersService } from "@/services/orders";
 import type { Order, Driver } from "@/types";
+import { theme, palette, spacing, radius, fontSize, fontWeight, shadow } from "@/constants/theme";
 
 const STATUS_FILTERS = ["ALL", "PENDING", "ASSIGNED", "IN_TRANSIT", "DELIVERED", "CANCELLED"];
 type DateFilter = "ALL" | "TODAY" | "YESTERDAY" | "WEEK";
@@ -29,13 +33,13 @@ const DATE_FILTERS: { key: DateFilter; label: string }[] = [
   { key: "WEEK", label: "Hafta" },
 ];
 
-const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
-  ALL:        { bg: "rgba(2, 132, 199, 0.08)", text: "#0284C7" },
-  PENDING:    { bg: "rgba(217, 119, 6, 0.08)",  text: "#D97706" },
-  ASSIGNED:   { bg: "rgba(99, 102, 241, 0.08)", text: "#6366F1" },
-  IN_TRANSIT: { bg: "rgba(14, 165, 233, 0.08)", text: "#0EA5E9" },
-  DELIVERED:  { bg: "rgba(22, 163, 74, 0.08)",  text: "#16A34A" },
-  CANCELLED:  { bg: "rgba(220, 38, 38, 0.08)",  text: "#DC2626" },
+const FILTER_COLORS: Record<string, string> = {
+  ALL: theme.primaryDark,
+  PENDING: palette.amber500,
+  ASSIGNED: palette.violet500,
+  IN_TRANSIT: palette.aqua500,
+  DELIVERED: palette.mint500,
+  CANCELLED: palette.rose500,
 };
 
 function getTimeSincePending(createdAt: string) {
@@ -53,7 +57,7 @@ export default function AdminOrdersScreen() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [dateFilter, setDateFilter] = useState<DateFilter>("ALL");
   const [search, setSearch] = useState("");
-  
+
   const [assignModal, setAssignModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -74,7 +78,7 @@ export default function AdminOrdersScreen() {
     useCallback(() => {
       setLoading(true);
       loadOrders();
-    }, [statusFilter])
+    }, [statusFilter]),
   );
 
   const onRefresh = async () => {
@@ -85,13 +89,13 @@ export default function AdminOrdersScreen() {
 
   const filtered = useMemo(() => {
     let result = [...orders];
-
     if (dateFilter !== "ALL") {
       const now = new Date();
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-      const weekStart = new Date(todayStart); weekStart.setDate(weekStart.getDate() - 7);
-
+      const yesterdayStart = new Date(todayStart);
+      yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+      const weekStart = new Date(todayStart);
+      weekStart.setDate(weekStart.getDate() - 7);
       result = result.filter((o) => {
         const orderDate = new Date(o.createdAt);
         if (dateFilter === "TODAY") return orderDate >= todayStart;
@@ -100,16 +104,15 @@ export default function AdminOrdersScreen() {
         return true;
       });
     }
-
     if (search.trim()) {
       const q = search.toLowerCase();
-      result = result.filter((o) =>
-        o.customer.name.toLowerCase().includes(q) ||
-        o.customer.phone1.includes(q) ||
-        String(o.orderNumber).includes(q)
+      result = result.filter(
+        (o) =>
+          o.customer.name.toLowerCase().includes(q) ||
+          o.customer.phone1.includes(q) ||
+          String(o.orderNumber).includes(q),
       );
     }
-
     return result;
   }, [orders, dateFilter, search]);
 
@@ -127,7 +130,7 @@ export default function AdminOrdersScreen() {
     setAssignLoading(true);
     const r = await ordersService.assignDriver(selectedOrder.id, driverId);
     if (r.success) {
-      Alert.alert("✅ Tayyor!", `${driverName}ga biriktirildi`);
+      Alert.alert("Tayyor!", `${driverName}ga biriktirildi`);
       setAssignModal(false);
       loadOrders();
     } else {
@@ -143,25 +146,21 @@ export default function AdminOrdersScreen() {
     const totalQty = item.items.reduce((sum, i) => sum + i.quantity, 0);
 
     return (
-      <Card
-        style={[
-          styles.orderCard,
-          isUrgent && styles.orderCardUrgent,
-          isNew && styles.orderCardNew,
-        ]}
-      >
+      <View style={[styles.orderCard, isUrgent && styles.orderCardUrgent, isNew && styles.orderCardNew]}>
         <View style={styles.orderHeader}>
           <View style={{ flex: 1, gap: 6 }}>
             <View style={styles.orderNumberRow}>
               <Text style={styles.orderNumber}>#{item.orderNumber}</Text>
               {isUrgent && (
                 <View style={styles.urgentBadge}>
-                  <Text style={styles.urgentText}>⚠️ Kechikkan</Text>
+                  <Feather name="alert-triangle" size={10} color={theme.danger} />
+                  <Text style={styles.urgentText}>Kechikkan</Text>
                 </View>
               )}
               {isNew && (
                 <View style={styles.newBadge}>
-                  <Text style={styles.newText}>✨ Yangi</Text>
+                  <Feather name="zap" size={10} color={theme.success} />
+                  <Text style={styles.newText}>Yangi</Text>
                 </View>
               )}
             </View>
@@ -169,10 +168,8 @@ export default function AdminOrdersScreen() {
               <StatusBadge status={item.status} />
               {pendingTime && (
                 <View style={styles.tickerBadge}>
-                  <Ionicons name="time-outline" size={12} color={isUrgent ? Colors.danger : "#D97706"} />
-                  <Text style={[styles.pendingTime, isUrgent && { color: Colors.danger }]}>
-                    {pendingTime}
-                  </Text>
+                  <Feather name="clock" size={11} color={isUrgent ? theme.danger : palette.amber600} />
+                  <Text style={[styles.pendingTime, isUrgent && { color: theme.danger }]}>{pendingTime}</Text>
                 </View>
               )}
             </View>
@@ -184,12 +181,12 @@ export default function AdminOrdersScreen() {
           <Text style={styles.customerName}>{item.customer.name}</Text>
           <Text style={styles.customerPhone}>{item.customer.phone1}</Text>
           <View style={styles.infoLine}>
-            <Ionicons name="location-outline" size={14} color="#64748B" />
-            <Text style={styles.customerAddress} numberOfLines={2}>{item.customer.address}</Text>
+            <Feather name="map-pin" size={13} color={theme.textSecondary} />
+            <Text style={styles.customerAddress} numberOfLines={2}>
+              {item.customer.address}
+            </Text>
           </View>
-          {item.customer.landmark ? (
-            <Text style={styles.landmark}>Mo'ljal: {item.customer.landmark}</Text>
-          ) : null}
+          {item.customer.landmark ? <Text style={styles.landmark}>Mo'ljal: {item.customer.landmark}</Text> : null}
         </View>
 
         <View style={styles.itemsDivider} />
@@ -197,44 +194,41 @@ export default function AdminOrdersScreen() {
         <View style={styles.itemsRow}>
           {item.items.map((oi, i) => (
             <Text key={i} style={styles.itemChip}>
-              {oi.product.name} <Text style={{ fontWeight: '700' }}>×{oi.quantity}</Text>
+              {oi.product.name} ×{oi.quantity}
             </Text>
           ))}
         </View>
 
         <View style={styles.cardFooter}>
           <View style={styles.bottleBox}>
-            <Ionicons name="water-outline" size={14} color="#64748B" />
+            <Feather name="droplet" size={13} color={theme.textSecondary} />
             <Text style={styles.bottleLabel}>Idish: {totalQty} ta</Text>
           </View>
           {item.driver && (
             <View style={styles.driverContainer}>
-              <Ionicons name="car-outline" size={14} color="#334155" />
-              <Text style={styles.driverInfo}>Haydovchi: {item.driver.name}</Text>
+              <Feather name="truck" size={13} color={theme.primaryDark} />
+              <Text style={styles.driverInfo}>{item.driver.name}</Text>
             </View>
           )}
         </View>
 
         {item.status === "PENDING" && (
-          <Button
-            title="Haydovchi biriktirish"
-            onPress={() => handleAssign(item)}
-            variant="primary"
-            size="sm"
-            style={styles.assignBtn}
-          />
+          <Button title="Haydovchi biriktirish" onPress={() => handleAssign(item)} size="sm" icon={<Feather name="user-plus" size={15} color="#fff" />} />
         )}
-      </Card>
+      </View>
     );
   };
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.headerPanel, { paddingTop: insets.top > 0 ? insets.top + 8 : 14 }]}>
+    <Screen>
+      {/* Header */}
+      <View style={[styles.headerPanel, { paddingTop: insets.top + 12 }]}>
+        <Text style={styles.pageTitle}>Buyurtmalar</Text>
         <View style={styles.searchWrapper}>
-          <Ionicons name="search-outline" size={18} color="#94A3B8" style={styles.searchIcon} />
-          <Input
-            placeholder="Ism, telefon yoki buyurtma raqami..."
+          <Feather name="search" size={18} color={theme.textMuted} />
+          <TextInput
+            placeholder="Ism, telefon yoki raqam..."
+            placeholderTextColor={theme.textMuted}
             value={search}
             onChangeText={setSearch}
             style={styles.searchInput}
@@ -242,7 +236,8 @@ export default function AdminOrdersScreen() {
         </View>
       </View>
 
-      <View style={{ height: 34, marginBottom: 4 }}>
+      {/* Status filters */}
+      <View style={{ marginBottom: spacing.sm }}>
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -251,21 +246,23 @@ export default function AdminOrdersScreen() {
           contentContainerStyle={styles.filterListContainer}
           renderItem={({ item }) => {
             const isActive = statusFilter === item;
-            const config = STATUS_STYLES[item] || STATUS_STYLES.ALL;
+            const color = FILTER_COLORS[item] || theme.primaryDark;
             return (
               <TouchableOpacity
-                style={[styles.chip, { backgroundColor: isActive ? config.text : config.bg }]}
+                style={[styles.chip, isActive ? { backgroundColor: color, borderColor: color } : { borderColor: theme.border }]}
                 onPress={() => setStatusFilter(item)}
+                activeOpacity={0.7}
               >
-                <Text style={[styles.chipText, { color: isActive ? "#FFFFFF" : config.text }]}>
+                <Text style={[styles.chipText, { color: isActive ? "#FFF" : theme.textSecondary }]}>
                   {item === "ALL" ? "Barchasi" : ORDER_STATUS_LABELS[item] || item}
                 </Text>
               </TouchableOpacity>
-              
-            )}}
-         />
+            );
+          }}
+        />
       </View>
 
+      {/* Date filters */}
       <View style={styles.dateFilterRow}>
         {DATE_FILTERS.map((df) => (
           <TouchableOpacity
@@ -273,9 +270,7 @@ export default function AdminOrdersScreen() {
             style={[styles.dateChip, dateFilter === df.key && styles.dateChipActive]}
             onPress={() => setDateFilter(df.key)}
           >
-            <Text style={[styles.dateChipText, dateFilter === df.key && styles.dateChipTextActive]}>
-              {df.label}
-            </Text>
+            <Text style={[styles.dateChipText, dateFilter === df.key && styles.dateChipTextActive]}>{df.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -283,8 +278,13 @@ export default function AdminOrdersScreen() {
       {(dateFilter !== "ALL" || search) && (
         <View style={styles.resultRow}>
           <Text style={styles.resultText}>{filtered.length} ta buyurtma topildi</Text>
-          <TouchableOpacity onPress={() => { setDateFilter("ALL"); setSearch(""); }}>
-            <Text style={styles.clearText}>Filtrni tozalash</Text>
+          <TouchableOpacity
+            onPress={() => {
+              setDateFilter("ALL");
+              setSearch("");
+            }}
+          >
+            <Text style={styles.clearText}>Tozalash</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -293,16 +293,18 @@ export default function AdminOrdersScreen() {
         data={filtered}
         renderItem={renderOrder}
         keyExtractor={(i) => i.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
         contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+        ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
         ListEmptyComponent={
           <View style={styles.empty}>
             {loading ? (
-              <ActivityIndicator size="large" color={Colors.primary} />
+              <ActivityIndicator size="large" color={theme.primary} />
             ) : (
               <>
-                <Text style={styles.emptyIcon}>📦</Text>
+                <View style={styles.emptyIconBox}>
+                  <Feather name="inbox" size={34} color={theme.primary} />
+                </View>
                 <Text style={styles.emptyText}>Buyurtmalar mavjud emas</Text>
               </>
             )}
@@ -312,147 +314,182 @@ export default function AdminOrdersScreen() {
 
       <Modal visible={assignModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 24 }]}>
             <View style={styles.modalIndicator} />
             <Text style={styles.modalTitle}>Haydovchini tanlang</Text>
-            <Text style={styles.modalSub}>Buyurtma #{selectedOrder?.orderNumber} · {selectedOrder?.customer.name}</Text>
+            <Text style={styles.modalSub}>
+              Buyurtma #{selectedOrder?.orderNumber} · {selectedOrder?.customer.name}
+            </Text>
 
             {driversLoading ? (
-              <View style={{ paddingVertical: 40 }}><ActivityIndicator color={Colors.primary} /></View>
+              <View style={{ paddingVertical: 40 }}>
+                <ActivityIndicator color={theme.primary} />
+              </View>
             ) : drivers.length === 0 ? (
               <Text style={styles.modalEmpty}>Haydovchilar topilmadi</Text>
             ) : (
               <FlatList
                 data={drivers}
                 keyExtractor={(i) => i.id}
-                style={{ maxHeight: 320 }}
+                style={{ maxHeight: 340 }}
                 showsVerticalScrollIndicator={false}
                 renderItem={({ item }) => {
                   const load = item.activeOrdersCount;
-                  const color = load === 0 ? Colors.success : load <= 3 ? Colors.primary : Colors.warning;
+                  const color = load === 0 ? theme.success : load <= 3 ? theme.primary : theme.warning;
                   return (
-                    <TouchableOpacity
-                      style={styles.driverRow}
-                      onPress={() => confirmAssign(item.id, item.name)}
-                      disabled={assignLoading}
-                    >
-                      <View style={[styles.driverAvatar, { backgroundColor: color + "15" }]}>
+                    <TouchableOpacity style={styles.driverRow} onPress={() => confirmAssign(item.id, item.name)} disabled={assignLoading}>
+                      <View style={[styles.driverAvatar, { backgroundColor: color + "18" }]}>
                         <Text style={[styles.driverAvatarText, { color }]}>{item.name.charAt(0).toUpperCase()}</Text>
                       </View>
                       <View style={{ flex: 1, gap: 2 }}>
                         <Text style={styles.driverName}>{item.name}</Text>
                         <Text style={styles.driverPhone}>{item.phone}</Text>
                       </View>
-                      <View style={[styles.driverBadge, { backgroundColor: color + "10" }]}>
-                        <Text style={[styles.driverBadgeText, { color }]}>
-                          {load === 0 ? "Bo'sh" : `${load} ta buyurtma`}
-                        </Text>
+                      <View style={[styles.driverBadge, { backgroundColor: color + "14" }]}>
+                        <Text style={[styles.driverBadgeText, { color }]}>{load === 0 ? "Bo'sh" : `${load} ta`}</Text>
                       </View>
                     </TouchableOpacity>
                   );
                 }}
-                ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: "#F1F5F9" }} />}
+                ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: theme.border }} />}
               />
             )}
 
-            <View style={styles.legendRow}>
-              <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: Colors.success }]} /><Text style={styles.legendText}>Bo'sh</Text></View>
-              <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: Colors.primary }]} /><Text style={styles.legendText}>1-3 ta</Text></View>
-              <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: Colors.warning }]} /><Text style={styles.legendText}>4+ ta</Text></View>
-            </View>
-
-            <Button
-              title="Yopish"
-              onPress={() => setAssignModal(false)}
-              variant="outline"
-              style={{ marginTop: 16, borderRadius: 12 }}
-            />
+            <Button title="Yopish" onPress={() => setAssignModal(false)} variant="outline" style={{ marginTop: spacing.base }} />
           </View>
         </View>
       </Modal>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
-  headerPanel: { paddingHorizontal: 16, paddingBottom: 6 },
-  
-  searchWrapper: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 12, paddingHorizontal: 12, borderWidth: 1, borderColor: "#E2E8F0" },
-  searchIcon: { marginRight: 6 },
-  searchInput: { flex: 1, height: 54, borderBottomWidth: 0, backgroundColor: "transparent",marginBottom:0 },
-  
-  filterListContainer: { paddingHorizontal: 16, gap: 6 },
-  chip: { paddingHorizontal: 12, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  chipText: { fontSize: 12, fontWeight: "600" },
-  
-  dateFilterRow: { flexDirection: "row", gap: 4, paddingHorizontal: 16, backgroundColor: "#F1F5F9", padding: 3, borderRadius: 10, marginHorizontal: 16, marginBottom: 12, marginTop: 8 },
-  dateChip: { flex: 1, paddingVertical: 6, alignItems: "center", borderRadius: 8 },
-  dateChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
-  dateChipText: { fontSize: 12, color: "#64748B", fontWeight: "600" },
-  dateChipTextActive: { color: "#1E293B", fontWeight: "700" },
-  
-  resultRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 10 },
-  resultText: { fontSize: 12, color: "#64748B", fontWeight: "500" },
-  clearText: { fontSize: 12, color: Colors.primary, fontWeight: "600" },
-  
-  list: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 100 },
-  orderCard: { padding: 16, borderRadius: 16, backgroundColor: Colors.white, borderLeftWidth: 4, borderLeftColor: "#CBD5E1", borderWidth: 1, borderColor: "#E2E8F0" },
-  orderCardUrgent: { borderLeftColor: Colors.danger, backgroundColor: "#FFF5F5" },
-  orderCardNew: { borderLeftColor: Colors.success, backgroundColor: "#F0FFF4" },
-  
-  orderHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
-  orderNumberRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  orderNumber: { fontSize: 16, fontWeight: "700", color: "#0F172A" },
-  badgeRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 },
-  urgentBadge: { backgroundColor: "#FEE2E2", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  urgentText: { fontSize: 10, fontWeight: "700", color: Colors.danger },
-  newBadge: { backgroundColor: "#DCFCE7", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  newText: { fontSize: 10, fontWeight: "700", color: Colors.success },
-  tickerBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(217, 119, 6, 0.06)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  pendingTime: { fontSize: 11, color: "#D97706", fontWeight: "600" },
-  orderAmount: { fontSize: 16, fontWeight: "800", color: Colors.primary },
-  
-  customerBlock: { gap: 4, marginBottom: 10, paddingVertical: 2 },
-  customerName: { fontSize: 14, fontWeight: "600", color: "#1E293B" },
-  customerPhone: { fontSize: 12, color: "#64748B" },
-  infoLine: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
-  customerAddress: { flex: 1, fontSize: 13, color: "#475569" },
-  landmark: { fontSize: 12, color: "#64748B", fontStyle: "italic", marginLeft: 18 },
-  
-  itemsDivider: { height: 1, backgroundColor: "#F1F5F9", marginVertical: 10 },
-  itemsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4, marginBottom: 12 },
-  itemChip: { fontSize: 12, backgroundColor: "#F1F5F9", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, color: "#334155" },
-  
-  cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  bottleBox: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#F8FAFC", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  bottleLabel: { fontSize: 12, fontWeight: "600", color: "#475569" },
-  driverContainer: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#F1F5F9", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  driverInfo: { fontSize: 12, color: "#334155", fontWeight: "600" },
-  
-  assignBtn: { marginTop: 4, borderRadius: 10, width: '100%' },
-  
-  empty: { alignItems: "center", justifyContent: "center", paddingTop: 80 },
-  emptyIcon: { fontSize: 54, marginBottom: 14 },
-  emptyText: { fontSize: 15, color: "#94A3B8", fontWeight: "500" },
-  
-  modalOverlay: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.3)", justifyContent: "flex-end" },
-  modalContent: { backgroundColor: Colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 34, maxHeight: "85%" },
-  modalIndicator: { width: 36, height: 4, backgroundColor: "#E2E8F0", borderRadius: 2, alignSelf: "center", marginBottom: 16 },
-  modalTitle: { fontSize: 18, fontWeight: "700", color: "#0F172A" },
-  modalSub: { fontSize: 13, color: "#64748B", marginTop: 4, marginBottom: 20 },
-  modalEmpty: { textAlign: "center", color: "#94A3B8", paddingVertical: 30, fontSize: 14 },
-  
-  driverRow: { flexDirection: "row", alignItems: "center", paddingVertical: 14, gap: 12 },
-  driverAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  driverAvatarText: { fontWeight: "700", fontSize: 15 },
-  driverName: { fontSize: 15, fontWeight: "600", color: "#1E293B" },
-  driverPhone: { fontSize: 12, color: "#64748B" },
-  driverBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
-  driverBadgeText: { fontSize: 11, fontWeight: "600" },
-  
-  legendRow: { flexDirection: "row", gap: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F1F5F9", marginTop: 12, justifyContent: "center" },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontSize: 12, color: "#64748B" },
+  headerPanel: { paddingHorizontal: spacing.lg, paddingBottom: spacing.base, gap: spacing.md },
+  pageTitle: { fontSize: fontSize["3xl"], fontWeight: fontWeight.extrabold, color: theme.text, letterSpacing: -0.6 },
+  searchWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    backgroundColor: theme.surface,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.base,
+    height: 50,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    ...shadow.xs,
+  },
+  searchInput: { flex: 1, fontSize: fontSize.base, color: theme.text, fontWeight: fontWeight.medium },
+
+  filterListContainer: { paddingHorizontal: spacing.lg, gap: spacing.sm },
+  chip: {
+    paddingHorizontal: spacing.base,
+    height: 36,
+    borderRadius: radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    backgroundColor: theme.surface,
+  },
+  chipText: { fontSize: fontSize.sm, fontWeight: fontWeight.bold },
+
+  dateFilterRow: {
+    flexDirection: "row",
+    gap: spacing.xs,
+    backgroundColor: theme.surface,
+    padding: 4,
+    borderRadius: radius.md,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+  },
+  dateChip: { flex: 1, paddingVertical: 9, alignItems: "center", borderRadius: radius.sm },
+  dateChipActive: { backgroundColor: theme.primary },
+  dateChipText: { fontSize: fontSize.sm, color: theme.textSecondary, fontWeight: fontWeight.bold },
+  dateChipTextActive: { color: "#fff" },
+
+  resultRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    backgroundColor: theme.primaryTint,
+    borderRadius: radius.md,
+  },
+  resultText: { fontSize: fontSize.sm, color: theme.textSecondary, fontWeight: fontWeight.bold },
+  clearText: { fontSize: fontSize.sm, color: theme.primaryDark, fontWeight: fontWeight.extrabold },
+
+  list: { paddingHorizontal: spacing.lg, paddingTop: 4, paddingBottom: 110 },
+  orderCard: {
+    padding: spacing.base,
+    borderRadius: radius.xl,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    borderLeftWidth: 4,
+    borderLeftColor: theme.border,
+    ...shadow.sm,
+  },
+  orderCardUrgent: { borderLeftColor: theme.danger },
+  orderCardNew: { borderLeftColor: theme.success },
+
+  orderHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: spacing.md },
+  orderNumberRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  orderNumber: { fontSize: fontSize.md, fontWeight: fontWeight.extrabold, color: theme.text },
+  badgeRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, flexWrap: "wrap" },
+  urgentBadge: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: theme.dangerSoft, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.sm },
+  urgentText: { fontSize: 10, fontWeight: fontWeight.extrabold, color: theme.danger },
+  newBadge: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: theme.successSoft, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.sm },
+  newText: { fontSize: 10, fontWeight: fontWeight.extrabold, color: theme.success },
+  tickerBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: theme.warningSoft, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.sm },
+  pendingTime: { fontSize: fontSize.xs, color: palette.amber600, fontWeight: fontWeight.bold },
+  orderAmount: { fontSize: fontSize.lg, fontWeight: fontWeight.black, color: theme.primaryDark, letterSpacing: -0.5 },
+
+  customerBlock: { gap: 5, marginBottom: spacing.md },
+  customerName: { fontSize: fontSize.base, fontWeight: fontWeight.bold, color: theme.text },
+  customerPhone: { fontSize: fontSize.sm, color: theme.textSecondary, fontWeight: fontWeight.semibold },
+  infoLine: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: 2 },
+  customerAddress: { flex: 1, fontSize: fontSize.base, color: theme.textSecondary, lineHeight: 20 },
+  landmark: { fontSize: fontSize.sm, color: theme.textSecondary, fontStyle: "italic", marginLeft: 19, fontWeight: fontWeight.medium },
+
+  itemsDivider: { height: 1, backgroundColor: theme.border, marginVertical: spacing.md },
+  itemsRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginBottom: spacing.md },
+  itemChip: {
+    fontSize: fontSize.sm,
+    backgroundColor: theme.surfaceAlt,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.sm,
+    color: theme.textSecondary,
+    fontWeight: fontWeight.semibold,
+    overflow: "hidden",
+  },
+
+  cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md },
+  bottleBox: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: theme.bg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.sm },
+  bottleLabel: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: theme.textSecondary },
+  driverContainer: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: theme.primarySoft, paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.sm },
+  driverInfo: { fontSize: fontSize.sm, color: theme.primaryDark, fontWeight: fontWeight.bold },
+
+  empty: { alignItems: "center", justifyContent: "center", paddingTop: 90 },
+  emptyIconBox: { width: 78, height: 78, borderRadius: radius["2xl"], backgroundColor: theme.primarySoft, alignItems: "center", justifyContent: "center", marginBottom: spacing.base },
+  emptyText: { fontSize: fontSize.md, color: theme.textSecondary, fontWeight: fontWeight.semibold },
+
+  modalOverlay: { flex: 1, backgroundColor: theme.overlay, justifyContent: "flex-end" },
+  modalContent: { backgroundColor: theme.surface, borderTopLeftRadius: radius["2xl"], borderTopRightRadius: radius["2xl"], padding: spacing.xl, maxHeight: "85%" },
+  modalIndicator: { width: 40, height: 4, backgroundColor: theme.border, borderRadius: 2, alignSelf: "center", marginBottom: spacing.base },
+  modalTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.extrabold, color: theme.text },
+  modalSub: { fontSize: fontSize.base, color: theme.textSecondary, marginTop: 4, marginBottom: spacing.lg, fontWeight: fontWeight.semibold },
+  modalEmpty: { textAlign: "center", color: theme.textMuted, paddingVertical: 40, fontSize: fontSize.base, fontWeight: fontWeight.semibold },
+
+  driverRow: { flexDirection: "row", alignItems: "center", paddingVertical: spacing.base, gap: spacing.md },
+  driverAvatar: { width: 48, height: 48, borderRadius: radius.md, alignItems: "center", justifyContent: "center" },
+  driverAvatarText: { fontWeight: fontWeight.extrabold, fontSize: fontSize.lg },
+  driverName: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: theme.text },
+  driverPhone: { fontSize: fontSize.sm, color: theme.textSecondary, fontWeight: fontWeight.semibold, marginTop: 2 },
+  driverBadge: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.md },
+  driverBadgeText: { fontSize: fontSize.xs, fontWeight: fontWeight.extrabold },
 });

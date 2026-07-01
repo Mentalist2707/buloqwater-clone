@@ -5,7 +5,7 @@
  * Roles: DIRECTOR, OPERATOR
  */
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
   getAuthUser,
@@ -40,8 +40,10 @@ export async function GET(request: NextRequest) {
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
-        { phone1: { contains: search } },
+        { phone1: { contains: search, mode: "insensitive" } },
+        { phone2: { contains: search, mode: "insensitive" } },
         { address: { contains: search, mode: "insensitive" } },
+        { landmark: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -64,13 +66,43 @@ export async function GET(request: NextRequest) {
           debtBalance: true,
           createdAt: true,
           _count: { select: { orders: true } },
+          addresses: {
+            where: { isDefault: true },
+            take: 1,
+            select: { address: true, landmark: true, locationLink: true },
+          },
+          user: {
+            select: {
+              userAddresses: {
+                where: { isDefault: true },
+                take: 1,
+                select: { address: true, landmark: true, locationLink: true },
+              },
+            },
+          },
         },
       }),
       prisma.customer.count({ where }),
     ]);
 
+    // Asosiy manzil bo'sh/placeholder bo'lsa — saqlangan yoki ilovadagi
+    // standart manzilni ko'rsatamiz.
+    const items = customers.map((c) => {
+      const { addresses, user, ...rest } = c as any;
+      let { address, landmark, locationLink } = rest;
+      if (!address || address === "Manzil kiritilmagan") {
+        const alt = addresses?.[0] || user?.userAddresses?.[0];
+        if (alt) {
+          address = alt.address;
+          landmark = alt.landmark ?? landmark;
+          locationLink = alt.locationLink ?? locationLink;
+        }
+      }
+      return { ...rest, address, landmark, locationLink };
+    });
+
     return success({
-      items: customers,
+      items,
       total,
       page,
       totalPages: Math.ceil(total / limit),
@@ -96,12 +128,33 @@ export async function POST(request: NextRequest) {
       return badRequest("name, phone1, va address talab qilinadi");
     }
 
-    // Telefon raqam mavjudligini tekshirish
+    // Telefon raqam shu kompaniyada mavjudligini tekshirish
     const existing = await prisma.customer.findFirst({
       where: { phone1, companyId: auth.companyId },
     });
     if (existing) {
       return badRequest("Bu telefon raqami allaqachon ro'yxatda");
+    }
+
+    // Bu telefon tizimda user sifatida bor bo'lsa (boshqa kompaniya/CUSTOMER)
+    // — operatorga taklif yuborish imkonini berish uchun userId qaytaramiz
+    const existingUser = await prisma.user.findFirst({
+      where: { phone: phone1 },
+      select: { id: true, name: true, companyId: true },
+    });
+    if (existingUser) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Bu telefon raqam allaqachon tizimda mavjud",
+          data: {
+            userId: existingUser.id,
+            userName: existingUser.name,
+            isFromAnotherCompany: existingUser.companyId !== auth.companyId,
+          },
+        },
+        { status: 409 },
+      );
     }
 
     // Kompaniya limitini tekshirish

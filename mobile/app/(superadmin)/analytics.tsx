@@ -7,6 +7,7 @@ import {
   View, Text, StyleSheet, ScrollView, RefreshControl,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/constants";
 import { api } from "@/services/api";
 
@@ -31,6 +32,7 @@ function formatCurrency(amount: number) {
 export default function AnalyticsScreen() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const load = async () => {
     const r = await api.get<AnalyticsData>("/superadmin/analytics");
@@ -43,7 +45,7 @@ export default function AnalyticsScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <Text style={styles.pageTitle}>Tahlil va Moliya 📊</Text>

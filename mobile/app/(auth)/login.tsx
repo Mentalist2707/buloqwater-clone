@@ -1,6 +1,5 @@
 /**
- * BuloqWater — Tizimga kirish ekrani
- * Organic Liquid Glassmorphism & Claymorphism Style
+ * BuloqWater — Tizimga kirish ekrani (2026 redesign)
  */
 import React, { useState, useRef } from "react";
 import {
@@ -16,10 +15,10 @@ import {
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import { Button, Input } from "@/components/ui";
-import { Colors } from "@/constants";
+import { Input, Button, Screen } from "@/components/ui";
 import { authService } from "@/services/auth";
 import { useAuthStore } from "@/store/auth";
+import { theme, palette, gradients, spacing, radius, fontSize, fontWeight, shadow } from "@/constants/theme";
 
 const PREFIX = "+998";
 
@@ -27,8 +26,7 @@ function formatSuffix(raw: string): string {
   const digits = raw.replace(/\D/g, "").slice(0, 9);
   if (digits.length <= 2) return digits;
   if (digits.length <= 5) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
-  if (digits.length <= 7)
-    return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`;
+  if (digits.length <= 7) return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`;
   return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 7)} ${digits.slice(7)}`;
 }
 
@@ -45,8 +43,7 @@ export default function LoginScreen() {
 
   const handleSuffixChange = (text: string) => {
     if (text.startsWith(PREFIX)) {
-      const after = text.slice(PREFIX.length);
-      setSuffix(formatSuffix(after));
+      setSuffix(formatSuffix(text.slice(PREFIX.length)));
     } else if (text.length === 0) {
       setSuffix("");
     } else {
@@ -73,7 +70,6 @@ export default function LoginScreen() {
         setError(result.error || "Xatolik yuz berdi");
         return;
       }
-
       const data = result.data!;
       if (data.type === "authenticated") {
         await setAuth(data.token!, data.user!);
@@ -112,43 +108,31 @@ export default function LoginScreen() {
   };
 
   return (
-    <LinearGradient
-      colors={["#E6FFFA", "#EBF5FF", "#F4FAFF"]} // Bir xil toza, iliq suv muhiti foni
-      style={styles.container}>
-      {/* Fonda suzib yuruvchi silliq organik elementlar */}
-      <View style={styles.fluidBubble1} />
-      <View style={styles.fluidBubble2} />
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}>
+    <Screen>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
-          {/* Logo / Header (Yumshoq Organik Tipografika) */}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Logo */}
           <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <Ionicons name="water" size={42} color="#06B6D4" />
-            </View>
+            <LinearGradient colors={gradients.brand} style={[styles.logo, shadow.brand]}>
+              <Ionicons name="water" size={40} color="#FFF" />
+            </LinearGradient>
             <Text style={styles.logoText}>BuloqWater</Text>
-            <Text style={styles.subtitle}>
-              Toza ichimlik suvini tez va qulay buyurtma qiling
-            </Text>
+            <Text style={styles.subtitle}>Toza ichimlik suvini tez va qulay buyurtma qiling</Text>
           </View>
 
-          {/* Form Layer (Claymorphism Oq Quti) */}
+          {/* Form */}
           <View style={styles.form}>
-            {/* Telefon */}
             <View style={styles.inputWrapper}>
               <Text style={styles.inputLabel}>Telefon raqam</Text>
               <TouchableOpacity
                 activeOpacity={1}
                 onPress={() => phoneRef.current?.focus()}
-                style={[
-                  styles.phoneBox,
-                  phoneFocused && styles.phoneBoxFocused,
-                ]}>
+                style={[styles.phoneBox, phoneFocused && styles.phoneBoxFocused]}
+              >
                 <View style={styles.prefixBox}>
                   <Text style={styles.prefixText}>+998</Text>
                 </View>
@@ -159,7 +143,7 @@ export default function LoginScreen() {
                   onChangeText={handleSuffixChange}
                   keyboardType="phone-pad"
                   placeholder="90 123 45 67"
-                  placeholderTextColor="#A1A1AA"
+                  placeholderTextColor={theme.textMuted}
                   onFocus={() => setPhoneFocused(true)}
                   onBlur={() => setPhoneFocused(false)}
                   maxLength={12}
@@ -168,330 +152,150 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Parol */}
-            <View style={styles.inputWrapper}>
-              <Input
-                label="Parol"
-                placeholder="Parolingizni kiriting"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                placeholderTextColor="#A1A1AA"
-                style={styles.clayInput}
-              />
-            </View>
+            <Input
+              label="Parol"
+              placeholder="Parolingizni kiriting"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              icon="lock"
+            />
 
-            {/* Error Container */}
             {error ? (
               <View style={styles.errorContainer}>
-                <Feather name="info" size={14} color="#FF4D4F" />
+                <Feather name="alert-circle" size={14} color={theme.danger} />
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             ) : null}
 
-            {/* Kirish Tugmasi (Liquid Soft Gradient) */}
-            <TouchableOpacity
+            <Button
+              title={loading ? "Kirilmoqda..." : "Kirish"}
               onPress={handleLogin}
-              disabled={loading}
-              activeOpacity={0.8}
-              style={styles.loginButtonWrapper}>
-              <LinearGradient
-                colors={["#06B6D4", "#0284C7"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.loginButtonGradient}>
-                <Text style={styles.loginButtonText}>
-                  {loading ? "Kirilmoqda..." : "Kirish"}
-                </Text>
-                <Feather name="chevron-right" size={18} color="#FFF" />
-              </LinearGradient>
-            </TouchableOpacity>
+              loading={loading}
+              iconRight={!loading ? <Feather name="chevron-right" size={18} color="rgba(255, 255, 255, 1)" /> : undefined}
+            />
           </View>
 
-          {/* Footer Informational Text */}
           <Text style={styles.footer}>
-            Kompaniya kodini bilmasangiz, shunchaki telefon va parol bilan
-            kiring
+            Kompaniya kodini bilmasangiz, shunchaki telefon va parol bilan kiring
           </Text>
 
-          {/* Navigatsiya Havolalari (Nafis silliq tugmalar) */}
-          <View style={styles.actionLinksContainer}>
+          <View style={styles.actionLinks}>
             <TouchableOpacity
-              style={styles.customerRegisterBtn}
+              style={[styles.linkBtn, { backgroundColor: theme.successSoft, borderColor: palette.mint400 + "66" }]}
               onPress={() => router.push("/(auth)/customer-register")}
-              activeOpacity={0.7}>
-              <Feather
-                name="user"
-                size={16}
-                color="#10B981"
-                style={{ marginRight: 6 }}
-              />
-              <Text style={styles.customerRegisterBtnText}>
-                Yangi mijoz — Ro'yxatdan o'tish
-              </Text>
+              activeOpacity={0.7}
+            >
+              <Feather name="user-plus" size={16} color={theme.success} />
+              <Text style={[styles.linkText, { color: palette.mint600 }]}>Ro'yxatdan o'tish</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.registerBtn}
+              style={[styles.linkBtn, { backgroundColor: theme.primaryTint, borderColor: palette.aqua200 }]}
               onPress={() => router.push("/(auth)/register")}
-              activeOpacity={0.7}>
-              <Feather
-                name="briefcase"
-                size={16}
-                color="#0284C7"
-                style={{ marginRight: 6 }}
-              />
-              <Text style={styles.registerBtnText}>
-                Yangi firma qo'shish — Zayavka
-              </Text>
+              activeOpacity={0.7}
+            >
+              <Feather name="briefcase" size={16} color={theme.primaryDark} />
+              <Text style={[styles.linkText, { color: theme.primaryDark }]}>Firma egasimisiz?</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-
-  // Orqa fondagi harakatlanuvchi havorang "suyuqlik" pufakchalari
-  fluidBubble1: {
-    position: "absolute",
-    top: -40,
-    right: -60,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: "rgba(6, 182, 212, 0.05)",
-  },
-  fluidBubble2: {
-    position: "absolute",
-    bottom: 80,
-    left: -60,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: "rgba(59, 130, 246, 0.04)",
-  },
-
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 40,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing["3xl"],
   },
-
-  // Header dizayni
-  header: {
-    alignItems: "center",
-    marginBottom: 36,
-  },
-  logoContainer: {
+  header: { alignItems: "center", marginBottom: spacing["2xl"] },
+  logo: {
     width: 88,
     height: 88,
-    borderRadius: 30, // Silliq claymorphic burchak
-    backgroundColor: "#FFF",
+    borderRadius: radius["2xl"],
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#06B6D4",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.06,
-        shadowRadius: 16,
-      },
-      android: { elevation: 2 },
-    }),
+    marginBottom: spacing.base,
   },
-  logoText: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#0F172A",
-    letterSpacing: -0.5,
-  },
+  logoText: { fontSize: fontSize["3xl"], fontWeight: fontWeight.extrabold, color: theme.text, letterSpacing: -0.6 },
   subtitle: {
-    marginTop: 8,
-    color: "#64748B",
+    marginTop: spacing.sm,
+    color: theme.textSecondary,
     textAlign: "center",
     lineHeight: 22,
-    fontSize: 14,
-    paddingHorizontal: 20,
+    fontSize: fontSize.base,
+    paddingHorizontal: spacing.lg,
   },
-
-  // Claymorphic Oq Quti (Form)
   form: {
-    backgroundColor: "#FFF",
-    borderRadius: 24,
-    padding: 24,
-    gap: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#0F172A",
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.03,
-        shadowRadius: 24,
-      },
-      android: { elevation: 4 },
-    }),
+    backgroundColor: theme.surface,
+    borderRadius: radius["2xl"],
+    padding: spacing.xl,
+    gap: spacing.md,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    ...shadow.md,
   },
-
-  inputWrapper: { gap: 4 },
+  inputWrapper: { marginBottom: spacing.sm },
   inputLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#475569",
-    paddingLeft: 4,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: theme.textSecondary,
+    marginBottom: 6,
+    paddingLeft: 2,
   },
-
-  // Telefon kirish maydoni
   phoneBox: {
     height: 52,
-    borderRadius: 20,
+    borderRadius: radius.lg,
     borderWidth: 1.5,
-    borderColor: "rgba(226, 232, 240, 0.8)",
-    backgroundColor: "#FFF",
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
     flexDirection: "row",
     alignItems: "center",
     overflow: "hidden",
   },
-  phoneBoxFocused: {
-    borderColor: "#06B6D4",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#06B6D4",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-      },
-    }),
-  },
+  phoneBoxFocused: { borderColor: theme.primary, backgroundColor: theme.primaryTint },
   prefixBox: {
-    backgroundColor: "#F1F5F9",
+    backgroundColor: theme.surfaceAlt,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 14,
+    borderRadius: radius.sm,
     marginLeft: 8,
   },
-  prefixText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#334155",
-  },
-  phoneSuffix: {
-    flex: 1,
-    height: "100%",
-    paddingHorizontal: 12,
-    fontSize: 15,
-    color: "#0F172A",
-  },
+  prefixText: { fontSize: fontSize.base, fontWeight: fontWeight.bold, color: theme.textSecondary },
+  phoneSuffix: { flex: 1, height: "100%", paddingHorizontal: 12, fontSize: fontSize.base, color: theme.text },
 
-  // Parol uchun mukammal Claymorphic qobiq
-  passwordBox: {
-    borderRadius: 150,
-    borderWidth: 1.5,
-    borderColor: "rgba(226, 232, 240, 0.8)",
-    backgroundColor: "#FFF",
-    overflow: "hidden",
-    height: 52,
-    justifyContent: "center",
-  },
-  passwordBoxFocused: {
-    borderColor: "#06B6D4",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#06B6D4",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-      },
-    }),
-  },
-
-  // Error xabari
   errorContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#FEF2F2",
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    backgroundColor: theme.dangerSoft,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.base,
   },
-  errorText: { color: "#EF4444", fontSize: 13, fontWeight: "600" },
+  errorText: { color: theme.danger, fontSize: fontSize.sm, fontWeight: fontWeight.semibold, flex: 1 },
 
-  // Liquid Kirish Tugmasi
-  loginButtonWrapper: {
-    marginTop: 6,
-    borderRadius: 20,
-    overflow: "hidden",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#0284C7",
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.18,
-        shadowRadius: 12,
-      },
-      android: { elevation: 3 },
-    }),
-  },
-  loginButtonGradient: {
-    height: 52,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  loginButtonText: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-
-  // Eslatma matni
   footer: {
-    marginTop: 20,
+    marginTop: spacing.lg,
     textAlign: "center",
-    color: "#64748B",
-    fontSize: 12,
+    color: theme.textSecondary,
+    fontSize: fontSize.xs,
     lineHeight: 18,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.lg,
   },
-
-  // Pastki havolalar
-  actionLinksContainer: {
-    gap: 12,
-    marginTop: 24,
-  },
-  customerRegisterBtn: {
+  actionLinks: { gap: spacing.md, marginTop: spacing.xl },
+  linkBtn: {
     height: 52,
-    borderRadius: 20,
+    borderRadius: radius.lg,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ECFDF5",
+    gap: 8,
     borderWidth: 1.5,
-    borderColor: "#A7F3D0",
   },
-  customerRegisterBtnText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#059669",
-  },
-  registerBtn: {
-    height: 52,
-    borderRadius: 20,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#F0F9FF",
-    borderWidth: 1.5,
-    borderColor: "#BEE3F8",
-  },
-  registerBtnText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#0284C7",
-  },
+  linkText: { fontSize: fontSize.base, fontWeight: fontWeight.bold },
 });

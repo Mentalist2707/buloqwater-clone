@@ -69,6 +69,20 @@ export interface Product {
   category: ProductCategory;
   unit: ProductUnit;
   isBottle: boolean;
+  /** Ko'p-kompaniyali ko'rinishda mahsulot qaysi kompaniyaga tegishli */
+  companyId?: string;
+  company?: { id: string; name: string } | null;
+}
+
+// ── Kompaniya qidiruvi (mijoz uchun) ────────────────────────
+export interface CompanySearchResult {
+  id: string;
+  name: string;
+  subdomain: string;
+  address?: string | null;
+  logoUrl?: string | null;
+  productCount: number;
+  isMember: boolean;
 }
 
 // ── Order ───────────────────────────────────────────────────
@@ -101,6 +115,8 @@ export interface Order {
     landmark?: string | null;
     locationLink?: string | null;
     bottleBalance?: number;
+    latitude?: number | null;
+    longitude?: number | null;
   };
   driver?: { id: string; name: string; phone: string } | null;
   operator?: { id: string; name: string } | null;
@@ -132,4 +148,47 @@ export interface PaginatedResponse<T> {
   total: number;
   page: number;
   totalPages: number;
+}
+
+// ── Notifications ───────────────────────────────────────────
+export type NotificationType =
+  | "INVITATION"          // mijozga taklif keldi (customer ko'radi)
+  | "INVITATION_ACCEPTED" // taklif qabul qilindi (director/operator ko'radi)
+  | "INVITATION_REJECTED"
+  | "ORDER"               // buyurtma bilan bog'liq
+  | "SYSTEM";             // tizim xabari
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  isRead: boolean;
+  createdAt: string;
+  /** Qo'shimcha ma'lumot: invitationId, orderId, companyName, phone, va h.k. */
+  data?: Record<string, any> | null;
+}
+
+// ── Global odam qidiruvi (operator new-order uchun) ─────────
+export type Membership = "none" | "mine" | "other";
+
+/**
+ * Bazadan qidirilgan odam natijasi.
+ * Backend `GET /customers/search?query=&scope=all|mine` shu shaklda qaytarishi kutiladi.
+ */
+export interface PersonSearchResult {
+  id: string;
+  userId?: string | null;
+  customerId?: string | null;
+  name: string;
+  phone: string;
+  address?: string | null;
+  /** none = hech qaysi kompaniyada emas, mine = mening mijozim, other = boshqa kompaniya(lar)da */
+  membership: Membership;
+  /** other bo'lsa — bitta kompaniya nomi */
+  companyName?: string | null;
+  /** other bo'lsa — nechta kompaniyaga a'zo */
+  companyCount?: number;
+  bottleBalance?: number;
+  debtBalance?: number;
 }

@@ -1,201 +1,133 @@
 /**
- * Customer Layout — Pastki navigatsiya paneli (Tabs)
- * Barcha tablar Buyurtma tugmasi kabi vizual qobiqqa o'tkazilgan variant
+ * Customer Layout — Zamonaviy suzuvchi tab paneli (2026)
  */
 import { Tabs } from "expo-router";
 import { StyleSheet, Platform, View } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { theme, gradients, radius, shadow } from "@/constants/theme";
+import { useNotificationsStore } from "@/store/notifications";
 
-// ─── Rang Palitrasi ──────────────────────────────────────────
-const C = {
-  primary: "#06B6D4", // Premium Cyan (Faol rang)
-  inactive: "#94A3B8", // Slate 400 (Nofaol belgi)
-  tabBg: "rgba(255, 255, 255, 0.96)", // Shaffof oq fon
-};
+type TabIconProps = { focused: boolean; lib: "ion" | "feather"; name: any };
+
+function TabIcon({ focused, lib, name }: TabIconProps) {
+  const Icon = lib === "ion" ? Ionicons : Feather;
+  if (focused) {
+    return (
+      <View style={styles.iconWrap}>
+        <LinearGradient
+          colors={gradients.brand}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.iconActive, shadow.brandSoft]}
+        >
+          <Icon name={name} size={20} color="#FFFFFF" />
+        </LinearGradient>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.iconWrap}>
+      <View style={styles.iconInactive}>
+        <Icon name={name} size={20} color={theme.textMuted} />
+      </View>
+    </View>
+  );
+}
 
 export default function CustomerLayout() {
+  const unread = useNotificationsStore((s) => s.unreadCount);
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: C.primary,
-        tabBarInactiveTintColor: C.inactive,
+        tabBarActiveTintColor: theme.primaryDark,
+        tabBarInactiveTintColor: theme.textMuted,
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabBarLabel,
-      }}>
-      {/* 1. Bosh sahifa */}
+        tabBarItemStyle: { paddingTop: 6 },
+      }}
+    >
       <Tabs.Screen
         name="home"
         options={{
           title: "Bosh sahifa",
           tabBarIcon: ({ focused }) => (
-            <View style={styles.tabIconContainer}>
-              <LinearGradient
-                colors={
-                  focused ? ["#06B6D4", "#0284C7"] : ["#F1F5F9", "#E2E8F0"]
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[
-                  styles.iconGradient,
-                  focused && styles.iconFocusedShadow,
-                ]}>
-                <Ionicons
-                  name={focused ? "home" : "home-outline"}
-                  size={20}
-                  color={focused ? "#FFFFFF" : "#64748B"}
-                />
-              </LinearGradient>
-            </View>
+            <TabIcon focused={focused} lib="ion" name={focused ? "home" : "home-outline"} />
           ),
         }}
       />
-
-      {/* 2. Buyurtma (Markaziy) */}
       <Tabs.Screen
         name="order"
         options={{
           title: "Buyurtma",
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.tabIconContainer}>
-              <LinearGradient
-                colors={
-                  focused ? ["#06B6D4", "#0284C7"] : ["#E0F2FE", "#BAE6FD"]
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[
-                  styles.iconGradient,
-                  focused && styles.iconFocusedShadow,
-                ]}>
-                <Ionicons
-                  name="water"
-                  size={20}
-                  color={focused ? "#FFFFFF" : "#0284C7"}
-                />
-              </LinearGradient>
-            </View>
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} lib="ion" name="water" />,
         }}
       />
-
-      {/* 3. Buyurtmalar Tarixi */}
       <Tabs.Screen
         name="history"
         options={{
           title: "Tarix",
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.tabIconContainer}>
-              <LinearGradient
-                colors={
-                  focused ? ["#06B6D4", "#0284C7"] : ["#F1F5F9", "#E2E8F0"]
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[
-                  styles.iconGradient,
-                  focused && styles.iconFocusedShadow,
-                ]}>
-                <Feather
-                  name="clipboard"
-                  size={20}
-                  color={focused ? "#FFFFFF" : "#64748B"}
-                />
-              </LinearGradient>
-            </View>
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} lib="feather" name="clock" />,
         }}
       />
-
-      {/* 4. Profil */}
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: "Xabarlar",
+          tabBarBadge: unread > 0 ? unread : undefined,
+          tabBarBadgeStyle: styles.badge,
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} lib="feather" name="bell" />,
+        }}
+      />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Profil",
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.tabIconContainer}>
-              <LinearGradient
-                colors={
-                  focused ? ["#06B6D4", "#0284C7"] : ["#F1F5F9", "#E2E8F0"]
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[
-                  styles.iconGradient,
-                  focused && styles.iconFocusedShadow,
-                ]}>
-                <Feather
-                  name="user"
-                  size={20}
-                  color={focused ? "#FFFFFF" : "#64748B"}
-                />
-              </LinearGradient>
-            </View>
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} lib="feather" name="user" />,
         }}
       />
+      {/* Yashirin — home'dan router.push orqali ochiladi */}
+      <Tabs.Screen name="companies" options={{ href: null }} />
     </Tabs>
   );
 }
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: C.tabBg,
     position: "absolute",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(226, 232, 240, 0.8)",
-    height: Platform.OS === "ios" ? 92 : 76,
-    paddingBottom: Platform.OS === "ios" ? 32 : 12,
-    paddingTop: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#0F172A",
-        shadowOffset: { width: 0, height: -8 },
-        shadowOpacity: 0.04,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 10,
-      },
-    }),
+    left: 16,
+    right: 16,
+    bottom: Platform.OS === "ios" ? 28 : 16,
+    height: 68,
+    borderRadius: radius.xl,
+    backgroundColor: "rgba(255,255,255,0.98)",
+    borderTopWidth: 0,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    paddingHorizontal: 6,
+    ...shadow.lg,
   },
   tabBarLabel: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: "700",
-    marginTop: 4,
+    marginTop: -2,
   },
-
-  // Barcha ikonkalarni bir xil tekislikda ushlab turuvchi qobiq
-  tabIconContainer: {
+  badge: { backgroundColor: theme.danger, fontSize: 10, fontWeight: "800" },
+  iconWrap: { alignItems: "center", justifyContent: "center" },
+  iconActive: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
-    top: Platform.OS === "ios" ? -2 : -4, // Hamma tugmani bir xil chiziqda vizual tekislash
   },
-
-  // Buyurtma kabi yumshoq gradientli 3D kvadrat shakli
-  iconGradient: {
-    width: 46,
-    height: 46,
-    borderRadius: 16, // Silliq burchaklar
+  iconInactive: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: "#FFFFFF",
-  },
-
-  // Faol bo'lgan tugmaga yumshoq ko'k rangli nur berish (Glow effect)
-  iconFocusedShadow: {
-    ...Platform.select({
-      ios: {
-        shadowColor: "#0284C7",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    backgroundColor: theme.surfaceAlt,
   },
 });

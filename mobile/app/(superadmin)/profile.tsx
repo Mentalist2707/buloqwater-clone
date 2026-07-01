@@ -7,7 +7,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ScrollView,
   Modal,
   TextInput,
@@ -16,12 +15,14 @@ import {
   StatusBar,
   Platform,
 } from "react-native";
+import { Alert } from "@/utils/alert";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card } from "@/components/ui";
 import { Colors } from "@/constants";
 import { useAuthStore } from "@/store/auth";
+import { usePinStore } from "@/store/pin";
 import { api } from "@/services/api";
 
 const SA_COLOR = "#6366F1";
@@ -77,6 +78,7 @@ function Row({ icon, label, value, onPress, showArrow = false, rightElement, dan
 
 export default function SuperAdminProfileScreen() {
   const { user, logout } = useAuthStore();
+  const { pinEnabled } = usePinStore();
   const insets = useSafeAreaInsets();
 
   // Password modal
@@ -227,6 +229,14 @@ export default function SuperAdminProfileScreen() {
                 style={styles.switch}
               />
             }
+          />
+          <Divider />
+          <Row
+            icon="🔒"
+            label="Kirish PIN-kodi"
+            value={pinEnabled ? "Yoqilgan" : "O'chirilgan"}
+            onPress={() => router.push("/pin-setup")}
+            showArrow
           />
         </Card>
 

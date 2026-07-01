@@ -58,12 +58,51 @@ export async function GET(request: NextRequest) {
             landmark: true,
             locationLink: true,
             bottleBalance: true,
+            addresses: {
+              where: { isDefault: true },
+              take: 1,
+              select: { address: true, landmark: true, locationLink: true, latitude: true, longitude: true },
+            },
+            user: {
+              select: {
+                userAddresses: {
+                  where: { isDefault: true },
+                  take: 1,
+                  select: { address: true, landmark: true, locationLink: true, latitude: true, longitude: true },
+                },
+              },
+            },
           },
         },
         items: {
           include: { product: { select: { id: true, name: true, unit: true } } },
         },
       },
+    });
+
+    // Har bir buyurtma uchun mijozning haqiqiy manzili/koordinatasini aniqlash
+    const tasks = orders.map((o) => {
+      const c: any = o.customer;
+      const alt = c.addresses?.[0] || c.user?.userAddresses?.[0] || null;
+      let address = c.address;
+      let landmark = c.landmark;
+      let locationLink = c.locationLink;
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+      if (alt) {
+        latitude = alt.latitude ?? null;
+        longitude = alt.longitude ?? null;
+        if (!address || address === "Manzil kiritilmagan") {
+          address = alt.address;
+          landmark = alt.landmark ?? landmark;
+        }
+        if (!locationLink) locationLink = alt.locationLink ?? null;
+      }
+      const { addresses, user, ...restCustomer } = c;
+      return {
+        ...o,
+        customer: { ...restCustomer, address, landmark, locationLink, latitude, longitude },
+      };
     });
 
     // Statistika
@@ -81,7 +120,7 @@ export async function GET(request: NextRequest) {
     });
 
     return success({
-      tasks: orders,
+      tasks: tasks,
       stats: {
         pendingCount: orders.filter((o) => o.status === "ASSIGNED" || o.status === "IN_TRANSIT").length,
         deliveredToday: todayStats._count.id || 0,

@@ -1,6 +1,5 @@
 /**
- * Director / Admin — Mahsulotlar sahifasi (Premium iOS Style)
- * Kompaniya mahsulotlarini ko'rish, narx o'zgartirish, faol/passiv qilish
+ * Director / Admin — Mahsulotlar sahifasi (2026 redesign)
  */
 import React, { useState, useCallback } from "react";
 import {
@@ -10,16 +9,19 @@ import {
   FlatList,
   RefreshControl,
   TouchableOpacity,
-  Alert,
   Modal,
   ActivityIndicator,
   ScrollView,
+  TextInput,
 } from "react-native";
-import { useFocusEffect } from "expo-router";
-import { Card, Input, Button } from "@/components/ui";
-import { Colors } from "@/constants";
+import { Alert } from "@/utils/alert";
+import { useFocusEffect, router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
+import { Button, Input, Header, Screen } from "@/components/ui";
 import { api } from "@/services/api";
 import type { ProductCategory, ProductUnit } from "@/types";
+import { theme, palette, spacing, radius, fontSize, fontWeight, shadow } from "@/constants/theme";
 
 interface Product {
   id: string;
@@ -33,27 +35,19 @@ interface Product {
 }
 
 const CATEGORY_LABELS: Record<ProductCategory, string> = {
-  WATER:       "💧 Suv",
-  PROMO:       "🎁 Promo",
-  ACCESSORIES: "🔧 Aksessuar",
+  WATER: "Suv",
+  PROMO: "Promo",
+  ACCESSORIES: "Aksessuar",
 };
 
-const CATEGORY_STYLES: Record<ProductCategory, { bg: string; text: string }> = {
-  WATER:       { bg: "rgba(2, 132, 199, 0.08)", text: "#0284C7" }, 
-  PROMO:       { bg: "rgba(217, 119, 6, 0.08)",  text: "#D97706" }, 
-  ACCESSORIES: { bg: "rgba(100, 116, 139, 0.08)", text: "#64748B" }, 
+const CATEGORY_COLORS: Record<ProductCategory, string> = {
+  WATER: palette.aqua500,
+  PROMO: palette.amber500,
+  ACCESSORIES: palette.slate500,
 };
 
-const UNIT_LABELS: Record<ProductUnit, string> = {
-  PIECE: "dona",
-  LITER: "litr",
-};
-
+const UNIT_LABELS: Record<ProductUnit, string> = { PIECE: "dona", LITER: "litr" };
 const CATEGORIES: ProductCategory[] = ["WATER", "PROMO", "ACCESSORIES"];
-
-function formatPrice(n: number) {
-  return n.toLocaleString("uz-UZ") + " so'm";
-}
 
 export default function AdminProductsScreen() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -61,25 +55,72 @@ export default function AdminProductsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [catFilter, setCatFilter] = useState<ProductCategory | "ALL">("ALL");
   const [search, setSearch] = useState("");
+  const insets = useSafeAreaInsets();
 
-  // Narx tahrirlash modali uchun statelar
   const [priceModal, setPriceModal] = useState(false);
   const [selectedProduct, setSelected] = useState<Product | null>(null);
   const [newPrice, setNewPrice] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Yangi mahsulot yaratish
+  const [createModal, setCreateModal] = useState(false);
+  const [cName, setCName] = useState("");
+  const [cDesc, setCDesc] = useState("");
+  const [cPrice, setCPrice] = useState("");
+  const [cCategory, setCCategory] = useState<ProductCategory>("WATER");
+  const [cUnit, setCUnit] = useState<ProductUnit>("PIECE");
+  const [cIsBottle, setCIsBottle] = useState(true);
+  const [creating, setCreating] = useState(false);
+
+  const openCreate = () => {
+    setCName("");
+    setCDesc("");
+    setCPrice("");
+    setCCategory("WATER");
+    setCUnit("PIECE");
+    setCIsBottle(true);
+    setCreateModal(true);
+  };
+
+  const handleCreate = async () => {
+    if (!cName.trim()) {
+      Alert.alert("Diqqat", "Mahsulot nomini kiriting");
+      return;
+    }
+    const price = Number(cPrice);
+    if (isNaN(price) || price <= 0) {
+      Alert.alert("Diqqat", "Narxni to'g'ri kiriting");
+      return;
+    }
+    setCreating(true);
+    const r = await api.post("/products", {
+      name: cName.trim(),
+      description: cDesc.trim() || undefined,
+      price,
+      category: cCategory,
+      unit: cUnit,
+      isBottle: cIsBottle,
+    });
+    setCreating(false);
+    if (r.success) {
+      Alert.alert("Bajarildi!", "Yangi mahsulot qo'shildi");
+      setCreateModal(false);
+      loadProducts();
+    } else {
+      Alert.alert("Xato", (r as any).error || "Mahsulot yaratishda xatolik");
+    }
+  };
+
   const loadProducts = async () => {
     const r = await api.get<Product[]>("/products");
-    if (r.success && r.data) {
-      setProducts(r.data);
-    }
+    if (r.success && r.data) setProducts(r.data);
     setLoading(false);
   };
 
   useFocusEffect(
     useCallback(() => {
       loadProducts();
-    }, [])
+    }, []),
   );
 
   const onRefresh = async () => {
@@ -88,13 +129,10 @@ export default function AdminProductsScreen() {
     setRefreshing(false);
   };
 
-  // Mahsulotni yoqish / o'chirish (Statusini o'zgartirish)
   const handleToggleActive = (p: Product) => {
     Alert.alert(
-      p.isActive ? "⏸️ Mahsulotni o'chirish" : "▶️ Mahsulotni yoqish",
-      p.isActive
-        ? `"${p.name}" ni passiv qilasizmi? Operatorlar yangi buyurtmada bu mahsulotni ko'rmaydi.`
-        : `"${p.name}" ni faollashtirasizmi?`,
+      p.isActive ? "Mahsulotni o'chirish" : "Mahsulotni yoqish",
+      p.isActive ? `"${p.name}" ni passiv qilasizmi?` : `"${p.name}" ni faollashtirasizmi?`,
       [
         { text: "Bekor qilish", style: "cancel" },
         {
@@ -102,25 +140,20 @@ export default function AdminProductsScreen() {
           style: p.isActive ? "destructive" : "default",
           onPress: async () => {
             const r = await api.post(`/products/${p.id}/toggle`, {});
-            if (r.success) {
-              loadProducts();
-            } else {
-              Alert.alert("Xato", (r as any).error || "Xatolik yuz berdi");
-            }
+            if (r.success) loadProducts();
+            else Alert.alert("Xato", (r as any).error || "Xatolik yuz berdi");
           },
         },
-      ]
+      ],
     );
   };
 
-  // Narx o'zgartirish oynasini ochish
   const openPriceEdit = (p: Product) => {
     setSelected(p);
     setNewPrice(String(p.price));
     setPriceModal(true);
   };
 
-  // Yangi narxni saqlash
   const handleSavePrice = async () => {
     if (!selectedProduct) return;
     const price = Number(newPrice);
@@ -132,7 +165,7 @@ export default function AdminProductsScreen() {
     const r = await api.put(`/products/${selectedProduct.id}`, { price });
     setSaving(false);
     if (r.success) {
-      Alert.alert("✅", "Narx yangilandi!");
+      Alert.alert("Bajarildi", "Narx yangilandi!");
       setPriceModal(false);
       loadProducts();
     } else {
@@ -146,134 +179,82 @@ export default function AdminProductsScreen() {
     return true;
   });
 
-  const totalActive   = products.filter((p) => p.isActive).length;
+  const totalActive = products.filter((p) => p.isActive).length;
   const totalInactive = products.filter((p) => !p.isActive).length;
 
   const renderProduct = ({ item: p }: { item: Product }) => {
-    const styleConfig = CATEGORY_STYLES[p.category] || CATEGORY_STYLES.WATER;
-
+    const catColor = CATEGORY_COLORS[p.category] || theme.primary;
     return (
-      <Card style={[styles.productCard, !p.isActive && styles.productCardInactive]}>
+      <View style={[styles.productCard, !p.isActive && styles.productCardInactive]}>
         <View style={styles.cardHeader}>
           <View style={{ flex: 1, gap: 6 }}>
-            {/* Kategoriya Badge */}
-            <View style={[styles.categoryBadge, { backgroundColor: styleConfig.bg }]}>
-              <Text style={[styles.categoryText, { color: styleConfig.text }]}>
-                {CATEGORY_LABELS[p.category] || p.category}
-              </Text>
+            <View style={[styles.categoryBadge, { backgroundColor: catColor + "18" }]}>
+              <Text style={[styles.categoryText, { color: catColor }]}>{CATEGORY_LABELS[p.category] || p.category}</Text>
             </View>
-            <Text style={[styles.productName, !p.isActive && styles.textMuted]}>
-              {p.name}
-            </Text>
+            <Text style={[styles.productName, !p.isActive && styles.textMuted]}>{p.name}</Text>
             {p.description ? (
               <Text style={styles.productDesc} numberOfLines={2}>
                 {p.description}
               </Text>
             ) : null}
+            {p.isBottle && (
+              <View style={styles.bottleTag}>
+                <Feather name="droplet" size={11} color={theme.primaryDark} />
+                <Text style={styles.bottleText}>Idishli</Text>
+              </View>
+            )}
           </View>
-
-          {/* Narx qismi */}
           <View style={styles.priceContainer}>
-            <Text style={[styles.priceValue, !p.isActive && styles.textMuted]}>
-              {p.price.toLocaleString()}
-            </Text>
-            <Text style={styles.priceUnit}>so'm / {UNIT_LABELS[p.unit] || "dona"}</Text>
+            <Text style={[styles.priceValue, !p.isActive && styles.textMuted]}>{p.price.toLocaleString()}</Text>
+            <Text style={styles.priceUnit}>so'm/{UNIT_LABELS[p.unit] || "dona"}</Text>
           </View>
         </View>
 
         <View style={styles.divider} />
 
-        {/* Boshqaruv tugmalari */}
         <View style={styles.cardActions}>
-          {/* Faollik holati (Status Toggle) */}
           <TouchableOpacity
-            style={[styles.statusToggleBtn, p.isActive ? styles.statusActiveBg : styles.statusInactiveBg]}
+            style={[styles.statusToggleBtn, { backgroundColor: p.isActive ? theme.successSoft : theme.surfaceAlt }]}
             onPress={() => handleToggleActive(p)}
             activeOpacity={0.7}
           >
-            <View style={[styles.statusDot, { backgroundColor: p.isActive ? "#16A34A" : "#64748B" }]} />
-            <Text style={[styles.statusToggleText, { color: p.isActive ? "#15803D" : "#475569" }]}>
+            <View style={[styles.statusDot, { backgroundColor: p.isActive ? theme.success : theme.textMuted }]} />
+            <Text style={[styles.statusToggleText, { color: p.isActive ? theme.success : theme.textSecondary }]}>
               {p.isActive ? "Faol" : "Noaktiv"}
             </Text>
           </TouchableOpacity>
-
-          {/* Narxni tahrirlash */}
-          <TouchableOpacity
-            style={styles.editPriceBtn}
-            onPress={() => openPriceEdit(p)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.editPriceBtnText}>💰 Narxni o'zgartirish</Text>
+          <TouchableOpacity style={styles.editPriceBtn} onPress={() => openPriceEdit(p)} activeOpacity={0.7}>
+            <Feather name="edit-2" size={13} color={theme.primaryDark} />
+            <Text style={styles.editPriceBtnText}>Narx</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Idish turi haqida yorliq */}
-        {p.isBottle && (
-          <View style={styles.bottleLabel}>
-            <Text style={styles.bottleText}>🍶 Idish</Text>
-          </View>
-        )}
-      </Card>
+      </View>
     );
   };
 
   return (
-    <View style={styles.container}>
-      {/* Statistika summary paneli */}
+    <Screen>
+      <Header title="Mahsulotlar" onBack={() => router.back()} />
+      <View style={styles.searchBox}>
+        <View style={styles.searchWrapper}>
+          <Feather name="search" size={18} color={theme.textMuted} />
+          <TextInput placeholder="Mahsulot qidirish..." placeholderTextColor={theme.textMuted} value={search} onChangeText={setSearch} style={styles.searchInput} />
+        </View>
+      </View>
+
       {!loading && products.length > 0 && (
         <View style={styles.statsRow}>
-          <View style={[styles.statBox, { borderLeftColor: "#16A34A" }]}>
-            <Text style={[styles.statNum, { color: "#16A34A" }]}>{totalActive}</Text>
-            <Text style={styles.statLabel}>Faol</Text>
-          </View>
-          <View style={[styles.statBox, { borderLeftColor: "#94A3B8" }]}>
-            <Text style={[styles.statNum, { color: "#64748B" }]}>{totalInactive}</Text>
-            <Text style={styles.statLabel}>Yopiq</Text>
-          </View>
-          <View style={[styles.statBox, { borderLeftColor: Colors.primary }]}>
-            <Text style={[styles.statNum, { color: Colors.primary }]}>{products.length}</Text>
-            <Text style={styles.statLabel}>Jami</Text>
-          </View>
+          <StatBox value={String(totalActive)} label="Faol" color={theme.success} />
+          <StatBox value={String(totalInactive)} label="Yopiq" color={theme.textSecondary} />
+          <StatBox value={String(products.length)} label="Jami" color={theme.primaryDark} />
         </View>
       )}
 
-      {/* Qidiruv inputi */}
-      <View style={styles.searchWrapper}>
-        <Input
-          placeholder="🔍 Mahsulot nomi..."
-          value={search}
-          onChangeText={setSearch}
-          style={{ marginBottom: 0 }}
-        />
-        {search.length > 0 && (
-          <TouchableOpacity style={styles.clearBtn} onPress={() => setSearch("")}>
-            <Text style={styles.clearBtnText}>✕</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Kategoriya filterlari */}
-      <View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipRow}
-        >
-          {([
-            { key: "ALL" as const, label: `Barchasi (${products.length})` },
-            ...CATEGORIES.map((c) => ({
-              key: c,
-              label: `${CATEGORY_LABELS[c]} (${products.filter((p) => p.category === c).length})`,
-            })),
-          ]).map((f) => (
-            <TouchableOpacity
-              key={f.key}
-              style={[styles.chip, catFilter === f.key && styles.chipActive]}
-              onPress={() => setCatFilter(f.key as any)}
-            >
-              <Text style={[styles.chipText, catFilter === f.key && styles.chipTextActive]}>
-                {f.label}
-              </Text>
+      <View style={{ marginBottom: spacing.sm }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+          {[{ key: "ALL" as const, label: `Barchasi (${products.length})` }, ...CATEGORIES.map((c) => ({ key: c, label: `${CATEGORY_LABELS[c]} (${products.filter((p) => p.category === c).length})` }))].map((f) => (
+            <TouchableOpacity key={f.key} style={[styles.chip, catFilter === f.key && styles.chipActive]} onPress={() => setCatFilter(f.key as any)}>
+              <Text style={[styles.chipText, catFilter === f.key && styles.chipTextActive]}>{f.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -283,18 +264,18 @@ export default function AdminProductsScreen() {
         data={filtered}
         renderItem={renderProduct}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />
-        }
+        contentContainerStyle={styles.list}
+        ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
         ListEmptyComponent={
-          <View style={styles.centerBox}>
+          <View style={styles.empty}>
             {loading ? (
-              <ActivityIndicator size="large" color={Colors.primary} />
+              <ActivityIndicator size="large" color={theme.primary} />
             ) : (
               <>
-                <Text style={styles.emptyIcon}>📦</Text>
+                <View style={styles.emptyIconBox}>
+                  <Feather name="box" size={34} color={theme.primary} />
+                </View>
                 <Text style={styles.emptyText}>Mahsulot topilmadi</Text>
               </>
             )}
@@ -302,203 +283,217 @@ export default function AdminProductsScreen() {
         }
       />
 
-      {/* Narxni tahrirlash Modali (iOS Bottom Sheet Style) */}
-      <Modal visible={priceModal} animationType="slide" transparent>
+      {/* Yangi mahsulot qo'shish tugmasi */}
+      {!loading && (
+        <TouchableOpacity
+          style={[styles.fab, { bottom: insets.bottom + 92 }, shadow.brand]}
+          onPress={openCreate}
+          activeOpacity={0.9}
+        >
+          <Feather name="plus" size={28} color="#fff" />
+        </TouchableOpacity>
+      )}
+
+      {/* Yangi mahsulot modal */}
+      <Modal visible={createModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 24 }]}>
             <View style={styles.modalIndicator} />
-            <Text style={styles.modalTitle}>Narxni tahrirlash</Text>
-            <Text style={styles.modalSub}>{selectedProduct?.name}</Text>
+            <Text style={styles.modalTitle}>Yangi mahsulot</Text>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: spacing.md }}>
+              <Input label="Nomi *" placeholder="Masalan: 19L suv" value={cName} onChangeText={setCName} icon="box" />
+              <Input label="Tavsif (ixtiyoriy)" placeholder="Qisqacha ma'lumot" value={cDesc} onChangeText={setCDesc} icon="file-text" />
+              <Input label="Narx (so'm) *" placeholder="15000" keyboardType="numeric" value={cPrice} onChangeText={setCPrice} icon="dollar-sign" />
 
-            <Text style={styles.inputLabel}>Yangi narx (so'mda):</Text>
-            <Input
-              keyboardType="numeric"
-              value={newPrice}
-              onChangeText={setNewPrice}
-              placeholder="Masalan: 15000"
-              style={styles.priceInput}
-            />
+              <Text style={styles.fieldLabel}>Turkum</Text>
+              <View style={styles.selectRow}>
+                {CATEGORIES.map((c) => (
+                  <TouchableOpacity
+                    key={c}
+                    style={[styles.selectChip, cCategory === c && { backgroundColor: theme.primary, borderColor: theme.primary }]}
+                    onPress={() => setCCategory(c)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.selectChipText, cCategory === c && { color: "#fff" }]}>{CATEGORY_LABELS[c]}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-            {/* Tezkor narx tanlash tugmalari */}
-            <Text style={styles.quickLabel}>Tez tanlash:</Text>
-            <View style={styles.quickPricesRow}>
-              {[10000, 12000, 15000, 18000, 20000].map((price) => (
-                <TouchableOpacity
-                  key={price}
-                  style={[styles.quickPriceChip, newPrice === String(price) && styles.quickPriceChipActive]}
-                  onPress={() => setNewPrice(String(price))}
-                >
-                  <Text style={[styles.quickPriceChipText, newPrice === String(price) && styles.quickPriceChipTextActive]}>
-                    {(price / 1000)}K
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+              <Text style={styles.fieldLabel}>O'lchov birligi</Text>
+              <View style={styles.selectRow}>
+                {(["PIECE", "LITER"] as ProductUnit[]).map((u) => (
+                  <TouchableOpacity
+                    key={u}
+                    style={[styles.selectChip, cUnit === u && { backgroundColor: theme.primary, borderColor: theme.primary }]}
+                    onPress={() => setCUnit(u)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.selectChipText, cUnit === u && { color: "#fff" }]}>{UNIT_LABELS[u]}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-            {/* Modal tugmalari */}
+              <TouchableOpacity style={styles.checkboxRow} onPress={() => setCIsBottle(!cIsBottle)} activeOpacity={0.7}>
+                <View style={[styles.checkbox, cIsBottle && styles.checkboxChecked]}>
+                  {cIsBottle && <Feather name="check" size={14} color="#fff" />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.checkboxLabel}>Idishli mahsulot</Text>
+                  <Text style={styles.checkboxHint}>Qaytariladigan idish (masalan 19L balon)</Text>
+                </View>
+              </TouchableOpacity>
+            </ScrollView>
             <View style={styles.modalActionsRow}>
-              <Button
-                title="Bekor qilish"
-                variant="outline"
-                style={styles.modalBtn}
-                onPress={() => setPriceModal(false)}
-                disabled={saving}
-              />
-              <Button
-                title={saving ? "Saqlanmoqda..." : "Saqlash"}
-                style={styles.modalBtn}
-                onPress={handleSavePrice}
-                disabled={saving}
-              />
+              <Button title="Bekor" variant="outline" style={{ flex: 1 }} onPress={() => setCreateModal(false)} disabled={creating} />
+              <Button title="Saqlash" style={{ flex: 1 }} onPress={handleCreate} loading={creating} />
             </View>
           </View>
         </View>
       </Modal>
+
+      <Modal visible={priceModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 24 }]}>
+            <View style={styles.modalIndicator} />
+            <Text style={styles.modalTitle}>Narxni tahrirlash</Text>
+            <Text style={styles.modalSub}>{selectedProduct?.name}</Text>
+
+            <Input label="Yangi narx (so'm)" keyboardType="numeric" value={newPrice} onChangeText={setNewPrice} placeholder="15000" icon="dollar-sign" />
+
+            <Text style={styles.quickLabel}>Tez tanlash</Text>
+            <View style={styles.quickPricesRow}>
+              {[10000, 12000, 15000, 18000, 20000].map((price) => (
+                <TouchableOpacity
+                  key={price}
+                  style={[styles.quickChip, newPrice === String(price) && styles.quickChipActive]}
+                  onPress={() => setNewPrice(String(price))}
+                >
+                  <Text style={[styles.quickChipText, newPrice === String(price) && styles.quickChipTextActive]}>{price / 1000}K</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.modalActionsRow}>
+              <Button title="Bekor" variant="outline" style={{ flex: 1 }} onPress={() => setPriceModal(false)} disabled={saving} />
+              <Button title="Saqlash" style={{ flex: 1 }} onPress={handleSavePrice} loading={saving} />
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </Screen>
+  );
+}
+
+function StatBox({ value, label, color }: { value: string; label: string; color: string }) {
+  return (
+    <View style={[styles.statBox, { borderTopColor: color }]}>
+      <Text style={[styles.statNum, { color }]}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC", paddingTop:40, paddingBottom:80 },
-  listContainer: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 40 },
-
-  // Stats summary
-  statsRow: { flexDirection: "row", gap: 8, padding: 16, paddingBottom: 4 },
-  statBox: {
-    flex: 1, backgroundColor: "#FFFFFF", borderRadius: 12,
-    padding: 12, borderLeftWidth: 3,
-    shadowColor: "#0F172A", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
-  },
-  statNum: { fontSize: 22, fontWeight: "800" },
-  statLabel: { fontSize: 11, color: "#64748B", marginTop: 2 },
-
-  // Search input
-  searchWrapper: { position: "relative", paddingHorizontal: 16, marginBottom: 4, marginTop: 8 },
-  clearBtn: { position: "absolute", right: 28, top: 14, padding: 6 },
-  clearBtnText: { fontSize: 14, color: "#64748B", fontWeight: "600" },
-
-  // Filter chiplari
-  chipRow: { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0" },
-  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { fontSize: 12, color: "#64748B" },
-  chipTextActive: { color: "#FFFFFF", fontWeight: "600" },
-
-  // Mahsulot kartasi
-  productCard: {
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 2,
-    overflow: "hidden",
-  },
-  productCardInactive: {
-    backgroundColor: "#F1F5F9",
-    borderColor: "#CBD5E1",
-    opacity: 0.75,
-  },
-
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  
-  categoryBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    marginBottom: 2,
-  },
-  categoryText: { fontSize: 11, fontWeight: "700" },
-  
-  productName: { fontSize: 16, fontWeight: "700", color: "#0F172A", marginTop: 2 },
-  productDesc: { fontSize: 13, color: "#64748B", marginTop: 4, lineHeight: 18 },
-  textMuted: { color: "#94A3B8", textDecorationLine: "line-through" },
-
-  // Narx bloki
-  priceContainer: { alignItems: "flex-end", backgroundColor: "#F8FAFC", padding: 8, borderRadius: 10, borderWidth: 1, borderColor: "#F1F5F9" },
-  priceValue: { fontSize: 17, fontWeight: "800", color: "#0284C7" },
-  priceUnit: { fontSize: 11, color: "#64748B", fontWeight: "500", marginTop: 2 },
-
-  divider: { height: 1, backgroundColor: "#F1F5F9", marginVertical: 14 },
-
-  // Boshqaruv tugmalari
-  cardActions: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 10 },
-  
-  statusToggleBtn: {
+  searchBox: { paddingHorizontal: spacing.lg, marginBottom: spacing.md },
+  searchWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 8,
+    gap: spacing.sm,
+    backgroundColor: theme.surface,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.base,
+    height: 50,
     borderWidth: 1,
+    borderColor: theme.borderSoft,
+    ...shadow.xs,
   },
-  statusActiveBg: { backgroundColor: "rgba(22, 163, 74, 0.06)", borderColor: "rgba(22, 163, 74, 0.2)" },
-  statusInactiveBg: { backgroundColor: "#E2E8F0", borderColor: "#CBD5E1" },
-  statusDot: { width: 7, height: 7, borderRadius: 3.5 },
-  statusToggleText: { fontSize: 12, fontWeight: "600" },
+  searchInput: { flex: 1, fontSize: fontSize.base, color: theme.text, fontWeight: fontWeight.medium },
 
-  editPriceBtn: {
-    backgroundColor: "#F1F5F9",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  editPriceBtnText: { fontSize: 12, fontWeight: "600", color: "#1E293B" },
+  statsRow: { flexDirection: "row", gap: spacing.md, paddingHorizontal: spacing.lg, marginBottom: spacing.md },
+  statBox: { flex: 1, backgroundColor: theme.surface, borderRadius: radius.md, padding: spacing.md, borderTopWidth: 3, borderWidth: 1, borderColor: theme.borderSoft, ...shadow.xs },
+  statNum: { fontSize: fontSize.xl, fontWeight: fontWeight.black, letterSpacing: -0.5 },
+  statLabel: { fontSize: 10, color: theme.textSecondary, marginTop: 2, fontWeight: fontWeight.bold, textTransform: "uppercase" },
 
-  // Shisha/Idish belgisi
-  bottleLabel: {
+  chipRow: { paddingHorizontal: spacing.lg, gap: spacing.sm },
+  chip: { paddingHorizontal: spacing.base, paddingVertical: 9, borderRadius: radius.md, backgroundColor: theme.surface, borderWidth: 1.5, borderColor: theme.border },
+  chipActive: { backgroundColor: theme.primary, borderColor: theme.primary },
+  chipText: { fontSize: fontSize.sm, color: theme.textSecondary, fontWeight: fontWeight.bold },
+  chipTextActive: { color: "#fff" },
+
+  list: { paddingHorizontal: spacing.lg, paddingTop: 4, paddingBottom: 40 },
+  productCard: { padding: spacing.base, borderRadius: radius.xl, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.borderSoft, ...shadow.sm },
+  productCardInactive: { opacity: 0.6 },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  categoryBadge: { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.sm },
+  categoryText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
+  productName: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: theme.text, marginTop: 2 },
+  productDesc: { fontSize: fontSize.sm, color: theme.textSecondary, marginTop: 2, lineHeight: 18 },
+  textMuted: { color: theme.textMuted, textDecorationLine: "line-through" },
+  bottleTag: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", marginTop: 4 },
+  bottleText: { fontSize: fontSize.xs, color: theme.primaryDark, fontWeight: fontWeight.semibold },
+
+  priceContainer: { alignItems: "flex-end", backgroundColor: theme.bg, padding: spacing.sm, borderRadius: radius.sm, borderWidth: 1, borderColor: theme.border },
+  priceValue: { fontSize: fontSize.md, fontWeight: fontWeight.extrabold, color: theme.primaryDark },
+  priceUnit: { fontSize: 10, color: theme.textSecondary, fontWeight: fontWeight.medium, marginTop: 2 },
+
+  divider: { height: 1, backgroundColor: theme.border, marginVertical: spacing.md },
+  cardActions: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: spacing.md },
+  statusToggleBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.sm },
+  statusDot: { width: 7, height: 7, borderRadius: 4 },
+  statusToggleText: { fontSize: fontSize.sm, fontWeight: fontWeight.bold },
+  editPriceBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: theme.primarySoft, paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.sm },
+  editPriceBtnText: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: theme.primaryDark },
+
+  empty: { alignItems: "center", justifyContent: "center", paddingTop: 90 },
+  emptyIconBox: { width: 78, height: 78, borderRadius: radius["2xl"], backgroundColor: theme.primarySoft, alignItems: "center", justifyContent: "center", marginBottom: spacing.base },
+  emptyText: { fontSize: fontSize.md, color: theme.textSecondary, fontWeight: fontWeight.semibold },
+
+  modalOverlay: { flex: 1, backgroundColor: theme.overlay, justifyContent: "flex-end" },
+  modalContent: { backgroundColor: theme.surface, borderTopLeftRadius: radius["2xl"], borderTopRightRadius: radius["2xl"], padding: spacing.xl },
+  modalIndicator: { width: 40, height: 4, backgroundColor: theme.border, borderRadius: 2, alignSelf: "center", marginBottom: spacing.base },
+  modalTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.extrabold, color: theme.text },
+  modalSub: { fontSize: fontSize.base, color: theme.textSecondary, marginTop: 4, marginBottom: spacing.lg, fontWeight: fontWeight.semibold },
+  quickLabel: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: theme.textSecondary, marginBottom: spacing.sm },
+  quickPricesRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginBottom: spacing.lg },
+  quickChip: { backgroundColor: theme.surfaceAlt, paddingHorizontal: spacing.base, paddingVertical: spacing.sm, borderRadius: radius.sm, borderWidth: 1.5, borderColor: theme.border },
+  quickChipActive: { borderColor: theme.primary, backgroundColor: theme.primaryTint },
+  quickChipText: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: theme.textSecondary },
+  quickChipTextActive: { color: theme.primaryDark },
+  modalActionsRow: { flexDirection: "row", gap: spacing.md },
+
+  fab: {
     position: "absolute",
-    top: 0,
-    right: 0,
-    backgroundColor: "#EFF6FF",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderBottomLeftRadius: 8,
+    right: spacing.xl,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: theme.primary,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  bottleText: { fontSize: 9, fontWeight: "600", color: "#1E40AF" },
-
-  // Bo'sh holat
-  centerBox: { alignItems: "center", justifyContent: "center", paddingTop: 100 },
-  emptyIcon: { fontSize: 54, marginBottom: 14 },
-  emptyText: { fontSize: 15, color: "#94A3B8", fontWeight: "500" },
-
-  // Modal (iOS Bottom Sheet)
-  modalOverlay: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.4)", justifyContent: "flex-end" },
-  modalContent: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+  fieldLabel: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: theme.text, marginBottom: spacing.sm, marginTop: spacing.xs, paddingLeft: 2 },
+  selectRow: { flexDirection: "row", gap: spacing.sm, marginBottom: spacing.base, flexWrap: "wrap" },
+  selectChip: {
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: theme.surface,
+    borderWidth: 1.5,
+    borderColor: theme.border,
   },
-  modalIndicator: { width: 36, height: 4, backgroundColor: "#E2E8F0", borderRadius: 2, alignSelf: "center", marginBottom: 18 },
-  modalTitle: { fontSize: 19, fontWeight: "800", color: "#0F172A" },
-  modalSub: { fontSize: 14, color: "#64748B", marginTop: 4, marginBottom: 20 },
-  inputLabel: { fontSize: 13, fontWeight: "600", color: "#475569", marginBottom: 6 },
-  priceInput: { borderRadius: 12, height: 48, borderColor: "#CBD5E1", backgroundColor: "#F8FAFC", fontSize: 16 },
-
-  // Tezkor narx chiplari
-  quickLabel: { fontSize: 13, fontWeight: "500", color: "#64748B", marginBottom: 8, marginTop: 14 },
-  quickPricesRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 24 },
-  quickPriceChip: { backgroundColor: "#F1F5F9", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: "#E2E8F0" },
-  quickPriceChipActive: { borderColor: Colors.primary, backgroundColor: "rgba(2, 132, 199, 0.08)" },
-  quickPriceChipText: { fontSize: 12, fontWeight: "600", color: "#475569" },
-  quickPriceChipTextActive: { color: Colors.primary },
-
-  modalActionsRow: { flexDirection: "row", gap: 10 },
-  modalBtn: { flex: 1, borderRadius: 12, height: 46 },
+  selectChipText: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: theme.textSecondary },
+  checkboxRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginBottom: spacing.base, marginTop: spacing.xs },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: theme.borderStrong,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: theme.bg,
+  },
+  checkboxChecked: { backgroundColor: theme.primary, borderColor: theme.primary },
+  checkboxLabel: { fontSize: fontSize.base, fontWeight: fontWeight.bold, color: theme.text },
+  checkboxHint: { fontSize: fontSize.xs, color: theme.textSecondary, marginTop: 2, fontWeight: fontWeight.medium },
 });

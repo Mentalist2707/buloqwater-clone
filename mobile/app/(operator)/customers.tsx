@@ -1,6 +1,5 @@
 /**
- * Operator mijozlar ekrani
- * Web: /operator/customers — mijozlar bazasi, qidirish, yangi mijoz qo'shish
+ * Operator mijozlar ekrani (2026 redesign)
  */
 import React, { useState, useCallback } from "react";
 import {
@@ -12,13 +11,19 @@ import {
   TouchableOpacity,
   Linking,
   Modal,
-  Alert,
+  ActivityIndicator,
+  TextInput,
+  ScrollView,
 } from "react-native";
-import { useFocusEffect } from "expo-router";
-import { Card, Button, Input } from "@/components/ui";
-import { Colors } from "@/constants";
+import { Alert } from "@/utils/alert";
+import { useFocusEffect, router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
+import { Button, Input, Screen } from "@/components/ui";
 import { customersService } from "@/services/customers";
+import { openLocation } from "@/utils/maps";
 import type { Customer } from "@/types";
+import { theme, spacing, radius, fontSize, fontWeight, shadow } from "@/constants/theme";
 
 export default function CustomersScreen() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -28,7 +33,6 @@ export default function CustomersScreen() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // New customer modal — web bilan bir xil maydonlar
   const [showModal, setShowModal] = useState(false);
   const [newName, setNewName] = useState("");
   const [newPhone1, setNewPhone1] = useState("");
@@ -38,17 +42,15 @@ export default function CustomersScreen() {
   const [newLocationLink, setNewLocationLink] = useState("");
   const [creating, setCreating] = useState(false);
 
+  const insets = useSafeAreaInsets();
+
   const loadCustomers = async (pageNum = 1) => {
     const params: Record<string, string> = { page: pageNum.toString(), limit: "20" };
     if (search.trim()) params.search = search.trim();
-
     const result = await customersService.getCustomers(params);
     if (result.success && result.data) {
-      if (pageNum === 1) {
-        setCustomers(result.data.items);
-      } else {
-        setCustomers((prev) => [...prev, ...result.data!.items]);
-      }
+      if (pageNum === 1) setCustomers(result.data.items);
+      else setCustomers((prev) => [...prev, ...result.data!.items]);
       setTotalPages(result.data.totalPages);
       setPage(pageNum);
     }
@@ -58,13 +60,11 @@ export default function CustomersScreen() {
   useFocusEffect(
     useCallback(() => {
       loadCustomers(1);
-    }, [])
+    }, []),
   );
 
   React.useEffect(() => {
-    if (!loading) {
-      loadCustomers(1);
-    }
+    if (!loading) loadCustomers(1);
   }, [search]);
 
   const onRefresh = async () => {
@@ -77,12 +77,10 @@ export default function CustomersScreen() {
     if (page < totalPages) loadCustomers(page + 1);
   };
 
-  const handleCall = (phone: string) => {
-    Linking.openURL(`tel:${phone}`);
-  };
-
-  const handleOpenMap = (locationLink: string) => {
-    Linking.openURL(locationLink);
+  const handleCall = (phone: string) => Linking.openURL(`tel:${phone}`);
+  const handleOpenMap = (item: Customer) => {
+    const ok = openLocation({ locationLink: item.locationLink, address: item.address });
+    if (!ok) Alert.alert("Lokatsiya yo'q", "Bu mijoz uchun manzil kiritilmagan");
   };
 
   const handleCreateCustomer = async () => {
@@ -90,11 +88,8 @@ export default function CustomersScreen() {
       Alert.alert("Diqqat", "Ism, telefon va manzil to'ldirilishi shart");
       return;
     }
-
     setCreating(true);
-    const phone1 = newPhone1.trim().startsWith("+")
-      ? newPhone1.trim()
-      : `+998${newPhone1.trim().replace(/\D/g, "")}`;
+    const phone1 = newPhone1.trim().startsWith("+") ? newPhone1.trim() : `+998${newPhone1.trim().replace(/\D/g, "")}`;
     const phone2 = newPhone2.trim()
       ? newPhone2.trim().startsWith("+")
         ? newPhone2.trim()
@@ -131,244 +126,251 @@ export default function CustomersScreen() {
   };
 
   const renderCustomer = ({ item }: { item: Customer }) => (
-    <Card style={styles.customerCard}>
+    <TouchableOpacity
+      style={styles.customerCard}
+      activeOpacity={0.85}
+      onPress={() => router.push(`/customer/${item.id}`)}
+    >
       <View style={styles.customerHeader}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>
         </View>
         <View style={styles.customerInfo}>
           <Text style={styles.customerName}>{item.name}</Text>
-          <Text style={styles.customerAddress}>{item.address}</Text>
-          {item.landmark ? (
-            <Text style={styles.landmark}>Mo'ljal: {item.landmark}</Text>
-          ) : null}
+          <View style={styles.infoRow}>
+            <Feather name="phone" size={12} color={theme.textSecondary} />
+            <Text style={styles.customerPhone}>{item.phone1}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Feather name="map-pin" size={12} color={theme.textSecondary} />
+            <Text style={styles.customerAddress} numberOfLines={1}>
+              {item.address}
+            </Text>
+          </View>
+          {item.landmark && <Text style={styles.landmark}>Mo'ljal: {item.landmark}</Text>}
         </View>
         <View style={styles.callBtns}>
           <TouchableOpacity style={styles.callBtn} onPress={() => handleCall(item.phone1)}>
-            <Text style={styles.callIcon}>📞</Text>
+            <Feather name="phone" size={16} color={theme.primaryDark} />
           </TouchableOpacity>
-          {item.locationLink ? (
-            <TouchableOpacity
-              style={[styles.callBtn, { backgroundColor: "#EDE9FE" }]}
-              onPress={() => handleOpenMap(item.locationLink!)}
-            >
-              <Text style={styles.callIcon}>🗺</Text>
+          {item.locationLink && (
+            <TouchableOpacity style={styles.callBtn} onPress={() => handleOpenMap(item)}>
+              <Feather name="map" size={16} color={theme.primaryDark} />
             </TouchableOpacity>
-          ) : null}
+          )}
         </View>
       </View>
+
+      <View style={styles.divider} />
 
       <View style={styles.customerMeta}>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaLabel}>Idish</Text>
-          <Text
-            style={[
-              styles.metaValue,
-              item.bottleBalance > 0 && { color: Colors.warning },
-            ]}
-          >
-            {item.bottleBalance} ta
-          </Text>
-        </View>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaLabel}>Qarz</Text>
-          <Text
-            style={[
-              styles.metaValue,
-              item.debtBalance > 0 && { color: Colors.danger },
-            ]}
-          >
-            {item.debtBalance > 0 ? `${item.debtBalance.toLocaleString()} so'm` : "—"}
-          </Text>
-        </View>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaLabel}>Buyurtmalar</Text>
-          <Text style={styles.metaValue}>{item._count?.orders || 0} ta</Text>
-        </View>
+        <MetaItem icon="droplet" label="Idish" value={`${item.bottleBalance} ta`} highlight={item.bottleBalance > 0 ? theme.warning : undefined} />
+        <MetaItem
+          icon="credit-card"
+          label="Qarz"
+          value={item.debtBalance > 0 ? `${item.debtBalance.toLocaleString()}` : "—"}
+          highlight={item.debtBalance > 0 ? theme.danger : undefined}
+        />
+        <MetaItem icon="package" label="Buyurtma" value={`${item._count?.orders || 0} ta`} />
       </View>
 
-      {item.phone2 ? (
-        <TouchableOpacity
-          style={styles.phone2Row}
-          onPress={() => handleCall(item.phone2!)}
-        >
-          <Text style={styles.phone2Text}>📞 {item.phone2}</Text>
+      {item.phone2 && (
+        <TouchableOpacity style={styles.phone2Row} onPress={() => handleCall(item.phone2!)}>
+          <Feather name="phone" size={13} color={theme.primaryDark} />
+          <Text style={styles.phone2Text}>{item.phone2}</Text>
         </TouchableOpacity>
-      ) : null}
-    </Card>
+      )}
+    </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
-      {/* Search */}
-      <View style={styles.searchContainer}>
-        <Input
-          placeholder="Ism, telefon yoki manzil qidirish..."
-          value={search}
-          onChangeText={setSearch}
-          style={styles.searchInput}
-        />
+    <Screen>
+      <View style={[styles.headerPanel, { paddingTop: insets.top + 12 }]}>
+        <Text style={styles.pageTitle}>Mijozlar</Text>
+        <View style={styles.searchWrapper}>
+          <Feather name="search" size={18} color={theme.textMuted} />
+          <TextInput
+            placeholder="Ism, telefon yoki manzil..."
+            placeholderTextColor={theme.textMuted}
+            value={search}
+            onChangeText={setSearch}
+            style={styles.searchInput}
+          />
+        </View>
       </View>
 
-      {/* Customer List */}
       <FlatList
         data={customers}
         renderItem={renderCustomer}
         keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
         onEndReached={loadMore}
         onEndReachedThreshold={0.3}
         contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>👥</Text>
-            <Text style={styles.emptyText}>
-              {loading ? "Yuklanmoqda..." : "Mijozlar topilmadi"}
-            </Text>
+            {loading ? (
+              <ActivityIndicator size="large" color={theme.primary} />
+            ) : (
+              <>
+                <View style={styles.emptyIconBox}>
+                  <Feather name="users" size={34} color={theme.primary} />
+                </View>
+                <Text style={styles.emptyText}>Mijozlar topilmadi</Text>
+              </>
+            )}
           </View>
         }
       />
 
       {/* FAB */}
       <TouchableOpacity
-        style={styles.fab}
-        onPress={() => { setShowModal(true); resetForm(); }}
+        style={[styles.fab, { bottom: insets.bottom + 92 }, shadow.brand]}
+        onPress={() => {
+          setShowModal(true);
+          resetForm();
+        }}
+        activeOpacity={0.9}
       >
-        <Text style={styles.fabText}>+</Text>
+        <Feather name="plus" size={28} color="#fff" />
       </TouchableOpacity>
 
-      {/* New Customer Modal — web bilan bir xil maydonlar */}
+      {/* Modal */}
       <Modal visible={showModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Yangi mijoz</Text>
-
-            <Input
-              label="Ism *"
-              placeholder="Mijoz ismi"
-              value={newName}
-              onChangeText={setNewName}
-            />
-            <Input
-              label="Telefon 1 *"
-              placeholder="+998 90 123 45 67"
-              value={newPhone1}
-              onChangeText={setNewPhone1}
-              keyboardType="phone-pad"
-            />
-            <Input
-              label="Telefon 2"
-              placeholder="+998 90 123 45 67 (ixtiyoriy)"
-              value={newPhone2}
-              onChangeText={setNewPhone2}
-              keyboardType="phone-pad"
-            />
-            <Input
-              label="Manzil *"
-              placeholder="To'liq manzil"
-              value={newAddress}
-              onChangeText={setNewAddress}
-            />
-            <Input
-              label="Mo'ljal"
-              placeholder="Masalan: 'Sariq darvoza yonida'"
-              value={newLandmark}
-              onChangeText={setNewLandmark}
-            />
-            <Input
-              label="Lokatsiya linki"
-              placeholder="Yandex Maps yoki Google Maps URL"
-              value={newLocationLink}
-              onChangeText={setNewLocationLink}
-            />
-
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 24 }]}>
+            <View style={styles.modalIndicator} />
+            <Text style={styles.modalTitle}>Yangi mijoz qo'shish</Text>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: spacing.md }}>
+              <Input label="Ism *" placeholder="Mijoz ismi" value={newName} onChangeText={setNewName} icon="user" />
+              <Input label="Telefon 1 *" placeholder="+998 90 123 45 67" value={newPhone1} onChangeText={setNewPhone1} keyboardType="phone-pad" icon="phone" />
+              <Input label="Telefon 2 (ixtiyoriy)" placeholder="+998 90 123 45 67" value={newPhone2} onChangeText={setNewPhone2} keyboardType="phone-pad" icon="phone" />
+              <Input label="Manzil *" placeholder="To'liq manzil" value={newAddress} onChangeText={setNewAddress} icon="map-pin" />
+              <Input label="Mo'ljal (ixtiyoriy)" placeholder="Sariq darvoza yonida" value={newLandmark} onChangeText={setNewLandmark} icon="flag" />
+              <Input label="Lokatsiya linki (ixtiyoriy)" placeholder="Maps URL" value={newLocationLink} onChangeText={setNewLocationLink} icon="link" />
+            </ScrollView>
             <View style={styles.modalActions}>
-              <Button
-                title="Saqlash"
-                onPress={handleCreateCustomer}
-                loading={creating}
-                size="md"
-                style={{ flex: 1 }}
-              />
-              <Button
-                title="Bekor"
-                onPress={() => { setShowModal(false); resetForm(); }}
-                variant="outline"
-                size="md"
-                style={{ flex: 1 }}
-              />
+              <Button title="Bekor" onPress={() => { setShowModal(false); resetForm(); }} variant="outline" style={{ flex: 1 }} />
+              <Button title="Saqlash" onPress={handleCreateCustomer} loading={creating} style={{ flex: 1 }} />
             </View>
           </View>
         </View>
       </Modal>
+    </Screen>
+  );
+}
+
+function MetaItem({ icon, label, value, highlight }: { icon: keyof typeof Feather.glyphMap; label: string; value: string; highlight?: string }) {
+  return (
+    <View style={styles.metaItem}>
+      <Feather name={icon} size={15} color={highlight || theme.textSecondary} />
+      <Text style={styles.metaLabel}>{label}</Text>
+      <Text style={[styles.metaValue, highlight ? { color: highlight } : null]}>{value}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  searchContainer: { paddingHorizontal: 16, paddingTop: 12 },
-  searchInput: { marginBottom: 0 },
-  list: { paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 },
-  customerCard: { padding: 14 },
-  customerHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 10 },
+  headerPanel: { paddingHorizontal: spacing.lg, paddingBottom: spacing.base, gap: spacing.md },
+  pageTitle: { fontSize: fontSize["3xl"], fontWeight: fontWeight.extrabold, color: theme.text, letterSpacing: -0.6 },
+  searchWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    backgroundColor: theme.surface,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.base,
+    height: 50,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    ...shadow.xs,
+  },
+  searchInput: { flex: 1, fontSize: fontSize.base, color: theme.text, fontWeight: fontWeight.medium },
+
+  list: { paddingHorizontal: spacing.lg, paddingBottom: 110, paddingTop: 4 },
+  customerCard: {
+    padding: spacing.base,
+    borderRadius: radius.xl,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    ...shadow.sm,
+  },
+  customerHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: spacing.md },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.primaryLight,
+    width: 46,
+    height: 46,
+    borderRadius: radius.md,
+    backgroundColor: theme.primarySoft,
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { fontSize: 16, fontWeight: "700", color: Colors.primaryDark },
-  customerInfo: { flex: 1, marginLeft: 12 },
-  customerName: { fontSize: 15, fontWeight: "600", color: Colors.gray[800] },
-  customerAddress: { fontSize: 12, color: Colors.gray[500], marginTop: 2 },
-  landmark: { fontSize: 11, color: Colors.gray[400], marginTop: 1, fontStyle: "italic" },
-  callBtns: { flexDirection: "row", gap: 6 },
-  callBtn: { padding: 8, backgroundColor: Colors.gray[50], borderRadius: 8 },
-  callIcon: { fontSize: 18 },
-  customerMeta: { flexDirection: "row", gap: 16 },
-  metaItem: { alignItems: "center" },
-  metaLabel: { fontSize: 11, color: Colors.gray[500] },
-  metaValue: { fontSize: 14, fontWeight: "700", color: Colors.gray[800], marginTop: 2 },
-  phone2Row: { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: Colors.gray[100] },
-  phone2Text: { fontSize: 13, color: Colors.primary },
-  empty: { alignItems: "center", paddingTop: 60 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { fontSize: 16, color: Colors.gray[500] },
-  // FAB
+  avatarText: { fontSize: fontSize.lg, fontWeight: fontWeight.extrabold, color: theme.primaryDark },
+  customerInfo: { flex: 1, marginLeft: spacing.md, gap: 3 },
+  customerName: { fontSize: fontSize.md, fontWeight: fontWeight.extrabold, color: theme.text },
+  infoRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  customerPhone: { fontSize: fontSize.sm, color: theme.textSecondary, fontWeight: fontWeight.semibold },
+  customerAddress: { flex: 1, fontSize: fontSize.sm, color: theme.textSecondary, fontWeight: fontWeight.medium },
+  landmark: { fontSize: fontSize.xs, color: theme.textSecondary, fontStyle: "italic", fontWeight: fontWeight.medium, marginLeft: 18 },
+  callBtns: { flexDirection: "row", gap: spacing.sm },
+  callBtn: {
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: theme.primarySoft,
+    borderRadius: radius.sm,
+  },
+
+  divider: { height: 1, backgroundColor: theme.border, marginBottom: spacing.md },
+  customerMeta: { flexDirection: "row", justifyContent: "space-around" },
+  metaItem: { alignItems: "center", gap: 4 },
+  metaLabel: { fontSize: fontSize.xs, color: theme.textSecondary, fontWeight: fontWeight.semibold },
+  metaValue: { fontSize: fontSize.base, fontWeight: fontWeight.extrabold, color: theme.text },
+  phone2Row: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  phone2Text: { fontSize: fontSize.sm, color: theme.primaryDark, fontWeight: fontWeight.bold },
+
+  empty: { alignItems: "center", paddingTop: 90 },
+  emptyIconBox: {
+    width: 78,
+    height: 78,
+    borderRadius: radius["2xl"],
+    backgroundColor: theme.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.base,
+  },
+  emptyText: { fontSize: fontSize.md, color: theme.textSecondary, fontWeight: fontWeight.semibold },
+
   fab: {
     position: "absolute",
-    right: 20,
-    bottom: 90,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.primary,
+    right: spacing.xl,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: theme.primary,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
   },
-  fabText: { fontSize: 28, color: Colors.white, fontWeight: "300", marginTop: -2 },
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
+
+  modalOverlay: { flex: 1, backgroundColor: theme.overlay, justifyContent: "flex-end" },
   modalContent: {
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
+    backgroundColor: theme.surface,
+    borderTopLeftRadius: radius["2xl"],
+    borderTopRightRadius: radius["2xl"],
+    padding: spacing.xl,
     maxHeight: "90%",
   },
-  modalTitle: { fontSize: 20, fontWeight: "700", color: Colors.gray[900], marginBottom: 16 },
-  modalActions: { flexDirection: "row", gap: 12, marginTop: 8 },
+  modalIndicator: { width: 40, height: 4, backgroundColor: theme.border, borderRadius: 2, alignSelf: "center", marginBottom: spacing.base },
+  modalTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.extrabold, color: theme.text },
+  modalActions: { flexDirection: "row", gap: spacing.md, marginTop: spacing.base },
 });

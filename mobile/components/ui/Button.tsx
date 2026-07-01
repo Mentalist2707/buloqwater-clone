@@ -6,20 +6,33 @@ import {
   ActivityIndicator,
   ViewStyle,
   TextStyle,
+  StyleProp,
+  View,
 } from "react-native";
-import { Colors } from "@/constants";
+import { theme, radius, spacing, fontSize, fontWeight, shadow } from "@/constants/theme";
+
+type Variant = "primary" | "secondary" | "outline" | "ghost" | "danger" | "success";
+type Size = "sm" | "md" | "lg";
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: "primary" | "secondary" | "outline" | "danger" | "success";
-  size?: "sm" | "md" | "lg";
+  variant?: Variant;
+  size?: Size;
   loading?: boolean;
   disabled?: boolean;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
+  fullWidth?: boolean;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
   icon?: React.ReactNode;
+  iconRight?: React.ReactNode;
 }
+
+const SIZES: Record<Size, { font: number; height: number; ph: number }> = {
+  sm: { font: fontSize.sm, height: 40, ph: 16 },
+  md: { font: fontSize.md, height: 52, ph: 22 },
+  lg: { font: fontSize.lg, height: 56, ph: 28 },
+};
 
 export function Button({
   title,
@@ -28,73 +41,76 @@ export function Button({
   size = "md",
   loading = false,
   disabled = false,
+  fullWidth = true,
   style,
   textStyle,
   icon,
+  iconRight,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+  const s = SIZES[size];
+
+  const textColor =
+    variant === "outline"
+      ? theme.primaryDark
+      : variant === "ghost"
+      ? theme.text
+      : theme.textInverse;
 
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={isDisabled}
+      activeOpacity={0.85}
       style={[
         styles.base,
-        styles[variant],
-        styles[`size_${size}`],
+        { height: s.height, borderRadius: radius.lg, paddingHorizontal: s.ph },
+        fullWidth && styles.fullWidth,
+        variantStyles[variant],
+        variant === "primary" && !isDisabled && shadow.brandSoft,
         isDisabled && styles.disabled,
         style,
       ]}
-      activeOpacity={0.7}
     >
       {loading ? (
-        <ActivityIndicator
-          color={variant === "outline" ? Colors.primary : Colors.white}
-          size="small"
-        />
+        <ActivityIndicator color={textColor} size="small" />
       ) : (
-        <>
+        <View style={styles.contentRow}>
           {icon}
           <Text
-            style={[
-              styles.text,
-              styles[`text_${variant}`],
-              styles[`textSize_${size}`],
-              textStyle,
-            ]}
+            style={[styles.text, { fontSize: s.font, lineHeight: s.font + 4, color: textColor }, textStyle]}
+            numberOfLines={1}
           >
             {title}
           </Text>
-        </>
+          {iconRight}
+        </View>
       )}
     </TouchableOpacity>
   );
 }
 
+const variantStyles: Record<Variant, ViewStyle> = {
+  primary: { backgroundColor: theme.primary },
+  secondary: { backgroundColor: theme.primaryDark },
+  outline: { backgroundColor: "transparent", borderWidth: 1.5, borderColor: theme.primary },
+  ghost: { backgroundColor: theme.surfaceAlt },
+  danger: { backgroundColor: theme.danger },
+  success: { backgroundColor: theme.success },
+};
+
 const styles = StyleSheet.create({
   base: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fullWidth: { alignSelf: "stretch" },
+  contentRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 12,
-    gap: 8,
+    gap: spacing.sm,
   },
-  primary: { backgroundColor: Colors.primary },
-  secondary: { backgroundColor: Colors.secondary },
-  outline: { backgroundColor: "transparent", borderWidth: 1.5, borderColor: Colors.primary },
-  danger: { backgroundColor: Colors.danger },
-  success: { backgroundColor: Colors.success },
-  size_sm: { paddingVertical: 8, paddingHorizontal: 16 },
-  size_md: { paddingVertical: 14, paddingHorizontal: 24 },
-  size_lg: { paddingVertical: 18, paddingHorizontal: 32 },
-  disabled: { opacity: 0.5 },
-  text: { fontWeight: "600" },
-  text_primary: { color: Colors.white },
-  text_secondary: { color: Colors.white },
-  text_outline: { color: Colors.primary },
-  text_danger: { color: Colors.white },
-  text_success: { color: Colors.white },
-  textSize_sm: { fontSize: 14 },
-  textSize_md: { fontSize: 16 },
-  textSize_lg: { fontSize: 18 },
+  disabled: { opacity: 0.55 },
+  text: { fontWeight: fontWeight.bold, letterSpacing: -0.1 },
 });

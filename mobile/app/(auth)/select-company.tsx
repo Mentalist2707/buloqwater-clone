@@ -1,38 +1,30 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
+import { Alert } from "@/utils/alert";
 import { router } from "expo-router";
-import { Card, Button } from "@/components/ui";
-import { Colors } from "@/constants";
+import { Feather } from "@expo/vector-icons";
+import { Button, Header, Screen } from "@/components/ui";
 import { authService } from "@/services/auth";
 import { useAuthStore } from "@/store/auth";
 import type { CompanyOption } from "@/types";
+import { theme, spacing, radius, fontSize, fontWeight, shadow } from "@/constants/theme";
 
 export default function SelectCompanyScreen() {
-  const { pendingCompanies, pendingPhone, pendingPassword, setAuth, clearPendingSelection } =
-    useAuthStore();
+  const { pendingCompanies, pendingPhone, pendingPassword, setAuth, clearPendingSelection } = useAuthStore();
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleSelect = async (option: CompanyOption) => {
     if (!pendingPhone || !pendingPassword) return;
-
     setLoading(option.company.id);
     try {
-      const result = await authService.selectCompany(
-        pendingPhone,
-        pendingPassword,
-        option.company.id
-      );
-
+      const result = await authService.selectCompany(pendingPhone, pendingPassword, option.company.id);
       if (!result.success) {
         Alert.alert("Xatolik", result.error || "Tizimda xatolik");
         return;
       }
-
       const data = result.data!;
       clearPendingSelection();
       await setAuth(data.token!, data.user!);
-
-      // Role-based navigate
       switch (data.user!.role) {
         case "DRIVER":
           router.replace("/(driver)/tasks");
@@ -61,66 +53,51 @@ export default function SelectCompanyScreen() {
     router.back();
   };
 
-  const renderCompany = ({ item }: { item: CompanyOption }) => (
-    <TouchableOpacity
-      onPress={() => handleSelect(item)}
-      disabled={loading !== null}
-      activeOpacity={0.7}
-    >
-      <Card style={[styles.companyCard, loading === item.company.id && styles.selectedCard]}>
-        <View style={styles.companyHeader}>
+  const renderCompany = ({ item }: { item: CompanyOption }) => {
+    const isLoading = loading === item.company.id;
+    return (
+      <TouchableOpacity onPress={() => handleSelect(item)} disabled={loading !== null} activeOpacity={0.75}>
+        <View style={[styles.companyCard, isLoading && styles.selectedCard]}>
           <View style={styles.companyIcon}>
-            <Text style={styles.companyIconText}>🏢</Text>
+            <Feather name="home" size={20} color={theme.primaryDark} />
           </View>
           <View style={styles.companyInfo}>
             <Text style={styles.companyName}>{item.company.name}</Text>
-            <Text style={styles.companyRole}>
-              {getRoleName(item.role)}
-            </Text>
+            <Text style={styles.companyRole}>{getRoleName(item.role)}</Text>
           </View>
-          {loading === item.company.id ? (
-            <Text style={styles.loadingText}>...</Text>
+          {isLoading ? (
+            <ActivityIndicator color={theme.primary} />
           ) : (
-            <Text style={styles.arrow}>→</Text>
+            <Feather name="chevron-right" size={20} color={theme.textMuted} />
           )}
         </View>
-      </Card>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   if (!pendingCompanies || pendingCompanies.length === 0) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.emptyText}>Kompaniyalar topilmadi</Text>
-        <Button title="Orqaga" onPress={handleBack} variant="outline" />
-      </View>
+      <Screen>
+        <Header title="Kompaniya tanlash" onBack={handleBack} />
+        <View style={styles.emptyWrap}>
+          <Text style={styles.emptyText}>Kompaniyalar topilmadi</Text>
+          <Button title="Orqaga" onPress={handleBack} variant="outline" fullWidth={false} />
+        </View>
+      </Screen>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Kompaniyani tanlang</Text>
-        <Text style={styles.subtitle}>
-          Sizning akkauntingiz bir nechta kompaniyada ro'yxatdan o'tgan
-        </Text>
-      </View>
-
+    <Screen>
+      <Header title="Kompaniyani tanlang" subtitle="Akkauntingiz bir nechta kompaniyada mavjud" onBack={handleBack} />
       <FlatList
         data={pendingCompanies}
         renderItem={renderCompany}
         keyExtractor={(item) => item.company.id}
         contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+        ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
       />
-
-      <Button
-        title="Orqaga"
-        onPress={handleBack}
-        variant="outline"
-        style={styles.backButton}
-      />
-    </View>
+    </Screen>
   );
 }
 
@@ -135,33 +112,30 @@ function getRoleName(role: string): string {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    paddingHorizontal: 24,
-    paddingTop: 60,
+  list: { paddingHorizontal: spacing.xl, paddingTop: spacing.sm, paddingBottom: spacing.xl },
+  companyCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    backgroundColor: theme.surface,
+    borderRadius: radius.xl,
+    padding: spacing.base,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    ...shadow.sm,
   },
-  header: { marginBottom: 32 },
-  title: { fontSize: 24, fontWeight: "700", color: Colors.gray[900], marginBottom: 8 },
-  subtitle: { fontSize: 14, color: Colors.gray[500], lineHeight: 20 },
-  list: { paddingBottom: 20 },
-  companyCard: { padding: 16 },
-  selectedCard: { borderColor: Colors.primary, borderWidth: 2 },
-  companyHeader: { flexDirection: "row", alignItems: "center" },
+  selectedCard: { borderColor: theme.primary, borderWidth: 2 },
   companyIcon: {
     width: 48,
     height: 48,
-    borderRadius: 12,
-    backgroundColor: Colors.primaryLight,
+    borderRadius: radius.md,
+    backgroundColor: theme.primarySoft,
     alignItems: "center",
     justifyContent: "center",
   },
-  companyIconText: { fontSize: 22 },
-  companyInfo: { flex: 1, marginLeft: 12 },
-  companyName: { fontSize: 16, fontWeight: "600", color: Colors.gray[900] },
-  companyRole: { fontSize: 13, color: Colors.gray[500], marginTop: 2 },
-  arrow: { fontSize: 20, color: Colors.gray[400] },
-  loadingText: { fontSize: 16, color: Colors.primary },
-  backButton: { marginTop: 16, marginBottom: 32 },
-  emptyText: { fontSize: 16, color: Colors.gray[500], textAlign: "center", marginBottom: 20 },
+  companyInfo: { flex: 1 },
+  companyName: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: theme.text },
+  companyRole: { fontSize: fontSize.sm, color: theme.textSecondary, marginTop: 2, fontWeight: fontWeight.medium },
+  emptyWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.base, paddingHorizontal: spacing.xl },
+  emptyText: { fontSize: fontSize.md, color: theme.textSecondary, fontWeight: fontWeight.medium },
 });

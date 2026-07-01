@@ -5,8 +5,9 @@
 import React, { useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, FlatList, RefreshControl,
-  TouchableOpacity, Alert, Modal, ScrollView,
+  TouchableOpacity, Modal, ScrollView,
 } from "react-native";
+import { Alert } from "@/utils/alert";
 import { useFocusEffect, router } from "expo-router";
 import { Card, Input, Button } from "@/components/ui";
 import { Colors } from "@/constants";

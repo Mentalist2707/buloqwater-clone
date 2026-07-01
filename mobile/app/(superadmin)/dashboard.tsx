@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card } from "@/components/ui";
 import { Colors } from "@/constants";
 import { api } from "@/services/api";
@@ -71,6 +72,7 @@ export default function SuperAdminDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const { user, logout } = useAuthStore();
+  const insets = useSafeAreaInsets();
 
   const load = async () => {
     const r = await api.get<DashboardData>("/superadmin/stats");
@@ -89,7 +91,7 @@ export default function SuperAdminDashboard() {
     <ScrollView
       style={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}
     >
       {/* Header */}
       <View style={styles.header}>

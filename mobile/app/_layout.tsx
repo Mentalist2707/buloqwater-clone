@@ -1,21 +1,56 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Stack, router, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { View, Text, ActivityIndicator, StyleSheet, Alert, TouchableOpacity, Platform } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, AppState } from "react-native";
+import { Alert } from "@/utils/alert";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/store/auth";
-import { Colors } from "@/constants";
+import { usePinStore } from "@/store/pin";
+import { useNotificationsStore } from "@/store/notifications";
 import { api } from "@/services/api";
+import SplashAnimation from "@/components/SplashAnimation";
+import LockScreen from "@/components/LockScreen";
+import AppDialog from "@/components/AppDialog";
 
 export default function RootLayout() {
   const { isAuthenticated, isLoading, user, loadStoredAuth, logout } = useAuthStore();
+  const { isReady: pinReady, pinEnabled, isLocked, load: loadPin, lock } = usePinStore();
   const segments = useSegments();
   const suspendCheckDone = useRef(false);
+  const [minSplashDone, setMinSplashDone] = useState(false);
 
-  // Ilova ochilganda saqlangan auth'ni yuklash
+  // Ilova ochilganda saqlangan auth va PIN holatini yuklash
   useEffect(() => {
     loadStoredAuth();
-  }, [loadStoredAuth]);
+    loadPin();
+    // Animatsiya ko'rinishi uchun splashni kamida 1.8s ushlab turamiz
+    const t = setTimeout(() => setMinSplashDone(true), 1800);
+    return () => clearTimeout(t);
+  }, [loadStoredAuth, loadPin]);
+
+  // Ilova fon'ga o'tib qaytganda qayta qulflash
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "background" || state === "inactive") lock();
+      if (state === "active" && useAuthStore.getState().isAuthenticated) {
+        useNotificationsStore.getState().fetchUnreadCount();
+      }
+    });
+    return () => sub.remove();
+  }, [lock]);
+
+  // O'qilmagan bildirishnomalar sonini davriy yangilash (badge uchun)
+  useEffect(() => {
+    if (!isAuthenticated) {
+      useNotificationsStore.getState().setUnreadCount(0);
+      return;
+    }
+    useNotificationsStore.getState().fetchUnreadCount();
+    const id = setInterval(() => {
+      useNotificationsStore.getState().fetchUnreadCount();
+    }, 30000);
+    return () => clearInterval(id);
+  }, [isAuthenticated]);
 
   // Auth holatiga qarab routing
   useEffect(() => {
@@ -37,13 +72,13 @@ export default function RootLayout() {
     }
   }, [isAuthenticated, isLoading, segments, user, logout]);
 
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-      </View>
-    );
+  // Yuklanish animatsiyasi — auth/PIN yuklanmaguncha yoki min vaqt tugamaguncha
+  if (isLoading || !pinReady || !minSplashDone) {
+    return <SplashAnimation />;
   }
+
+  // PIN qulfi — kirilgan bo'lsa va PIN yoqilgan/qulflangan bo'lsa
+  const showLock = isAuthenticated && pinEnabled && isLocked;
 
   return (
     <>
@@ -57,7 +92,11 @@ export default function RootLayout() {
         <Stack.Screen name="(driver)" />
         <Stack.Screen name="(operator)" />
         <Stack.Screen name="(customer)" />
+        <Stack.Screen name="pin-setup" />
+        <Stack.Screen name="customer/[id]" />
       </Stack>
+      {showLock && <LockScreen />}
+      <AppDialog />
     </>
   );
 }
@@ -158,12 +197,3 @@ function navigateByRole(role?: string) {
     default:            router.replace("/(operator)/orders");
   }
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.background,
-  },
-});

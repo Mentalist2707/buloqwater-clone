@@ -4,9 +4,11 @@
 import React, { useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, FlatList, RefreshControl,
-  TouchableOpacity, Alert, Modal, ScrollView, ActivityIndicator,
+  TouchableOpacity, Modal, ScrollView, ActivityIndicator,
 } from "react-native";
+import { Alert } from "@/utils/alert";
 import { useFocusEffect, router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card, Button, Input } from "@/components/ui";
 import { Colors } from "@/constants";
 import { api } from "@/services/api";
@@ -46,6 +48,7 @@ export default function CompaniesScreen() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "SUSPENDED">("ALL");
+  const insets = useSafeAreaInsets();
 
   const { startImpersonate } = useAuthStore();
   const [impersonateLoading, setImpersonateLoading] = useState<string | null>(null);
@@ -326,7 +329,7 @@ export default function CompaniesScreen() {
   const suspendedCount = companies.filter((c) => c.status === "SUSPENDED").length;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Search with clear button */}
       <View style={styles.searchWrapper}>
         <Input

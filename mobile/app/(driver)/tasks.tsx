@@ -1,7 +1,5 @@
 /**
- * Haydovchi vazifalar ekrani
- * Web: /driver/tasks — buyurtma kartalar, qo'ng'iroq/xarita/yopish tugmalari
- * Mobile xususiyatlar: stats bar, "Yo'lga chiqdim" tugmasi, kechikkan highlight
+ * Haydovchi vazifalar ekrani (2026 redesign)
  */
 import React, { useState, useCallback } from "react";
 import {
@@ -12,17 +10,20 @@ import {
   RefreshControl,
   TouchableOpacity,
   Linking,
-  Alert,
   Modal,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
+import { Alert } from "@/utils/alert";
 import { useFocusEffect, router } from "expo-router";
-import { Card, StatusBadge, Button } from "@/components/ui";
-import { Colors } from "@/constants";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import { StatusBadge, Screen } from "@/components/ui";
 import { driverService } from "@/services/driver";
 import { useAuthStore } from "@/store/auth";
+import { openLocation } from "@/utils/maps";
 import type { Order, DriverTasksResponse } from "@/types";
-import { PAYMENT_TYPE_LABELS } from "@/constants";
+import { theme, palette, spacing, radius, fontSize, fontWeight, shadow } from "@/constants/theme";
 
 type PaymentOption = "CASH" | "CLICK" | "CREDIT";
 
@@ -31,25 +32,24 @@ export default function DriverTasksScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const { user, logout } = useAuthStore();
+  const insets = useSafeAreaInsets();
 
-  // Inline deliver modal (web drawer kabi)
   const [deliverModal, setDeliverModal] = useState<Order | null>(null);
   const [paymentType, setPaymentType] = useState<PaymentOption>("CASH");
   const [bottlesReturned, setBottlesReturned] = useState(0);
   const [deliverLoading, setDeliverLoading] = useState(false);
+  const [startingId, setStartingId] = useState<string | null>(null);
 
   const loadTasks = async () => {
     const result = await driverService.getTasks(true);
-    if (result.success && result.data) {
-      setData(result.data);
-    }
+    if (result.success && result.data) setData(result.data);
     setLoading(false);
   };
 
   useFocusEffect(
     useCallback(() => {
       loadTasks();
-    }, [])
+    }, []),
   );
 
   const onRefresh = async () => {
@@ -59,12 +59,11 @@ export default function DriverTasksScreen() {
   };
 
   const handleStartDelivery = async (orderId: string) => {
+    setStartingId(orderId);
     const result = await driverService.startDelivery(orderId);
-    if (result.success) {
-      loadTasks();
-    } else {
-      Alert.alert("Xatolik", (result as any).error || "Xatolik yuz berdi");
-    }
+    setStartingId(null);
+    if (result.success) loadTasks();
+    else Alert.alert("Xatolik", (result as any).error || "Xatolik yuz berdi");
   };
 
   const openDeliverModal = (order: Order) => {
@@ -83,7 +82,7 @@ export default function DriverTasksScreen() {
     });
     if (result.success) {
       setDeliverModal(null);
-      Alert.alert("✅ Muvaffaqiyat!", "Buyurtma yetkazildi!");
+      Alert.alert("Muvaffaqiyat!", "Buyurtma yetkazildi!");
       loadTasks();
     } else {
       Alert.alert("Xatolik", (result as any).error || "Xatolik yuz berdi");
@@ -91,13 +90,15 @@ export default function DriverTasksScreen() {
     setDeliverLoading(false);
   };
 
-  const handleCall = (phone: string) => {
-    Linking.openURL(`tel:${phone}`);
-  };
-
-  const handleOpenMap = (locationLink: string | null | undefined, address: string) => {
-    const url = locationLink || `https://yandex.uz/maps/?text=${encodeURIComponent(address)}`;
-    Linking.openURL(url);
+  const handleCall = (phone: string) => Linking.openURL(`tel:${phone}`);
+  const openMap = (customer: Order["customer"]) => {
+    const ok = openLocation({
+      locationLink: customer.locationLink,
+      address: customer.address,
+      latitude: customer.latitude,
+      longitude: customer.longitude,
+    });
+    if (!ok) Alert.alert("Lokatsiya yo'q", "Bu mijoz uchun manzil/koordinata kiritilmagan");
   };
 
   const handleLogout = () => {
@@ -114,453 +115,448 @@ export default function DriverTasksScreen() {
     ]);
   };
 
-  const renderStats = () => {
-    if (!data?.stats) return null;
-    const { stats } = data;
-    return (
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{stats.pendingCount}</Text>
-          <Text style={styles.statLabel}>Kutilmoqda</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={[styles.statNumber, { color: Colors.success }]}>{stats.deliveredToday}</Text>
-          <Text style={styles.statLabel}>Yetkazildi</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={[styles.statNumber, { color: Colors.primary }]}>
-            {stats.totalAmountToday >= 1000
-              ? `${(stats.totalAmountToday / 1000).toFixed(0)}K`
-              : stats.totalAmountToday}
-          </Text>
-          <Text style={styles.statLabel}>Summa</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{stats.bottlesDeliveredToday}</Text>
-          <Text style={styles.statLabel}>🫙 Idish</Text>
-        </View>
-      </View>
-    );
-  };
-
   const renderOrder = ({ item, index }: { item: Order; index: number }) => {
-    const isLate =
-      Date.now() - new Date(item.createdAt).getTime() > 7200000; // 2 soat
+    const isLate = Date.now() - new Date(item.createdAt).getTime() > 7200000;
     const isDelivered = item.status === "DELIVERED";
 
     return (
-      <View
-        style={[
-          styles.orderCard,
-          isLate && !isDelivered && styles.orderCardLate,
-          isDelivered && styles.orderCardDelivered,
-        ]}
-      >
-        {/* Header */}
-        <View style={[styles.orderTop, isLate && !isDelivered ? styles.orderTopLate : styles.orderTopNormal]}>
-          <View style={styles.orderTopLeft}>
-            <View
-              style={[
-                styles.orderIndex,
-                { backgroundColor: isLate && !isDelivered ? Colors.danger : Colors.primary },
-              ]}
-            >
+      <View style={[styles.orderCard, isLate && !isDelivered && styles.orderCardLate, isDelivered && styles.orderCardDelivered]}>
+        <View style={styles.orderHeader}>
+          <View style={styles.orderHeaderLeft}>
+            <View style={[styles.orderIndex, isLate && !isDelivered && { backgroundColor: theme.danger }]}>
               <Text style={styles.orderIndexText}>{index + 1}</Text>
             </View>
-            <View>
-              <Text style={styles.orderCustomerName}>{item.customer.name}</Text>
-              <Text style={styles.orderNumberText}>
-                #{item.orderNumber}{isLate && !isDelivered ? " · ⚠️ Kechikmoqda" : ""}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.orderCustomerName} numberOfLines={1}>
+                {item.customer.name}
               </Text>
+              <View style={styles.orderMetaRow}>
+                <Text style={styles.orderNumberText}>#{item.orderNumber}</Text>
+                {isLate && !isDelivered && (
+                  <View style={styles.lateBadge}>
+                    <Feather name="clock" size={10} color={theme.danger} />
+                    <Text style={styles.lateText}>Kechikmoqda</Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
-          <View style={styles.orderTopRight}>
-            <Text style={styles.orderAmount}>{item.totalAmount.toLocaleString()} so'm</Text>
+          <View style={styles.orderHeaderRight}>
+            <Text style={styles.orderAmount}>{item.totalAmount.toLocaleString()}</Text>
+            <Text style={styles.orderCurrency}>so'm</Text>
             <StatusBadge status={item.status} />
           </View>
         </View>
 
-        {/* Info */}
         <View style={styles.orderBody}>
-          {/* Manzil */}
           <View style={styles.infoRow}>
-            <Text style={styles.infoIcon}>📍</Text>
+            <Feather name="map-pin" size={16} color={theme.primary} />
             <View style={{ flex: 1 }}>
               <Text style={styles.addressText}>{item.customer.address}</Text>
-              {item.customer.landmark ? (
-                <Text style={styles.landmarkText}>Mo'ljal: {item.customer.landmark}</Text>
-              ) : null}
+              {item.customer.landmark && <Text style={styles.landmarkText}>Mo'ljal: {item.customer.landmark}</Text>}
             </View>
           </View>
 
-          {/* Mahsulotlar */}
-          <View style={styles.infoRow}>
-            <Text style={styles.infoIcon}>📦</Text>
-            <View style={styles.itemsWrap}>
-              {item.items.map((orderItem) => (
-                <View key={orderItem.id} style={styles.itemChip}>
-                  <Text style={styles.itemChipText}>
-                    {orderItem.product.name} ×{orderItem.quantity}
-                  </Text>
-                </View>
-              ))}
-            </View>
+          <View style={styles.itemsRow}>
+            {item.items.map((orderItem) => (
+              <View key={orderItem.id} style={styles.itemChip}>
+                <Text style={styles.itemChipText}>
+                  {orderItem.product.name} ×{orderItem.quantity}
+                </Text>
+              </View>
+            ))}
           </View>
         </View>
 
-        {/* Action buttons — web bilan bir xil 3 ta katta tugma */}
         {!isDelivered && (
           <View style={styles.actionGrid}>
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.actionBtnCall]}
-              onPress={() => handleCall(item.customer.phone1)}
-            >
-              <Text style={styles.actionBtnIcon}>📞</Text>
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.primaryDark }]} onPress={() => handleCall(item.customer.phone1)}>
+              <Feather name="phone" size={18} color="#fff" />
               <Text style={styles.actionBtnText}>Qo'ng'iroq</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.actionBtnMap]}
-              onPress={() => handleOpenMap(item.customer.locationLink, item.customer.address)}
-            >
-              <Text style={styles.actionBtnIcon}>🗺️</Text>
-              <Text style={styles.actionBtnText}>
-                {item.customer.locationLink ? "Xarita" : "Manzil"}
-              </Text>
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: palette.violet500 }]} onPress={() => openMap(item.customer)}>
+              <Feather name="map" size={18} color="#fff" />
+              <Text style={styles.actionBtnText}>Xarita</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.actionBtnDeliver]}
-              onPress={() => openDeliverModal(item)}
-            >
-              <Text style={styles.actionBtnIcon}>✅</Text>
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.success }]} onPress={() => openDeliverModal(item)}>
+              <Feather name="check-circle" size={18} color="#fff" />
               <Text style={styles.actionBtnText}>Yopish</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* "Yo'lga chiqdim" tugmasi — faqat ASSIGNED holatida */}
         {item.status === "ASSIGNED" && (
           <TouchableOpacity
-            style={styles.startDeliveryBtn}
+            style={[styles.startDeliveryBtn, startingId === item.id && { opacity: 0.7 }]}
             onPress={() => handleStartDelivery(item.id)}
+            disabled={startingId === item.id}
           >
-            <Text style={styles.startDeliveryText}>🚛 Yo'lga chiqdim</Text>
+            {startingId === item.id ? (
+              <ActivityIndicator color={theme.primaryDark} />
+            ) : (
+              <>
+                <Ionicons name="car" size={18} color={theme.primaryDark} />
+                <Text style={styles.startDeliveryText}>Yo'lga chiqdim</Text>
+              </>
+            )}
           </TouchableOpacity>
         )}
       </View>
     );
   };
 
-  const activeTasks =
-    data?.tasks.filter((t) => t.status === "ASSIGNED" || t.status === "IN_TRANSIT") || [];
+  const activeTasks = data?.tasks.filter((t) => t.status === "ASSIGNED" || t.status === "IN_TRANSIT") || [];
   const deliveredTasks = data?.tasks.filter((t) => t.status === "DELIVERED") || [];
   const allTasks = [...activeTasks, ...deliveredTasks];
 
   return (
-    <View style={styles.container}>
+    <Screen>
       {/* Header */}
-      <View style={styles.headerBar}>
-        <View>
-          <Text style={styles.greeting}>Salom, {user?.name} 👋</Text>
-          <Text style={styles.companyName}>{user?.company?.name}</Text>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.pageTitle}>Buyurtmalar</Text>
+          <Text style={styles.greeting}>{user?.name}</Text>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-          <Text style={styles.logoutText}>Chiqish</Text>
+          <Feather name="log-out" size={20} color={theme.danger} />
         </TouchableOpacity>
       </View>
 
-      {renderStats()}
+      {/* Stats */}
+      {data?.stats && (
+        <View style={styles.statsRow}>
+          <StatBox value={data.stats.pendingCount} label="Kutilmoqda" color={palette.amber500} icon="clock" />
+          <StatBox value={data.stats.deliveredToday} label="Yetkazildi" color={theme.success} icon="check-circle" />
+          <StatBox
+            value={
+              data.stats.totalAmountToday >= 1000
+                ? `${(data.stats.totalAmountToday / 1000).toFixed(0)}K`
+                : String(data.stats.totalAmountToday)
+            }
+            label="Summa"
+            color={theme.primaryDark}
+            icon="dollar-sign"
+          />
+          <StatBox value={data.stats.bottlesDeliveredToday} label="Idish" color={palette.aqua500} icon="droplet" />
+        </View>
+      )}
 
       <FlatList
         data={allTasks}
-        renderItem={({ item, index }) => renderOrder({ item, index })}
+        renderItem={renderOrder}
         keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.empty}>
             {loading ? (
-              <Text style={styles.emptyText}>Yuklanmoqda...</Text>
+              <ActivityIndicator size="large" color={theme.primary} />
             ) : (
               <>
-                <Text style={styles.emptyIcon}>🎉</Text>
+                <View style={styles.emptyIconBox}>
+                  <Feather name="check-circle" size={34} color={theme.success} />
+                </View>
                 <Text style={styles.emptyTitle}>Barcha vazifalar bajarildi!</Text>
                 <Text style={styles.emptyText}>Yangi buyurtma tushganda bu yerda ko'rinadi</Text>
-                <TouchableOpacity style={styles.refreshBtn} onPress={loadTasks}>
-                  <Text style={styles.refreshBtnText}>Yangilash</Text>
-                </TouchableOpacity>
               </>
             )}
           </View>
         }
-        ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
+        ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
       />
 
-      {/* Deliver Modal — web drawer kabi */}
-      <Modal
-        visible={!!deliverModal}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setDeliverModal(null)}
-      >
-        <View style={styles.deliverOverlay}>
-          <TouchableOpacity
-            style={styles.deliverBackdrop}
-            onPress={() => setDeliverModal(null)}
-          />
-          <View style={styles.deliverSheet}>
-            {/* Handle */}
-            <View style={styles.sheetHandle} />
+      {/* Deliver Modal */}
+      <Modal visible={!!deliverModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 24 }]}>
+            <View style={styles.modalIndicator} />
+            <Text style={styles.modalTitle}>Buyurtmani yakunlash</Text>
+            <Text style={styles.modalSub}>
+              {deliverModal?.customer.name} · {deliverModal?.totalAmount.toLocaleString()} so'm
+            </Text>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Header */}
-              <View style={styles.deliverHeader}>
-                <Text style={styles.deliverTitle}>Buyurtmani yakunlash</Text>
-                <Text style={styles.deliverSub}>
-                  {deliverModal?.customer.name} · {deliverModal?.totalAmount.toLocaleString()} so'm
-                </Text>
-              </View>
-
-              {/* To'lov turi */}
-              <Text style={styles.deliverSectionTitle}>To'lov turi</Text>
+              <Text style={styles.sectionTitle}>To'lov turi</Text>
               <View style={styles.paymentOptions}>
-                {([
-                  { value: "CASH" as PaymentOption, label: "Naqd", icon: "💵" },
-                  { value: "CLICK" as PaymentOption, label: "Click/Payme", icon: "📱" },
-                  { value: "CREDIT" as PaymentOption, label: "Qarz", icon: "📝" },
-                ]).map((opt) => (
-                  <TouchableOpacity
-                    key={opt.value}
-                    style={[
-                      styles.paymentOption,
-                      paymentType === opt.value && styles.paymentOptionSelected,
-                    ]}
-                    onPress={() => setPaymentType(opt.value)}
-                  >
-                    <Text style={styles.paymentOptionIcon}>{opt.icon}</Text>
-                    <Text
-                      style={[
-                        styles.paymentOptionText,
-                        paymentType === opt.value && styles.paymentOptionTextSelected,
-                      ]}
+                {[
+                  { value: "CASH" as PaymentOption, label: "Naqd", icon: "dollar-sign" as const },
+                  { value: "CLICK" as PaymentOption, label: "Click/Payme", icon: "credit-card" as const },
+                  { value: "CREDIT" as PaymentOption, label: "Qarz", icon: "book" as const },
+                ].map((opt) => {
+                  const selected = paymentType === opt.value;
+                  return (
+                    <TouchableOpacity
+                      key={opt.value}
+                      style={[styles.paymentOption, selected && styles.paymentOptionSelected]}
+                      onPress={() => setPaymentType(opt.value)}
                     >
-                      {opt.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Feather name={opt.icon} size={22} color={selected ? theme.primaryDark : theme.textSecondary} />
+                      <Text style={[styles.paymentOptionText, selected && styles.paymentOptionTextSelected]}>{opt.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
 
-              {/* Qarz ogohlantirish */}
               {paymentType === "CREDIT" && deliverModal && (
                 <View style={styles.creditWarning}>
+                  <Feather name="alert-triangle" size={18} color={palette.amber600} />
                   <Text style={styles.creditWarningText}>
-                    ⚠️ Mijozning qarziga {deliverModal.totalAmount.toLocaleString()} so'm qo'shiladi
+                    Mijozning qarziga {deliverModal.totalAmount.toLocaleString()} so'm qo'shiladi
                   </Text>
                 </View>
               )}
 
-              {/* Qaytarilgan idishlar */}
-              <Text style={styles.deliverSectionTitle}>
-                Qaytarilgan baxlalar{" "}
-                <Text style={styles.deliverSectionSub}>
-                  (berilgan: {deliverModal?.bottlesDelivered})
-                </Text>
-              </Text>
+              <Text style={styles.sectionTitle}>Qaytarilgan idishlar (berilgan: {deliverModal?.bottlesDelivered})</Text>
               <View style={styles.bottleCounter}>
-                <TouchableOpacity
-                  style={styles.counterBtn}
-                  onPress={() => setBottlesReturned(Math.max(0, bottlesReturned - 1))}
-                >
-                  <Text style={styles.counterBtnText}>−</Text>
+                <TouchableOpacity style={styles.counterBtn} onPress={() => setBottlesReturned(Math.max(0, bottlesReturned - 1))}>
+                  <Feather name="minus" size={22} color="#fff" />
                 </TouchableOpacity>
                 <Text style={styles.counterValue}>{bottlesReturned}</Text>
-                <TouchableOpacity
-                  style={styles.counterBtn}
-                  onPress={() => setBottlesReturned(bottlesReturned + 1)}
-                >
-                  <Text style={styles.counterBtnText}>+</Text>
+                <TouchableOpacity style={styles.counterBtn} onPress={() => setBottlesReturned(bottlesReturned + 1)}>
+                  <Feather name="plus" size={22} color="#fff" />
                 </TouchableOpacity>
               </View>
 
-              {/* Yakunlash */}
-              <TouchableOpacity
-                style={[styles.confirmBtn, deliverLoading && styles.confirmBtnDisabled]}
-                onPress={handleDeliver}
-                disabled={deliverLoading}
-              >
-                <Text style={styles.confirmBtnText}>
-                  {deliverLoading ? "Yakunlanmoqda..." : "✅ Yakunlash"}
-                </Text>
+              <TouchableOpacity style={[styles.confirmBtn, deliverLoading && { opacity: 0.6 }]} onPress={handleDeliver} disabled={deliverLoading}>
+                {deliverLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.confirmBtnText}>Yakunlash</Text>}
               </TouchableOpacity>
-
-              <View style={{ height: 20 }} />
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setDeliverModal(null)}>
+                <Text style={styles.cancelBtnText}>Bekor qilish</Text>
+              </TouchableOpacity>
             </ScrollView>
           </View>
         </View>
       </Modal>
+    </Screen>
+  );
+}
+
+function StatBox({
+  value,
+  label,
+  color,
+  icon,
+}: {
+  value: string | number;
+  label: string;
+  color: string;
+  icon: keyof typeof Feather.glyphMap;
+}) {
+  return (
+    <View style={[styles.statBox, { borderTopColor: color }]}>
+      <Feather name={icon} size={14} color={color} />
+      <Text style={[styles.statNum, { color }]}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  headerBar: {
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+  pageTitle: { fontSize: fontSize["3xl"], fontWeight: fontWeight.extrabold, color: theme.text, letterSpacing: -0.6 },
+  greeting: { fontSize: fontSize.base, color: theme.textSecondary, fontWeight: fontWeight.semibold, marginTop: 2 },
+  logoutBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: theme.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+  },
+
+  statsRow: { flexDirection: "row", gap: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.base },
+  statBox: {
+    flex: 1,
+    backgroundColor: theme.surface,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    borderTopWidth: 3,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    gap: 4,
+    ...shadow.xs,
+  },
+  statNum: { fontSize: fontSize.xl, fontWeight: fontWeight.black, letterSpacing: -0.5 },
+  statLabel: { fontSize: 10, color: theme.textSecondary, fontWeight: fontWeight.bold, textTransform: "uppercase" },
+
+  list: { paddingHorizontal: spacing.lg, paddingTop: 4, paddingBottom: 100 },
+
+  orderCard: {
+    backgroundColor: theme.surface,
+    borderRadius: radius.xl,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    ...shadow.sm,
+  },
+  orderCardLate: { borderWidth: 1.5, borderColor: palette.rose400 },
+  orderCardDelivered: { opacity: 0.6 },
+
+  orderHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
+    alignItems: "flex-start",
+    padding: spacing.base,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
   },
-  greeting: { fontSize: 18, fontWeight: "700", color: Colors.gray[900] },
-  companyName: { fontSize: 13, color: Colors.gray[500], marginTop: 2 },
-  logoutBtn: { padding: 8 },
-  logoutText: { fontSize: 14, color: Colors.danger },
-  // Stats
-  statsContainer: { flexDirection: "row", paddingHorizontal: 16, paddingBottom: 16, gap: 8 },
-  statCard: {
+  orderHeaderLeft: { flexDirection: "row", gap: spacing.md, flex: 1 },
+  orderIndex: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
+    backgroundColor: theme.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  orderIndexText: { color: "#fff", fontWeight: fontWeight.black, fontSize: fontSize.lg },
+  orderCustomerName: { fontSize: fontSize.md, fontWeight: fontWeight.extrabold, color: theme.text, marginBottom: 4 },
+  orderMetaRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, flexWrap: "wrap" },
+  orderNumberText: { fontSize: fontSize.xs, color: theme.textSecondary, fontWeight: fontWeight.semibold },
+  lateBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: theme.dangerSoft,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+  },
+  lateText: { fontSize: 10, fontWeight: fontWeight.extrabold, color: theme.danger },
+  orderHeaderRight: { alignItems: "flex-end", gap: 4 },
+  orderAmount: { fontSize: fontSize.lg, fontWeight: fontWeight.black, color: theme.text, letterSpacing: -0.5 },
+  orderCurrency: { fontSize: fontSize.xs, color: theme.textSecondary, fontWeight: fontWeight.semibold, marginBottom: 4 },
+
+  orderBody: { padding: spacing.base, gap: spacing.md },
+  infoRow: { flexDirection: "row", gap: spacing.sm, alignItems: "flex-start" },
+  addressText: { fontSize: fontSize.base, fontWeight: fontWeight.semibold, color: theme.text, lineHeight: 20 },
+  landmarkText: { fontSize: fontSize.xs, color: theme.textSecondary, marginTop: 4, fontStyle: "italic" },
+
+  itemsRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  itemChip: {
+    backgroundColor: theme.primarySoft,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.sm,
+  },
+  itemChipText: { fontSize: fontSize.sm, color: theme.primaryDark, fontWeight: fontWeight.bold },
+
+  actionGrid: { flexDirection: "row", gap: spacing.sm, padding: spacing.md },
+  actionBtn: {
     flex: 1,
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 12,
+    flexDirection: "row",
     alignItems: "center",
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
   },
-  statNumber: { fontSize: 20, fontWeight: "700", color: Colors.gray[900] },
-  statLabel: { fontSize: 11, color: Colors.gray[500], marginTop: 2, textAlign: "center" },
-  list: { paddingHorizontal: 16, paddingBottom: 40 },
-  // Order card
-  orderCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    overflow: "hidden",
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  orderCardLate: { borderWidth: 2, borderColor: Colors.danger + "60" },
-  orderCardDelivered: { opacity: 0.7 },
-  orderTop: { paddingHorizontal: 16, paddingVertical: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  orderTopNormal: { backgroundColor: Colors.gray[50] },
-  orderTopLate: { backgroundColor: "#FEF2F2" },
-  orderTopLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
-  orderIndex: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  orderIndexText: { color: Colors.white, fontWeight: "800", fontSize: 16 },
-  orderCustomerName: { fontSize: 15, fontWeight: "700", color: Colors.gray[900] },
-  orderNumberText: { fontSize: 12, color: Colors.gray[500], marginTop: 1 },
-  orderTopRight: { alignItems: "flex-end", gap: 4 },
-  orderAmount: { fontSize: 15, fontWeight: "700", color: Colors.gray[900] },
-  orderBody: { paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
-  infoRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  infoIcon: { fontSize: 18, marginTop: 1 },
-  addressText: { fontSize: 15, fontWeight: "500", color: Colors.gray[900] },
-  landmarkText: { fontSize: 13, color: Colors.gray[500], marginTop: 2, fontStyle: "italic" },
-  itemsWrap: { flex: 1, flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  itemChip: { backgroundColor: "#EFF6FF", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
-  itemChipText: { fontSize: 13, color: "#1D4ED8", fontWeight: "600" },
-  // Action buttons — 3 ta katta tugma (web bilan bir xil)
-  actionGrid: { flexDirection: "row", gap: 10, paddingHorizontal: 12, paddingBottom: 12 },
-  actionBtn: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 14, borderRadius: 12, gap: 4 },
-  actionBtnCall: { backgroundColor: "#3B82F6" },
-  actionBtnMap: { backgroundColor: "#8B5CF6" },
-  actionBtnDeliver: { backgroundColor: "#22C55E" },
-  actionBtnIcon: { fontSize: 22 },
-  actionBtnText: { fontSize: 12, fontWeight: "700", color: Colors.white },
-  // Yo'lga chiqdim
+  actionBtnText: { fontSize: fontSize.xs, fontWeight: fontWeight.extrabold, color: "#fff" },
+
   startDeliveryBtn: {
-    marginHorizontal: 12,
-    marginBottom: 12,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: Colors.primaryLight,
+    margin: spacing.md,
+    marginTop: 0,
+    flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.primary + "40",
+    justifyContent: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.base,
+    borderRadius: radius.md,
+    backgroundColor: theme.primarySoft,
+    borderWidth: 1.5,
+    borderColor: palette.aqua200,
   },
-  startDeliveryText: { fontSize: 14, fontWeight: "700", color: Colors.primaryDark },
-  // Empty
-  empty: { alignItems: "center", paddingTop: 80, paddingBottom: 40 },
-  emptyIcon: { fontSize: 56, marginBottom: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: "700", color: Colors.gray[900], marginBottom: 8 },
-  emptyText: { fontSize: 14, color: Colors.gray[500] },
-  refreshBtn: { marginTop: 20, paddingHorizontal: 28, paddingVertical: 12, backgroundColor: Colors.primary, borderRadius: 12 },
-  refreshBtnText: { color: Colors.white, fontSize: 15, fontWeight: "600" },
-  // Deliver Modal
-  deliverOverlay: { flex: 1, justifyContent: "flex-end" },
-  deliverBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.6)" },
-  deliverSheet: {
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 24,
-    paddingBottom: 36,
-    maxHeight: "85%",
+  startDeliveryText: { fontSize: fontSize.base, fontWeight: fontWeight.extrabold, color: theme.primaryDark },
+
+  empty: { alignItems: "center", paddingTop: 90 },
+  emptyIconBox: {
+    width: 78,
+    height: 78,
+    borderRadius: radius["2xl"],
+    backgroundColor: theme.successSoft,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.base,
   },
-  sheetHandle: { width: 40, height: 4, backgroundColor: Colors.gray[300], borderRadius: 2, alignSelf: "center", marginVertical: 12 },
-  deliverHeader: { alignItems: "center", marginBottom: 24 },
-  deliverTitle: { fontSize: 18, fontWeight: "700", color: Colors.gray[900] },
-  deliverSub: { fontSize: 14, color: Colors.gray[500], marginTop: 4 },
-  deliverSectionTitle: { fontSize: 14, fontWeight: "600", color: Colors.gray[700], marginBottom: 12 },
-  deliverSectionSub: { fontSize: 13, color: Colors.gray[400], fontWeight: "400" },
-  paymentOptions: { flexDirection: "row", gap: 10, marginBottom: 20 },
+  emptyTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.extrabold, color: theme.text, marginBottom: 6 },
+  emptyText: { fontSize: fontSize.base, color: theme.textSecondary, fontWeight: fontWeight.medium },
+
+  modalOverlay: { flex: 1, backgroundColor: theme.overlay, justifyContent: "flex-end" },
+  modalContent: {
+    backgroundColor: theme.surface,
+    borderTopLeftRadius: radius["2xl"],
+    borderTopRightRadius: radius["2xl"],
+    padding: spacing.xl,
+    maxHeight: "90%",
+  },
+  modalIndicator: { width: 40, height: 4, backgroundColor: theme.border, borderRadius: 2, alignSelf: "center", marginBottom: spacing.base },
+  modalTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.extrabold, color: theme.text, textAlign: "center" },
+  modalSub: { fontSize: fontSize.base, color: theme.textSecondary, marginTop: 4, marginBottom: spacing.lg, textAlign: "center", fontWeight: fontWeight.semibold },
+
+  sectionTitle: { fontSize: fontSize.base, fontWeight: fontWeight.extrabold, color: theme.textSecondary, marginBottom: spacing.md, marginTop: 4 },
+
+  paymentOptions: { flexDirection: "row", gap: spacing.md, marginBottom: spacing.lg },
   paymentOption: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 18,
-    borderRadius: 16,
+    gap: spacing.sm,
+    paddingVertical: spacing.base,
+    borderRadius: radius.md,
     borderWidth: 2,
-    borderColor: Colors.gray[200],
-    backgroundColor: Colors.white,
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
   },
-  paymentOptionSelected: { borderColor: Colors.primary, backgroundColor: Colors.primaryLight },
-  paymentOptionIcon: { fontSize: 26, marginBottom: 6 },
-  paymentOptionText: { fontSize: 12, color: Colors.gray[600], fontWeight: "600" },
-  paymentOptionTextSelected: { color: Colors.primaryDark, fontWeight: "700" },
+  paymentOptionSelected: { borderColor: theme.primary, backgroundColor: theme.primaryTint },
+  paymentOptionText: { fontSize: fontSize.xs, color: theme.textSecondary, fontWeight: fontWeight.semibold },
+  paymentOptionTextSelected: { color: theme.primaryDark, fontWeight: fontWeight.extrabold },
+
   creditWarning: {
-    backgroundColor: Colors.warningLight,
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    backgroundColor: theme.warningSoft,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    marginBottom: spacing.lg,
   },
-  creditWarningText: { fontSize: 13, color: Colors.gray[700] },
+  creditWarningText: { flex: 1, fontSize: fontSize.sm, color: palette.amber600, fontWeight: fontWeight.semibold },
+
   bottleCounter: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 28,
-    marginBottom: 28,
-    paddingVertical: 16,
-    backgroundColor: Colors.gray[50],
-    borderRadius: 14,
+    gap: spacing["2xl"],
+    marginBottom: spacing.xl,
+    paddingVertical: spacing.base,
+    backgroundColor: theme.bg,
+    borderRadius: radius.lg,
   },
   counterBtn: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: Colors.gray[200],
+    backgroundColor: theme.primary,
     alignItems: "center",
     justifyContent: "center",
+    ...shadow.brandSoft,
   },
-  counterBtnText: { fontSize: 26, fontWeight: "700", color: Colors.gray[700] },
-  counterValue: { fontSize: 36, fontWeight: "800", color: Colors.gray[900], minWidth: 48, textAlign: "center" },
+  counterValue: { fontSize: fontSize["4xl"], fontWeight: fontWeight.black, color: theme.text, minWidth: 48, textAlign: "center", letterSpacing: -1 },
+
   confirmBtn: {
-    paddingVertical: 18,
-    backgroundColor: Colors.success,
-    borderRadius: 16,
+    paddingVertical: spacing.base,
+    backgroundColor: theme.success,
+    borderRadius: radius.md,
     alignItems: "center",
-    shadowColor: Colors.success,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    marginBottom: spacing.md,
   },
-  confirmBtnDisabled: { backgroundColor: Colors.success + "80" },
-  confirmBtnText: { fontSize: 18, fontWeight: "700", color: Colors.white },
+  confirmBtnText: { fontSize: fontSize.md, fontWeight: fontWeight.extrabold, color: "#fff" },
+  cancelBtn: { paddingVertical: spacing.md, alignItems: "center" },
+  cancelBtnText: { fontSize: fontSize.base, color: theme.textSecondary, fontWeight: fontWeight.bold },
 });
