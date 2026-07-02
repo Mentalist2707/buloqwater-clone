@@ -90,13 +90,17 @@ export default function NotificationCenter() {
     setLoading(false);
     setRefreshing(false);
 
-    // Sahifaga kirilganda — hammasi o'qilgan deb belgilanadi (badge tozalanadi).
-    // Lekin joriy ko'rinishda "yangi" ajratmasi qoladi, foydalanuvchi nima
-    // kelganini ko'rishi uchun.
+    // Sahifaga kirilganda — badge darhol tozalanadi. Yangi kelganlar qisqa
+    // vaqt ajralib turadi, so'ng default (o'qilgan) ko'rinishga o'tadi.
     if (list.some((n) => !n.isRead)) {
       notificationsService.markAllRead();
+      setUnreadCount(0);
+      setTimeout(() => {
+        setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      }, 1500);
+    } else {
+      setUnreadCount(0);
     }
-    setUnreadCount(0);
   }, [setUnreadCount]);
 
   useFocusEffect(

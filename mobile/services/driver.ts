@@ -22,4 +22,9 @@ export const driverService = {
   async deliverOrder(data: { orderId: string; paymentType: string; bottlesReturned: number }) {
     return api.post("/orders/deliver", data);
   },
+
+  // Buyurtmani rad etish (sabab bilan)
+  async rejectOrder(data: { orderId: string; reason: string }) {
+    return api.post("/driver/reject", data);
+  },
 };

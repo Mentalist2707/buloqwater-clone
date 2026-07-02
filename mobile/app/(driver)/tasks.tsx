@@ -13,6 +13,7 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { Alert } from "@/utils/alert";
 import { useFocusEffect, router } from "expo-router";
@@ -40,6 +41,10 @@ export default function DriverTasksScreen() {
   const [deliverLoading, setDeliverLoading] = useState(false);
   const [startingId, setStartingId] = useState<string | null>(null);
 
+  const [rejectTarget, setRejectTarget] = useState<Order | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectLoading, setRejectLoading] = useState(false);
+
   const loadTasks = async () => {
     const result = await driverService.getTasks(true);
     if (result.success && result.data) setData(result.data);
@@ -64,6 +69,25 @@ export default function DriverTasksScreen() {
     setStartingId(null);
     if (result.success) loadTasks();
     else Alert.alert("Xatolik", (result as any).error || "Xatolik yuz berdi");
+  };
+
+  const handleReject = async () => {
+    if (!rejectTarget) return;
+    if (!rejectReason.trim()) {
+      Alert.alert("Diqqat", "Rad etish sababini yozing");
+      return;
+    }
+    setRejectLoading(true);
+    const res = await driverService.rejectOrder({ orderId: rejectTarget.id, reason: rejectReason.trim() });
+    setRejectLoading(false);
+    if (res.success) {
+      setRejectTarget(null);
+      setRejectReason("");
+      Alert.alert("Rad etildi", "Buyurtma rad etildi va rahbariyatga xabar berildi");
+      loadTasks();
+    } else {
+      Alert.alert("Xatolik", (res as any).error || "Xatolik yuz berdi");
+    }
   };
 
   const openDeliverModal = (order: Order) => {
@@ -197,6 +221,20 @@ export default function DriverTasksScreen() {
               <Text style={styles.actionBtnText}>Yopish</Text>
             </TouchableOpacity>
           </View>
+        )}
+
+        {!isDelivered && (
+          <TouchableOpacity
+            style={styles.rejectOrderBtn}
+            onPress={() => {
+              setRejectTarget(item);
+              setRejectReason("");
+            }}
+            activeOpacity={0.8}
+          >
+            <Feather name="x-circle" size={16} color={theme.danger} />
+            <Text style={styles.rejectOrderText}>Buyurtmani rad etish</Text>
+          </TouchableOpacity>
         )}
 
         {item.status === "ASSIGNED" && (
@@ -338,6 +376,41 @@ export default function DriverTasksScreen() {
                 <Text style={styles.cancelBtnText}>Bekor qilish</Text>
               </TouchableOpacity>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Rad etish modali */}
+      <Modal visible={!!rejectTarget} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 24 }]}>
+            <View style={styles.modalIndicator} />
+            <Text style={styles.modalTitle}>Buyurtmani rad etish</Text>
+            <Text style={styles.modalSub}>
+              #{rejectTarget?.orderNumber} · Sabab rahbariyatga yuboriladi
+            </Text>
+            <TextInput
+              style={styles.reasonInput}
+              placeholder="Masalan: mijoz javob bermayapti, manzil noto'g'ri, uzoq..."
+              placeholderTextColor={theme.textMuted}
+              value={rejectReason}
+              onChangeText={setRejectReason}
+              multiline
+            />
+            <TouchableOpacity
+              style={[styles.rejectConfirmBtn, rejectLoading && { opacity: 0.6 }]}
+              onPress={handleReject}
+              disabled={rejectLoading}
+            >
+              {rejectLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.rejectConfirmText}>Rad etishni tasdiqlash</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => setRejectTarget(null)}>
+              <Text style={styles.cancelBtnText}>Bekor qilish</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -501,6 +574,42 @@ const styles = StyleSheet.create({
   },
   startDeliveryText: { fontSize: fontSize.base, fontWeight: fontWeight.extrabold, color: theme.primaryDark },
 
+  rejectOrderBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    marginTop: 0,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: theme.dangerSoft,
+    backgroundColor: theme.surface,
+  },
+  rejectOrderText: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: theme.danger },
+  reasonInput: {
+    borderWidth: 1.5,
+    borderColor: theme.border,
+    borderRadius: radius.md,
+    padding: spacing.base,
+    minHeight: 90,
+    textAlignVertical: "top",
+    fontSize: fontSize.base,
+    color: theme.text,
+    backgroundColor: theme.bg,
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  rejectConfirmBtn: {
+    paddingVertical: spacing.base,
+    backgroundColor: theme.danger,
+    borderRadius: radius.md,
+    alignItems: "center",
+    marginBottom: spacing.md,
+  },
+  rejectConfirmText: { fontSize: fontSize.md, fontWeight: fontWeight.extrabold, color: "#fff" },
   empty: { alignItems: "center", paddingTop: 90 },
   emptyIconBox: {
     width: 78,

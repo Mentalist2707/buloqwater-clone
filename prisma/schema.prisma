@@ -315,6 +315,7 @@ model Order {
   bottlesReturned   Int       @default(0)
   notes           String?
   contactPhone         String?
+  rejectReason         String?
   deliveryAddress      String?
   deliveryLandmark     String?
   deliveryLocationLink String?
