@@ -22,6 +22,7 @@ import { useAuthStore } from "@/store/auth";
 import { customerService, type Address } from "@/services/customer";
 import { Screen } from "@/components/ui";
 import { SecurityCard } from "@/components/SecurityCard";
+import LocationPicker from "@/components/LocationPicker";
 import { theme, palette, gradients, spacing, radius, fontSize, fontWeight, shadow } from "@/constants/theme";
 
 export default function CustomerProfile() {
@@ -42,6 +43,21 @@ export default function CustomerProfile() {
   const [isDefault, setIsDefault] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [gettingLocation, setGettingLocation] = useState<boolean>(false);
+  const [showMapPicker, setShowMapPicker] = useState<boolean>(false);
+
+  const handleMapSelect = async ({ latitude: la, longitude: lo }: { latitude: number; longitude: number }) => {
+    setLatitude(la);
+    setLongitude(lo);
+    setLocationLink(`https://www.google.com/maps?q=${la},${lo}`);
+    try {
+      const results = await Location.reverseGeocodeAsync({ latitude: la, longitude: lo });
+      if (results && results.length > 0) {
+        const loc = results[0];
+        const addr = [loc.street, loc.streetNumber, loc.district, loc.city, loc.region].filter(Boolean).join(", ");
+        if (addr) setAddress(addr);
+      }
+    } catch {}
+  };
 
   const loadAddresses = async () => {
     setLoading(true);
@@ -333,6 +349,11 @@ export default function CustomerProfile() {
                 )}
               </TouchableOpacity>
 
+              <TouchableOpacity style={styles.mapPickBtn} onPress={() => setShowMapPicker(true)} activeOpacity={0.85}>
+                <Feather name="map" size={18} color={theme.primaryDark} />
+                <Text style={styles.mapPickText}>Xaritadan belgilash</Text>
+              </TouchableOpacity>
+
               <View style={styles.formField}>
                 <Text style={styles.formLabel}>Manzil *</Text>
                 <TextInput
@@ -385,6 +406,16 @@ export default function CustomerProfile() {
             </ScrollView>
           </View>
         </View>
+      </Modal>
+
+      {/* Xaritadan lokatsiya tanlash */}
+      <Modal visible={showMapPicker} animationType="slide" onRequestClose={() => setShowMapPicker(false)}>
+        <LocationPicker
+          initialLatitude={latitude}
+          initialLongitude={longitude}
+          onClose={() => setShowMapPicker(false)}
+          onSelect={handleMapSelect}
+        />
       </Modal>
     </Screen>
   );
@@ -497,6 +528,20 @@ const styles = StyleSheet.create({
   gpsBtn: { borderRadius: radius.md, overflow: "hidden", marginBottom: spacing.md },
   gpsGradient: { height: 50, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
   gpsBtnText: { fontSize: fontSize.base, fontWeight: fontWeight.bold, color: "#FFF" },
+
+  mapPickBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    height: 48,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: theme.primarySoft,
+    backgroundColor: theme.primaryTint,
+    marginBottom: spacing.md,
+  },
+  mapPickText: { fontSize: fontSize.base, fontWeight: fontWeight.bold, color: theme.primaryDark },
 
   coordsBox: {
     backgroundColor: theme.successSoft,
