@@ -314,6 +314,12 @@ model Order {
   bottlesDelivered  Int       @default(0)
   bottlesReturned   Int       @default(0)
   notes           String?
+  contactPhone         String?
+  deliveryAddress      String?
+  deliveryLandmark     String?
+  deliveryLocationLink String?
+  deliveryLatitude     Float?
+  deliveryLongitude    Float?
   deliveredAt     DateTime?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt

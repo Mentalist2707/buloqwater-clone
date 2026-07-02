@@ -45,9 +45,38 @@ export async function POST(request: NextRequest) {
     if (!user) return unauthorized();
 
     const body = await request.json();
-    const { items, notes } = body;
+    const { items, notes, contactPhone, addressId } = body;
 
     if (!items || items.length === 0) return badRequest("Mahsulotlar tanlanmagan");
+
+    // Yetkazish manzili snapshot'i (tanlangan saqlangan manzildan)
+    let delivery: {
+      deliveryAddress: string | null;
+      deliveryLandmark: string | null;
+      deliveryLocationLink: string | null;
+      deliveryLatitude: number | null;
+      deliveryLongitude: number | null;
+    } = {
+      deliveryAddress: null,
+      deliveryLandmark: null,
+      deliveryLocationLink: null,
+      deliveryLatitude: null,
+      deliveryLongitude: null,
+    };
+    if (addressId) {
+      const addr = await prisma.userAddress.findFirst({
+        where: { id: addressId, userId: user.userId },
+      });
+      if (addr) {
+        delivery = {
+          deliveryAddress: addr.address,
+          deliveryLandmark: addr.landmark,
+          deliveryLocationLink: addr.locationLink,
+          deliveryLatitude: addr.latitude,
+          deliveryLongitude: addr.longitude,
+        };
+      }
+    }
 
     const productIds = items.map((i: any) => i.productId);
     const products = await prisma.product.findMany({
@@ -113,6 +142,8 @@ export async function POST(request: NextRequest) {
           totalAmount,
           bottlesDelivered: totalBottles,
           notes: notes || null,
+          contactPhone: contactPhone || null,
+          ...delivery,
           status: "PENDING",
           items: { create: orderItems },
         },

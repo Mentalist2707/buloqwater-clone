@@ -16,7 +16,7 @@ import { useFocusEffect, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { customerService } from "@/services/customer";
+import { customerService, type Address } from "@/services/customer";
 import type { Product } from "@/types";
 import { Screen } from "@/components/ui";
 import {
@@ -63,10 +63,20 @@ export default function OrderScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [catFilter, setCatFilter] = useState<string>("ALL");
 
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [showAddrList, setShowAddrList] = useState(false);
+  const [contactPhone, setContactPhone] = useState("");
+
   const load = async () => {
     setLoading(true);
     const r = await customerService.getProducts();
     if (r.success && r.data) setProducts(r.data);
+    const ar = await customerService.getAddresses();
+    if (ar.success && ar.data) {
+      setAddresses(ar.data);
+      setSelectedAddressId((prev) => prev ?? (ar.data!.find((a) => a.isDefault)?.id || ar.data![0]?.id || null));
+    }
     setLoading(false);
   };
 
@@ -117,11 +127,16 @@ export default function OrderScreen() {
               productId: i.product.id,
               quantity: i.quantity,
             }));
-            const r = await customerService.placeOrder(items, notes || undefined);
+            const r = await customerService.placeOrder(items, {
+              notes: notes || undefined,
+              contactPhone: contactPhone.trim() || undefined,
+              addressId: selectedAddressId || undefined,
+            });
             setSubmitting(false);
             if (r.success) {
               setCart({});
               setNotes("");
+              setContactPhone("");
               Alert.alert("Qabul qilindi!", "Operatorimiz tez orada siz bilan bog'lanadi.", [
                 { text: "OK" },
               ]);
@@ -137,6 +152,7 @@ export default function OrderScreen() {
   const categories = ["ALL", ...Array.from(new Set(products.map((p) => p.category)))];
   const filtered = catFilter === "ALL" ? products : products.filter((p) => p.category === catFilter);
   const showCompany = new Set(products.map((p) => p.companyId)).size > 1;
+  const selectedAddr = addresses.find((a) => a.id === selectedAddressId) || null;
 
   return (
     <Screen>
@@ -284,14 +300,83 @@ export default function OrderScreen() {
           </View>
         )}
 
-        {/* Izoh */}
+        {/* Yetkazish ma'lumotlari */}
         {cartItems.length > 0 && (
-          <View style={styles.notesBox}>
-            <Text style={styles.notesLabel}>Qo'shimcha izoh (ixtiyoriy)</Text>
+          <View style={styles.deliveryBox}>
+            <Text style={styles.deliveryTitle}>Yetkazish ma'lumotlari</Text>
+
+            {/* Manzil */}
+            <Text style={styles.fieldLabel}>Manzil</Text>
+            <TouchableOpacity style={styles.addrSelect} onPress={() => setShowAddrList((v) => !v)} activeOpacity={0.8}>
+              <Feather name="map-pin" size={16} color={theme.primaryDark} />
+              <View style={{ flex: 1 }}>
+                {selectedAddr ? (
+                  <>
+                    <Text style={styles.addrLabel}>{selectedAddr.label}</Text>
+                    <Text style={styles.addrText} numberOfLines={1}>
+                      {selectedAddr.address}
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={styles.addrPlaceholder}>Manzil tanlanmagan</Text>
+                )}
+              </View>
+              <Feather name={showAddrList ? "chevron-up" : "chevron-down"} size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+            {showAddrList && (
+              <View style={styles.addrList}>
+                {addresses.length === 0 ? (
+                  <Text style={styles.addrEmpty}>Saqlangan manzil yo'q. Profil → Manzillarim bo'limidan qo'shing.</Text>
+                ) : (
+                  addresses.map((a) => (
+                    <TouchableOpacity
+                      key={a.id}
+                      style={styles.addrOption}
+                      onPress={() => {
+                        setSelectedAddressId(a.id);
+                        setShowAddrList(false);
+                      }}
+                    >
+                      <Feather
+                        name={selectedAddressId === a.id ? "check-circle" : "circle"}
+                        size={17}
+                        color={selectedAddressId === a.id ? theme.primary : theme.textMuted}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.addrLabel}>
+                          {a.label}
+                          {a.isDefault ? " · Asosiy" : ""}
+                        </Text>
+                        <Text style={styles.addrText} numberOfLines={1}>
+                          {a.address}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </View>
+            )}
+
+            {/* Aloqa telefoni */}
+            <Text style={styles.fieldLabel}>Aloqa telefoni (ixtiyoriy)</Text>
+            <View style={styles.inputRow}>
+              <Feather name="phone" size={16} color={theme.textMuted} />
+              <TextInput
+                style={styles.inputFlex}
+                placeholder="Uyda bo'lmasangiz — boshqa raqam"
+                placeholderTextColor={theme.textMuted}
+                value={contactPhone}
+                onChangeText={setContactPhone}
+                keyboardType="phone-pad"
+              />
+            </View>
+
+            {/* Izoh */}
+            <Text style={styles.fieldLabel}>Izoh (ixtiyoriy)</Text>
             <View style={styles.notesInputWrapper}>
               <TextInput
                 style={styles.notesInput}
-                placeholder="Masalan: 3-qavat, domofon 12K..."
+                placeholder="Masalan: 3-qavat, domofon 12K, uyda bo'lmasligim mumkin..."
                 placeholderTextColor={theme.textMuted}
                 value={notes}
                 onChangeText={setNotes}
@@ -480,6 +565,60 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     paddingLeft: 2,
   },
+
+  deliveryBox: {
+    marginTop: spacing.lg,
+    backgroundColor: theme.surface,
+    borderRadius: radius.xl,
+    padding: spacing.base,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    ...shadow.xs,
+  },
+  deliveryTitle: { fontSize: fontSize.md, fontWeight: fontWeight.extrabold, color: theme.text, marginBottom: spacing.md },
+  fieldLabel: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: theme.textSecondary, marginBottom: 6, marginTop: spacing.md, paddingLeft: 2 },
+  addrSelect: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: theme.border,
+    backgroundColor: theme.bg,
+  },
+  addrLabel: { fontSize: fontSize.base, fontWeight: fontWeight.bold, color: theme.text },
+  addrText: { fontSize: fontSize.sm, color: theme.textSecondary, marginTop: 1, fontWeight: fontWeight.medium },
+  addrPlaceholder: { fontSize: fontSize.base, color: theme.textMuted, fontWeight: fontWeight.medium },
+  addrList: {
+    marginTop: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: theme.border,
+    overflow: "hidden",
+  },
+  addrEmpty: { fontSize: fontSize.sm, color: theme.textSecondary, padding: spacing.md, fontWeight: fontWeight.medium },
+  addrOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+    backgroundColor: theme.surface,
+  },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingHorizontal: spacing.base,
+    height: 50,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: theme.border,
+    backgroundColor: theme.bg,
+  },
+  inputFlex: { flex: 1, fontSize: fontSize.base, color: theme.text },
   notesInputWrapper: {
     backgroundColor: theme.surface,
     borderRadius: radius.lg,

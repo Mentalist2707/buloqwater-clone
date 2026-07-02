@@ -104,6 +104,7 @@ export interface Order {
   bottlesDelivered: number;
   bottlesReturned: number;
   notes: string | null;
+  contactPhone?: string | null;
   deliveredAt: string | null;
   createdAt: string;
   customer: {

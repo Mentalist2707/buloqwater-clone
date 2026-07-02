@@ -166,6 +166,20 @@ export default function DriverTasksScreen() {
               </View>
             ))}
           </View>
+
+          {item.contactPhone ? (
+            <TouchableOpacity style={styles.contactRow} onPress={() => handleCall(item.contactPhone!)} activeOpacity={0.7}>
+              <Feather name="phone-call" size={13} color={theme.primaryDark} />
+              <Text style={styles.contactText}>Aloqa: {item.contactPhone}</Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {item.notes ? (
+            <View style={styles.noteRow}>
+              <Feather name="message-square" size={14} color={palette.amber600} />
+              <Text style={styles.noteText}>{item.notes}</Text>
+            </View>
+          ) : null}
         </View>
 
         {!isDelivered && (
@@ -447,6 +461,18 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   itemChipText: { fontSize: fontSize.sm, color: theme.primaryDark, fontWeight: fontWeight.bold },
+
+  contactRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  contactText: { fontSize: fontSize.sm, color: theme.primaryDark, fontWeight: fontWeight.bold },
+  noteRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+    backgroundColor: theme.warningSoft,
+    padding: spacing.sm,
+    borderRadius: radius.sm,
+  },
+  noteText: { flex: 1, fontSize: fontSize.sm, color: palette.amber600, fontWeight: fontWeight.semibold, lineHeight: 18 },
 
   actionGrid: { flexDirection: "row", gap: spacing.sm, padding: spacing.md },
   actionBtn: {

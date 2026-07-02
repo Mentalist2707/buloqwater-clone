@@ -80,7 +80,8 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Har bir buyurtma uchun mijozning haqiqiy manzili/koordinatasini aniqlash
+    // Har bir buyurtma uchun manzil/koordinatani aniqlash — avval buyurtmaning
+    // o'z yetkazish manzili (mijoz tanlagan), keyin mijoz standart manzili
     const tasks = orders.map((o) => {
       const c: any = o.customer;
       const alt = c.addresses?.[0] || c.user?.userAddresses?.[0] || null;
@@ -89,7 +90,13 @@ export async function GET(request: NextRequest) {
       let locationLink = c.locationLink;
       let latitude: number | null = null;
       let longitude: number | null = null;
-      if (alt) {
+      if (o.deliveryAddress) {
+        address = o.deliveryAddress;
+        landmark = o.deliveryLandmark ?? landmark;
+        locationLink = o.deliveryLocationLink ?? null;
+        latitude = o.deliveryLatitude ?? null;
+        longitude = o.deliveryLongitude ?? null;
+      } else if (alt) {
         latitude = alt.latitude ?? null;
         longitude = alt.longitude ?? null;
         if (!address || address === "Manzil kiritilmagan") {

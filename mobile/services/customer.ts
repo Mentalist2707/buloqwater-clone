@@ -38,8 +38,11 @@ export const customerService = {
   },
 
   // Yangi buyurtma berish
-  async placeOrder(items: { productId: string; quantity: number }[], notes?: string) {
-    return api.post("/customer/orders", { items, notes });
+  async placeOrder(
+    items: { productId: string; quantity: number }[],
+    opts?: { notes?: string; contactPhone?: string; addressId?: string },
+  ) {
+    return api.post("/customer/orders", { items, ...(opts || {}) });
   },
 
   // Balans va profil
