@@ -9,8 +9,9 @@ import {
   ScrollView,
   RefreshControl,
   Dimensions,
+  TouchableOpacity,
 } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -104,17 +105,17 @@ export default function AdminDashboard() {
 
             {/* Stats grid */}
             <View style={styles.statsGrid}>
-              <StatCard icon="shopping-cart" label="Bugungi buyurtmalar" value={String(stats.dailyDeliveries)} color={palette.aqua500} />
-              <StatCard icon="user-plus" label="Yangi mijozlar" value={String(stats.newCustomersMonth)} sub="Bu oy" color={palette.mint500} />
-              <StatCard icon="truck" label="Faol haydovchilar" value={String(stats.activeDrivers)} color={palette.amber500} />
-              <StatCard icon="users" label="Jami mijozlar" value={String(stats.totalCustomers ?? 0)} color={palette.ocean500} />
+              <StatCard icon="shopping-cart" label="Bugungi buyurtmalar" value={String(stats.dailyDeliveries)} color={palette.aqua500} onPress={() => router.push("/(admin)/orders")} />
+              <StatCard icon="user-plus" label="Yangi mijozlar" value={String(stats.newCustomersMonth)} sub="Bu oy" color={palette.mint500} onPress={() => router.push("/(admin)/customers")} />
+              <StatCard icon="truck" label="Faol haydovchilar" value={String(stats.activeDrivers)} color={palette.amber500} onPress={() => router.push("/(admin)/staff")} />
+              <StatCard icon="users" label="Jami mijozlar" value={String(stats.totalCustomers ?? 0)} color={palette.ocean500} onPress={() => router.push("/(admin)/customers")} />
             </View>
 
             {/* Status */}
             <Text style={styles.sectionTitle}>Hozirgi holat</Text>
             <View style={styles.statusRow}>
-              <StatusPill icon="clock" label="Kutilmoqda" count={stats.pendingOrders} color={palette.amber500} />
-              <StatusPill icon="navigation" label="Yo'lda" count={stats.inTransitOrders} color={palette.ocean500} />
+              <StatusPill icon="clock" label="Kutilmoqda" count={stats.pendingOrders} color={palette.amber500} onPress={() => router.push("/(admin)/orders")} />
+              <StatusPill icon="navigation" label="Yo'lda" count={stats.inTransitOrders} color={palette.ocean500} onPress={() => router.push("/(admin)/orders")} />
             </View>
 
             {/* Payment breakdown */}
@@ -185,22 +186,34 @@ export default function AdminDashboard() {
   );
 }
 
-function StatCard({ icon, label, value, sub, color }: { icon: keyof typeof Feather.glyphMap; label: string; value: string; sub?: string; color: string }) {
-  return (
-    <View style={styles.statCard}>
-      <View style={[styles.statIconBg, { backgroundColor: color + "18" }]}>
-        <Feather name={icon} size={20} color={color} />
+function StatCard({ icon, label, value, sub, color, onPress }: { icon: keyof typeof Feather.glyphMap; label: string; value: string; sub?: string; color: string; onPress?: () => void }) {
+  const content = (
+    <>
+      <View style={styles.statTopRow}>
+        <View style={[styles.statIconBg, { backgroundColor: color + "18" }]}>
+          <Feather name={icon} size={20} color={color} />
+        </View>
+        {onPress && <Feather name="chevron-right" size={16} color={theme.textMuted} />}
       </View>
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
       {sub && <Text style={styles.statSub}>{sub}</Text>}
-    </View>
+    </>
   );
+  if (onPress) {
+    return (
+      <TouchableOpacity style={styles.statCard} onPress={onPress} activeOpacity={0.8}>
+        {content}
+      </TouchableOpacity>
+    );
+  }
+  return <View style={styles.statCard}>{content}</View>;
 }
 
-function StatusPill({ icon, label, count, color }: { icon: keyof typeof Feather.glyphMap; label: string; count: number; color: string }) {
+function StatusPill({ icon, label, count, color, onPress }: { icon: keyof typeof Feather.glyphMap; label: string; count: number; color: string; onPress?: () => void }) {
+  const Comp: any = onPress ? TouchableOpacity : View;
   return (
-    <View style={[styles.statusPill, { borderColor: color + "33" }]}>
+    <Comp style={[styles.statusPill, { borderColor: color + "33" }]} onPress={onPress} activeOpacity={0.8}>
       <View style={[styles.statusPillIcon, { backgroundColor: color + "18" }]}>
         <Feather name={icon} size={20} color={color} />
       </View>
@@ -208,7 +221,7 @@ function StatusPill({ icon, label, count, color }: { icon: keyof typeof Feather.
         <Text style={[styles.statusCount, { color }]}>{count}</Text>
         <Text style={styles.statusLabel}>{label}</Text>
       </View>
-    </View>
+    </Comp>
   );
 }
 
@@ -309,6 +322,7 @@ const styles = StyleSheet.create({
     ...shadow.xs,
   },
   statIconBg: { width: 46, height: 46, borderRadius: radius.md, alignItems: "center", justifyContent: "center", marginBottom: spacing.md },
+  statTopRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
   statValue: { fontSize: fontSize["2xl"], fontWeight: fontWeight.black, color: theme.text, letterSpacing: -1 },
   statLabel: { fontSize: fontSize.xs, color: theme.textSecondary, fontWeight: fontWeight.bold, marginTop: 2, lineHeight: 15 },
   statSub: { fontSize: 10, color: theme.textMuted, marginTop: 2, fontWeight: fontWeight.semibold },
